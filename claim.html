@@ -294,7 +294,6 @@
 <body>
     <div class="glow-bg"></div>
     <div class="card" id="main-card"></div>
-
     <script>
         const params = new URLSearchParams(window.location.search);
         const secret = params.get('secret');
@@ -397,7 +396,7 @@
 
             renderCard();
 
-            async function claimNumber() {
+            window.claimNumber = async function() {
                 const btn = document.getElementById('btn-claim');
                 btn.disabled = true;
                 btn.className = 'btn-claim processing';

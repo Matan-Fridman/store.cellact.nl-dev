@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claim Your Number</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0f0f13;
+            color: #f0ece6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .glow-bg {
+            position: fixed;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 500px;
+            background: radial-gradient(ellipse, rgba(142,45,226,0.15), rgba(196,91,255,0.08), transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            background: #1a1a22;
+            border: 1px solid #2a2a35;
+            border-radius: 20px;
+            padding: 40px 36px;
+            max-width: 480px;
+            width: 100%;
+        }
+
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(142,45,226,0.2), rgba(255,88,176,0.12));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 0 0 30px rgba(142,45,226,0.2);
+        }
+
+        .subtitle {
+            color: #9a95a8;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 28px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid #222230;
+        }
+
+        .detail-row:last-of-type { border-bottom: none; }
+
+        .detail-label {
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: #7a7688;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .detail-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .detail-value.mono {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: #c4b5fd;
+        }
+
+        .detail-value.truncate {
+            max-width: 220px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: #2a2a35;
+            margin: 24px 0;
+        }
+
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .step {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+
+        .step-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: #222230;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #9a95a8;
+            flex-shrink: 0;
+        }
+
+        .step-num.active {
+            background: linear-gradient(135deg, rgba(142,45,226,0.3), rgba(255,88,176,0.2));
+            color: #f0ece6;
+        }
+
+        .step-num.done {
+            background: rgba(74,222,128,0.15);
+            color: #4ade80;
+        }
+
+        .step-text {
+            font-size: 0.88rem;
+            color: #9a95a8;
+            line-height: 1.4;
+            padding-top: 3px;
+        }
+
+        .step-text.active { color: #f0ece6; }
+
+        .btn-claim {
+            background: #f0ece6;
+            color: #0f0f13;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 0;
+            width: 100%;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .btn-claim:hover { opacity: 0.9; }
+        .btn-claim:active { transform: scale(0.98); }
+
+        .btn-claim:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-claim.processing {
+            background: #2a2a35;
+            color: #9a95a8;
+        }
+
+        .btn-claim.success {
+            background: #1a3a2a;
+            color: #4ade80;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #7a7688;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .result-box {
+            display: none;
+            background: #0f0f13;
+            border: 1px solid #2a2a35;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .result-box.visible { display: block; }
+
+        .result-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #4ade80;
+            margin-bottom: 12px;
+        }
+
+        .result-field {
+            margin-bottom: 10px;
+        }
+
+        .result-field:last-child { margin-bottom: 0; }
+
+        .result-field-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #7a7688;
+            margin-bottom: 4px;
+        }
+
+        .result-field-value {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.78rem;
+            color: #c4b5fd;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+
+        .result-field-value a {
+            color: #c4b5fd;
+            text-decoration: none;
+        }
+
+        .result-field-value a:hover { text-decoration: underline; }
+
+        .error-box {
+            display: none;
+            background: rgba(255,88,176,0.06);
+            border: 1px solid rgba(255,88,176,0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 20px;
+            font-size: 0.85rem;
+            color: #ff8cc8;
+            line-height: 1.5;
+        }
+
+        .error-box.visible { display: block; }
+
+        .missing-params {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .missing-params h2 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+
+        .missing-params p {
+            color: #7a7688;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .missing-params code {
+            background: #222230;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.82rem;
+            color: #c4b5fd;
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-bg"></div>
+    <div class="card" id="main-card"></div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const secret = params.get('secret');
+        const label = params.get('label');
+        const wallet = params.get('walletAddress');
+
+        const card = document.getElementById('main-card');
+
+        function formatPhone(num) {
+            if (num.length >= 10) {
+                return '+' + num.slice(0,3) + ' ' + num.slice(3,5) + ' ' + num.slice(5,8) + ' ' + num.slice(8);
+            }
+            return num;
+        }
+
+        function truncate(str, len) {
+            if (str.length <= len) return str;
+            return str.slice(0, len / 2) + '...' + str.slice(-len / 2);
+        }
+
+        const API_URL = 'https://insert-commitment-esimera-309305771885.europe-west1.run.app';
+
+        if (!secret || !label || !wallet) {
+            card.innerHTML = `
+                <div class="missing-params">
+                    <div class="card-icon" style="margin: 0 auto 24px;">🔗</div>
+                    <h2>Missing Parameters</h2>
+                    <p>This page requires URL parameters to claim a number.</p>
+                    <p style="margin-top: 16px;">
+                        Expected format:<br>
+                        <code>claim.html?secret=0x...&label=972...&wallet=0x...</code>
+                    </p>
+                </div>
+            `;
+        } else {
+            let currentStep = 0;
+
+            function renderCard() {
+                card.innerHTML = `
+                    <div class="card-icon">🔐</div>
+                    <h1>Claim Your Number</h1>
+                    <p class="subtitle">
+                        Activate your phone number using a zero-knowledge proof. 
+                        Your identity remains private — only the proof is submitted on-chain.
+                    </p>
+
+                    <div class="detail-row">
+                        <span class="detail-label">Number</span>
+                        <span class="detail-value">${formatPhone(label)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Wallet</span>
+                        <span class="detail-value mono truncate" title="${wallet}">${truncate(wallet, 20)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Secret</span>
+                        <span class="detail-value mono truncate" title="${secret}">${truncate(secret, 20)}</span>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <div class="steps">
+                        <div class="step">
+                            <div class="step-num ${currentStep === 1 ? 'active' : currentStep > 1 ? 'done' : ''}">${currentStep > 1 ? '✓' : '1'}</div>
+                            <span class="step-text ${currentStep === 1 ? 'active' : ''}">Rebuilding Merkle tree from on-chain data</span>
+                        </div>
+                        <div class="step">
+                            <div class="step-num ${currentStep === 2 ? 'active' : currentStep > 2 ? 'done' : ''}">${currentStep > 2 ? '✓' : '2'}</div>
+                            <span class="step-text ${currentStep === 2 ? 'active' : ''}">Generating zero-knowledge proof</span>
+                        </div>
+                        <div class="step">
+                            <div class="step-num ${currentStep === 3 ? 'active' : currentStep > 3 ? 'done' : ''}">${currentStep > 3 ? '✓' : '3'}</div>
+                            <span class="step-text ${currentStep === 3 ? 'active' : ''}">Submitting proof and registering number</span>
+                        </div>
+                    </div>
+
+                    <button class="btn-claim" id="btn-claim" onclick="claimNumber()">
+                        Claim Number
+                    </button>
+
+                    <div class="result-box" id="result-box">
+                        <div class="result-title">Number Claimed Successfully</div>
+                        <div class="result-field">
+                            <div class="result-field-label">Registered As</div>
+                            <div class="result-field-value" id="result-name"></div>
+                        </div>
+                        <div class="result-field">
+                            <div class="result-field-label">Owner</div>
+                            <div class="result-field-value" id="result-owner"></div>
+                        </div>
+                        <div class="result-field">
+                            <div class="result-field-label">Transaction</div>
+                            <div class="result-field-value" id="result-tx"></div>
+                        </div>
+                    </div>
+
+                    <div class="error-box" id="error-box"></div>
+                `;
+            }
+
+            renderCard();
+
+            async function claimNumber() {
+                const btn = document.getElementById('btn-claim');
+                btn.disabled = true;
+                btn.className = 'btn-claim processing';
+
+                document.getElementById('error-box').className = 'error-box';
+                document.getElementById('result-box').className = 'result-box';
+
+                const stepMessages = [
+                    'Rebuilding Merkle tree...',
+                    'Generating ZK proof...',
+                    'Submitting to chain...'
+                ];
+
+                currentStep = 1;
+                renderCard();
+                const btn2 = document.getElementById('btn-claim');
+                btn2.disabled = true;
+                btn2.className = 'btn-claim processing';
+                btn2.innerHTML = `<span class="spinner"></span>${stepMessages[0]}`;
+
+                const stepInterval = setInterval(() => {
+                    if (currentStep < 3) {
+                        currentStep++;
+                        renderCard();
+                        const b = document.getElementById('btn-claim');
+                        b.disabled = true;
+                        b.className = 'btn-claim processing';
+                        b.innerHTML = `<span class="spinner"></span>${stepMessages[currentStep - 1]}`;
+                    }
+                }, 8000);
+
+                try {
+                    const res = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'activate',
+                            userSecret: secret,
+                            label: label,
+                            owner: wallet
+                        })
+                    });
+
+                    clearInterval(stepInterval);
+                    const data = await res.json();
+
+                    if (!res.ok) throw new Error(data.error || 'Claim failed');
+
+                    currentStep = 4;
+                    renderCard();
+
+                    const btnFinal = document.getElementById('btn-claim');
+                    btnFinal.className = 'btn-claim success';
+                    btnFinal.disabled = true;
+                    btnFinal.textContent = 'Claimed Successfully';
+
+                    const resultBox = document.getElementById('result-box');
+                    resultBox.className = 'result-box visible';
+                    document.getElementById('result-name').textContent = `${data.label}.${data.name}`;
+                    document.getElementById('result-owner').textContent = data.owner;
+                    document.getElementById('result-tx').innerHTML =
+                        `<a href="https://polygonscan.com/tx/${data.transactionHash}" target="_blank">${data.transactionHash}</a>`;
+
+                } catch (err) {
+                    clearInterval(stepInterval);
+                    currentStep = 0;
+                    renderCard();
+
+                    const errBox = document.getElementById('error-box');
+                    errBox.className = 'error-box visible';
+                    errBox.textContent = err.message;
+
+                    const btnErr = document.getElementById('btn-claim');
+                    btnErr.disabled = false;
+                    btnErr.className = 'btn-claim';
+                    btnErr.textContent = 'Retry Claim';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

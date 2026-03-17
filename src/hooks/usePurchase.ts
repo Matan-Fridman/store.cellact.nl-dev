@@ -15,11 +15,11 @@ export function usePurchase() {
     error: null,
   });
 
-  const purchase = useCallback(async () => {
+  const purchase = useCallback(async (label: string) => {
     setState({ status: "loading", data: null, error: null });
 
     try {
-      const data = await purchaseNumber();
+      const data = await purchaseNumber(label);
       setState({ status: "success", data, error: null });
     } catch (err) {
       const message =

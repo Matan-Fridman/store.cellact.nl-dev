@@ -6,8 +6,8 @@ const path = require('path');
 
 const PRIVATE_KEY = process.env.COORDINATES;
 const CHAIN_ID = process.env.CHAIN_ID || '137';
-const ENS_NAME = process.env.ENS_NAME || 'esimera';
-const STORE_ORIGIN = process.env.STORE_ORIGIN || 'https://store.esimera.com';
+const ENS_NAME = process.env.ENS_NAME || 'secnum';
+const STORE_ORIGIN = process.env.STORE_ORIGIN || 'https://store.secnum.com';
 
 if (!PRIVATE_KEY) {
   console.error('Missing COORDINATES environment variable');
@@ -46,14 +46,14 @@ function takeNextNumber() {
 
 function buildClaimUrl(userSecret, label) {
   const claimPage = `${STORE_ORIGIN}/claim?secret=${encodeURIComponent(userSecret)}&label=${encodeURIComponent(label)}`;
-  return `arnacon://install?url=${encodeURIComponent(claimPage)}&provider=eSIMera`;
+  return `arnacon://install?url=${encodeURIComponent(claimPage)}&provider=Secnum`;
 }
 
-async function handlePurchase(req, res) {
-  const { label } = req.body;
+async function handlePurchase(_req, res) {
+  const label = takeNextNumber();
 
-  if (!label || typeof label !== 'string' || !label.trim()) {
-    return res.status(400).json({ error: 'Missing required field: label (phone number)' });
+  if (!label) {
+    return res.status(409).json({ error: 'No numbers available' });
   }
 
   try {
@@ -96,7 +96,7 @@ async function handleActivate(req, res) {
     await NotificationService.send({
       walletAddress: owner,
       selectedName: label + '.' + ENS_NAME,
-      package_type: 'ESIMERA'
+      package_type: 'SECNUM'
     });
 
     res.json({

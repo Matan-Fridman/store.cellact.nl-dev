@@ -27,8 +27,8 @@ async function post<T>(body: Record<string, string>): Promise<T> {
   return data as T;
 }
 
-export function purchaseNumber(label: string): Promise<PurchaseResponse> {
-  return post<PurchaseResponse>({ action: "purchase", label });
+export function purchaseNumber(): Promise<PurchaseResponse> {
+  return post<PurchaseResponse>({ action: "purchase" });
 }
 
 export function activateNumber(

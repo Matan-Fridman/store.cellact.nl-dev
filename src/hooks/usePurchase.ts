@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { purchaseNumber } from "../services/api";
 import type { AsyncStatus, PurchaseResponse } from "../types";
-
+//
 interface PurchaseState {
   status: AsyncStatus;
   data: PurchaseResponse | null;

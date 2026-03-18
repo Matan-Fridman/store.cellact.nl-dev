@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
 import { ErrorAlert } from "../components/ErrorAlert";
@@ -6,6 +7,24 @@ import { usePurchase } from "../hooks/usePurchase";
 
 export function StorePage() {
   const { status, data, error, purchase, reset } = usePurchase();
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  function handlePurchase() {
+    const trimmed = phoneNumber.trim();
+    if (!trimmed) {
+      setValidationError("Please enter your phone number.");
+      return;
+    }
+    setValidationError(null);
+    purchase("+" + trimmed);
+  }
+
+  function handleReset() {
+    setPhoneNumber("");
+    setValidationError(null);
+    reset();
+  }
 
   return (
     <Layout>
@@ -31,7 +50,7 @@ export function StorePage() {
                 Mobile Number
               </div>
               <div className="text-sm text-slate-400">
-                Israeli number assigned on purchase
+                Enter your phone number to register
               </div>
             </div>
           </div>
@@ -42,14 +61,44 @@ export function StorePage() {
             <Feature text="Activate instantly via the Arnacon app" />
           </div>
 
-          <div className="border-t border-slate-100 pt-6">
+          <div className="border-t border-slate-100 pt-6 space-y-4">
+            <div>
+              <label
+                htmlFor="phone-number"
+                className="block text-sm font-medium text-slate-700 mb-1.5"
+              >
+                Phone Number
+              </label>
+              <div className="flex rounded-xl border border-slate-200 bg-slate-50 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition has-[:disabled]:opacity-50">
+                <span className="flex items-center pl-4 pr-2 text-sm font-medium text-slate-400 select-none">
+                  +
+                </span>
+                <input
+                  id="phone-number"
+                  type="tel"
+                  placeholder="972501234567"
+                  value={phoneNumber}
+                  onChange={(e) => {
+                    setPhoneNumber(e.target.value.replace(/^\+/, ""));
+                    if (validationError) setValidationError(null);
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && handlePurchase()}
+                  disabled={status === "loading" || status === "success"}
+                  className="min-w-0 flex-1 bg-transparent py-3 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                />
+              </div>
+              {validationError && (
+                <p className="mt-1.5 text-xs text-red-500">{validationError}</p>
+              )}
+            </div>
+
             {status === "success" ? (
               <Button variant="success" disabled>
                 Purchased Successfully
               </Button>
             ) : (
               <Button
-                onClick={purchase}
+                onClick={handlePurchase}
                 loading={status === "loading"}
                 disabled={status === "loading"}
               >
@@ -58,14 +107,14 @@ export function StorePage() {
             )}
           </div>
 
-          <ErrorAlert message={error} onDismiss={reset} />
+          <ErrorAlert message={error} onDismiss={handleReset} />
         </div>
       </div>
 
       {data && (
         <PurchaseModal
           open={status === "success"}
-          onClose={reset}
+          onClose={handleReset}
           data={data}
         />
       )}

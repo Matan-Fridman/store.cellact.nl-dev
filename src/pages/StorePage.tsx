@@ -1,11 +1,15 @@
+import { useSearchParams } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
 import { ErrorAlert } from "../components/ErrorAlert";
-import { PurchaseModal } from "./store/SecretModal";
 import { usePurchase } from "../hooks/usePurchase";
+import { PRICE_DISPLAY } from "../config/constants";
 
 export function StorePage() {
-  const { status, data, error, purchase, reset } = usePurchase();
+  const [searchParams] = useSearchParams();
+  const { status, error, initiate, reset } = usePurchase();
+
+  const wasCancelled = searchParams.get("payment") === "cancelled";
 
   return (
     <Layout>
@@ -43,32 +47,30 @@ export function StorePage() {
           </div>
 
           <div className="border-t border-slate-100 pt-6">
-            {status === "success" ? (
-              <Button variant="success" disabled>
-                Purchased Successfully
-              </Button>
-            ) : (
-              <Button
-                onClick={purchase}
-                loading={status === "loading"}
-                disabled={status === "loading"}
-              >
-                {status === "loading" ? "Processing..." : "Purchase Number"}
-              </Button>
-            )}
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-slate-400">One-time payment</span>
+              <span className="text-2xl font-bold text-slate-900">
+                {PRICE_DISPLAY}
+              </span>
+            </div>
+            <Button
+              onClick={initiate}
+              loading={status === "loading"}
+              disabled={status === "loading"}
+            >
+              {status === "loading" ? "Redirecting to checkout…" : "Purchase Number"}
+            </Button>
           </div>
+
+          {wasCancelled && !error && (
+            <p className="mt-4 text-center text-sm text-slate-400">
+              Payment was cancelled. You can try again whenever you're ready.
+            </p>
+          )}
 
           <ErrorAlert message={error} onDismiss={reset} />
         </div>
       </div>
-
-      {data && (
-        <PurchaseModal
-          open={status === "success"}
-          onClose={reset}
-          data={data}
-        />
-      )}
     </Layout>
   );
 }

@@ -1,5 +1,5 @@
-import { API_URL } from "../config/constants";
-import type { PurchaseResponse, ActivateResponse } from "../types";
+import { API_URL, STRIPE_URL, ORDER_RESULT_URL } from "../config/constants";
+import type { CheckoutSessionResponse, ActivateResponse, OrderResultResponse } from "../types";
 
 class ApiError extends Error {
   status: number;
@@ -11,8 +11,8 @@ class ApiError extends Error {
   }
 }
 
-async function post<T>(body: Record<string, string>): Promise<T> {
-  const res = await fetch(API_URL, {
+async function post<T>(url: string, body: Record<string, unknown>): Promise<T> {
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -27,8 +27,64 @@ async function post<T>(body: Record<string, string>): Promise<T> {
   return data as T;
 }
 
-export function purchaseNumber(): Promise<PurchaseResponse> {
-  return post<PurchaseResponse>({ action: "purchase" });
+export interface CreateCheckoutParams {
+  packageId: string;
+  packageName: string;
+  transactionPrice: string;
+  subscriptionPrice: string;
+  currency: string;
+  /** Bare URL — the GCP function appends ?session_id=<uuid>&user_address=<id> */
+  successUrl: string;
+  /** Bare URL — the GCP function appends ?user_address=<id> */
+  failureUrl: string;
+  /** Required by the GCP function — pass a generated UUID for anonymous users */
+  userId: string;
+  /** false = Stripe test mode (STRIPE_API_KEY), true = production (STRIPE_PROD_API_KEY) */
+  isProd: boolean;
+}
+
+export function createCheckoutSession(
+  params: CreateCheckoutParams,
+): Promise<CheckoutSessionResponse> {
+  return post<CheckoutSessionResponse>(STRIPE_URL, {
+    packageId: params.packageId,
+    packageName: params.packageName,
+    transactionPrice: params.transactionPrice,
+    subscriptionPrice: params.subscriptionPrice,
+    currency: params.currency,
+    success_url: params.successUrl,
+    failure_url: params.failureUrl,
+    userId: params.userId,
+    isProd: params.isProd,
+  });
+}
+
+/** Fetches claimUrl (or secret/label) from the webhook after payment. Success page polls this. */
+export function getOrderResult(sessionId: string): Promise<OrderResultResponse> {
+  const url = `${ORDER_RESULT_URL.replace(/\/$/, "")}/order-result?session_id=${encodeURIComponent(sessionId)}`;
+  return fetch(url, { method: "GET", headers: { Accept: "application/json" } }).then(
+    async (res) => {
+      const text = await res.text();
+      let data: Record<string, unknown>;
+      try {
+        data = (text.trim() ? JSON.parse(text) : {}) as Record<string, unknown>;
+      } catch {
+        throw new ApiError(
+          `Order result was not JSON (${res.status}). ${text.slice(0, 60)}`,
+          res.status,
+        );
+      }
+      if (!res.ok) {
+        throw new ApiError(
+          typeof data.error === "string" ? data.error : "Request failed",
+          res.status,
+        );
+      }
+      return {
+        claimUrl: typeof data.claimUrl === "string" ? data.claimUrl : null,
+      };
+    },
+  );
 }
 
 export function activateNumber(
@@ -36,7 +92,7 @@ export function activateNumber(
   label: string,
   owner: string,
 ): Promise<ActivateResponse> {
-  return post<ActivateResponse>({
+  return post<ActivateResponse>(API_URL, {
     action: "activate",
     userSecret,
     label,

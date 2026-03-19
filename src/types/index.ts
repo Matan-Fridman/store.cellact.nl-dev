@@ -1,3 +1,13 @@
+export interface CheckoutSessionResponse {
+  /** Stripe-hosted checkout URL to redirect the user to */
+  url: string;
+}
+
+export interface OrderResultResponse {
+  /** Set by webhook after provision; null while still processing */
+  claimUrl: string | null;
+}
+
 export interface PurchaseResponse {
   claimUrl: string;
 }

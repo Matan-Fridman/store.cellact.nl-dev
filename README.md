@@ -71,3 +71,16 @@ export default defineConfig([
   },
 ])
 ```
+
+---
+
+## Secnum services (backend)
+
+| Directory | Role |
+|-----------|------|
+| `api/` | Blockchain Cloud Function — `purchase`, `expire`, `activate` |
+| `processor/` | Ingest only — canonical `POST /v1/events`, Firestore **buckets**, **Pub/Sub** |
+| `handler/` | Subscriber + `GET /order-result` — orders, blockchain CF |
+| `webhook/` | Stripe adapter → processor; proxies order-result → **handler** |
+
+Docs: **`docs/DEPLOYMENT.md`** (step-by-step deploy & env), **`docs/FLOW.md`**, **`docs/PAYMENT_ARCHITECTURE.md`**, **`docs/SECURITY.md`**.

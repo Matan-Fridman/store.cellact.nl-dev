@@ -1,3 +1,13 @@
+/**
+ * Blockchain Cloud Function — all on-chain operations live here (no Stripe).
+ *
+ * - insert commitment  → action "purchase"     (called by Stripe webhook after checkout.session.completed)
+ * - set expiry (cancel) → action "expire"       (called by Stripe webhook on customer.subscription.deleted)
+ * - verify commitment  → action "verifyCommitment" (optional; add when client needs a separate verify step)
+ * - register product   → action "activate"      (called by client on /claim — registerWithProof)
+ *
+ * Stripe webhook forwards purchase + subscription-deleted into this service; client calls verify/register.
+ */
 const functions = require('@google-cloud/functions-framework');
 const { Storage } = require('@google-cloud/storage');
 const ArnaconSDK = require('arnacon-sdk');
@@ -6,7 +16,6 @@ const NotificationService = require('./NotificationService');
 const PRIVATE_KEY = process.env.COORDINATES;
 const CHAIN_ID = process.env.CHAIN_ID || '137';
 const ENS_NAME = process.env.ENS_NAME || 'secnum';
-const STORE_ORIGIN = process.env.STORE_ORIGIN || 'https://esimera-store.vercel.app';
 const BUCKET_NAME = process.env.BUCKET_NAME || 'secnum-numbers';
 const NUMBERS_FILE = 'numbers.json';
 
@@ -54,11 +63,6 @@ async function takeNextNumber() {
   return label;
 }
 
-function buildClaimUrl(userSecret, label) {
-  const claimPage = `${STORE_ORIGIN}/claim?secret=${encodeURIComponent(userSecret)}&label=${encodeURIComponent(label)}`;
-  return `arnacon://install?url=${encodeURIComponent(claimPage)}&provider=Secnum`;
-}
-
 async function handlePurchase(_req, res) {
   let label;
   try {
@@ -79,11 +83,41 @@ async function handlePurchase(_req, res) {
     const result = await sdk.insertCommitment(label);
     console.log(`Purchase complete — tx: ${result.transactionHash}`);
 
-    const claimUrl = buildClaimUrl(result.userSecret, label);
-
-    res.json({ claimUrl });
+    // Webhook stores label + userSecret in Firestore and builds claimUrl when serving GET /order-result
+    // so you always have label (and related fields) for subscription cancel / other server logic.
+    res.json({
+      label,
+      userSecret: result.userSecret,
+    });
   } catch (err) {
     console.error('Purchase error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleExpire(req, res) {
+  const { label } = req.body;
+
+  if (!label) {
+    return res.status(400).json({ error: 'Missing required field: label' });
+  }
+
+  // Arnacon SDK: Unix timestamp in seconds (see arnacon-sdk example.js)
+  const expirySeconds = Math.floor(Date.now() / 1000);
+
+  try {
+    console.log(`\nSetting expiry to now for label: ${label} (${expirySeconds})`);
+    const result = await sdk.setExpiry(ENS_NAME, label, expirySeconds);
+    console.log(`Expiry set — ${result.fullDomain || label}`);
+
+    res.json({
+      label,
+      expiry: expirySeconds,
+      name: result.name,
+      fullDomain: result.fullDomain,
+    });
+  } catch (err) {
+    console.error('Expire error:', err.message);
     res.status(500).json({ error: err.message });
   }
 }
@@ -144,10 +178,13 @@ functions.http('main', async (req, res) => {
   if (action === 'purchase') {
     return handlePurchase(req, res);
   }
+  if (action === 'expire') {
+    return handleExpire(req, res);
+  }
   if (action === 'activate') {
     return handleActivate(req, res);
   }
   return res
     .status(400)
-    .json({ error: 'Invalid action. Use "purchase" or "activate"' });
+    .json({ error: 'Invalid action. Use "purchase", "expire", or "activate"' });
 });

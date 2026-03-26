@@ -4,12 +4,17 @@ export interface CheckoutSessionResponse {
 }
 
 export interface OrderResultResponse {
-  /** Set by webhook after provision; null while still processing */
+  /** Built by webhook from stored label + userSecret; null while still processing */
   claimUrl: string | null;
+  /** Stored in Firestore for server-side flows (e.g. subscription cancel) */
+  label: string | null;
+  userSecret: string | null;
 }
 
 export interface PurchaseResponse {
   claimUrl: string;
+  label?: string;
+  userSecret?: string;
 }
 
 export interface ActivateResponse {

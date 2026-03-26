@@ -8,6 +8,7 @@ import {
   PRICE_CURRENCY,
 } from "../config/constants";
 import type { AsyncStatus, PurchaseResponse } from "../types";
+import { buildArnaconClaimUrl } from "../utils/format";
 
 interface PurchaseState {
   status: AsyncStatus;
@@ -65,7 +66,7 @@ export function usePurchase() {
 
   /**
    * Step 2 — Called from SuccessPage with session_id (order UUID).
-   * Polls the webhook app's order-result until claimUrl is set by the webhook.
+   * Polls the webhook until provision is done (claimUrl from server, or label+userSecret to build locally).
    */
   const completePurchase = useCallback(async (sessionId: string) => {
     setState({ status: "loading", data: null, error: null });
@@ -79,8 +80,18 @@ export function usePurchase() {
       attempt += 1;
       try {
         const result = await getOrderResult(sessionId);
-        if (result.claimUrl) {
-          setState({ status: "success", data: { claimUrl: result.claimUrl }, error: null });
+        let claimUrl = result.claimUrl;
+        const label = result.label ?? undefined;
+        const userSecret = result.userSecret ?? undefined;
+        if (!claimUrl && label && userSecret) {
+          claimUrl = buildArnaconClaimUrl(userSecret, label, window.location.origin);
+        }
+        if (claimUrl) {
+          setState({
+            status: "success",
+            data: { claimUrl, ...(label ? { label } : {}), ...(userSecret ? { userSecret } : {}) },
+            error: null,
+          });
           return;
         }
       } catch (err) {

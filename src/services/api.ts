@@ -1,4 +1,4 @@
-import { API_URL, STRIPE_URL, ORDER_RESULT_URL } from "../config/constants";
+import { getApiConfig } from "../config/constants";
 import type { CheckoutSessionResponse, ActivateResponse, OrderResultResponse } from "../types";
 
 class ApiError extends Error {
@@ -46,6 +46,7 @@ export interface CreateCheckoutParams {
 export function createCheckoutSession(
   params: CreateCheckoutParams,
 ): Promise<CheckoutSessionResponse> {
+  const { STRIPE_URL } = getApiConfig();
   return post<CheckoutSessionResponse>(STRIPE_URL, {
     packageId: params.packageId,
     packageName: params.packageName,
@@ -61,6 +62,7 @@ export function createCheckoutSession(
 
 /** Fetches claimUrl (or secret/label) from the webhook after payment. Success page polls this. */
 export function getOrderResult(sessionId: string): Promise<OrderResultResponse> {
+  const { ORDER_RESULT_URL } = getApiConfig();
   const url = `${ORDER_RESULT_URL.replace(/\/$/, "")}/order-result?session_id=${encodeURIComponent(sessionId)}`;
   return fetch(url, { method: "GET", headers: { Accept: "application/json" } }).then(
     async (res) => {
@@ -82,6 +84,8 @@ export function getOrderResult(sessionId: string): Promise<OrderResultResponse> 
       }
       return {
         claimUrl: typeof data.claimUrl === "string" ? data.claimUrl : null,
+        label: typeof data.label === "string" ? data.label : null,
+        userSecret: typeof data.userSecret === "string" ? data.userSecret : null,
       };
     },
   );
@@ -92,6 +96,7 @@ export function activateNumber(
   label: string,
   owner: string,
 ): Promise<ActivateResponse> {
+  const { API_URL } = getApiConfig();
   return post<ActivateResponse>(API_URL, {
     action: "activate",
     userSecret,

@@ -60,7 +60,7 @@ export const PACKAGE_ID = "secnum_number";
 export const PACKAGE_NAME = "Israeli Mobile Number";
 
 /** Pricing (decimal strings — the GCP function multiplies by 100 internally) */
-export const PRICE_DISPLAY_AMOUNT = "49";
-export const SUBSCRIPTION_PRICE = "10";
-export const PRICE_CURRENCY = "ILS";
-export const PRICE_DISPLAY = `₪${PRICE_DISPLAY_AMOUNT}`;
+export const PRICE_DISPLAY_AMOUNT = "0.5";
+export const SUBSCRIPTION_PRICE = "0.5";
+export const PRICE_CURRENCY = "eur";
+export const PRICE_DISPLAY = `€${PRICE_DISPLAY_AMOUNT}`;

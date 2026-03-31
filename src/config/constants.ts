@@ -17,17 +17,19 @@ const DEV_URLS = {
 };
 
 const PROD_URLS = {
-  /**
-   * Public chain-activate function (`action: activate` from /claim).
-   * Prefer VITE_PROD_CHAIN_ACTIVATE_URL; VITE_PROD_API_URL kept for older deploys.
-   */
+  /** Public chain-activate function (`action: activate` from /claim). */
   API_URL:
     import.meta.env.VITE_PROD_CHAIN_ACTIVATE_URL ??
     import.meta.env.VITE_PROD_API_URL ??
-    DEV_URLS.API_URL,
-  STRIPE_URL: import.meta.env.VITE_PROD_STRIPE_URL ?? DEV_URLS.STRIPE_URL,
+    "https://europe-west1-arnacon-production-gcp.cloudfunctions.net/secnum-chain-activate",
+  /** Stripe checkout session creator (production payment-link-generator). */
+  STRIPE_URL:
+    import.meta.env.VITE_PROD_STRIPE_URL ??
+    "https://europe-west1-arnacon-production-gcp.cloudfunctions.net/payment-link-generator",
+  /** Base URL for order-result polling. */
   ORDER_RESULT_URL:
-    import.meta.env.VITE_PROD_ORDER_RESULT_URL ?? DEV_URLS.ORDER_RESULT_URL,
+    import.meta.env.VITE_PROD_ORDER_RESULT_URL ??
+    "https://europe-west1-arnacon-production-gcp.cloudfunctions.net/secnum-order-result",
 };
 
 function getUseProduction(): boolean {

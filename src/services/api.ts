@@ -33,14 +33,12 @@ export interface CreateCheckoutParams {
   transactionPrice: string;
   subscriptionPrice: string;
   currency: string;
-  /** Bare URL — the GCP function appends ?session_id=<uuid>&user_address=<id> */
+  /** Bare URL — the GCP function appends &session_id=<uuid> */
   successUrl: string;
-  /** Bare URL — the GCP function appends ?user_address=<id> */
+  /** Bare URL — the GCP function appends &session_id=<uuid> */
   failureUrl: string;
   /** Required by the GCP function — pass a generated UUID for anonymous users */
   userId: string;
-  /** false = Stripe test mode (STRIPE_API_KEY), true = production (STRIPE_PROD_API_KEY) */
-  isProd: boolean;
 }
 
 export function createCheckoutSession(
@@ -56,7 +54,7 @@ export function createCheckoutSession(
     success_url: params.successUrl,
     failure_url: params.failureUrl,
     userId: params.userId,
-    isProd: params.isProd,
+    serviceProvider: "secnum",
   });
 }
 

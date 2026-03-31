@@ -194,23 +194,41 @@ async function handleActivate(req, res) {
   const { sdk: s } = getContext();
   const { userSecret, label, owner } = body;
 
-  try {
-    console.log(`[chain] activating label: ${label} for ${owner}`);
-    const result = await s.registerWithProof(userSecret, label, ENS_NAME, owner);
-    console.log(`[chain] activation complete — tx: ${result.transactionHash}`);
+  console.log(`[chain] activating label: ${label} for ${owner}`);
 
+  let result = {};
+  try {
+    result = await s.registerWithProof(userSecret, label, ENS_NAME, owner);
+    console.log(`[chain] activation complete — tx: ${result.transactionHash}`);
+  } catch (err) {
+    // The SDK sometimes returns a plain "Successful" string after sending the tx,
+    // which causes a JSON parse error. If that's the case the tx already landed —
+    // treat it as success and continue.
+    if (err instanceof SyntaxError) {
+      console.warn(`[chain] SDK returned non-JSON after activation (tx sent, continuing): ${err.message}`);
+    } else {
+      console.error('[chain] activation error:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // Notification is best-effort — never fail the activate response over it.
+  try {
     const notificationService = new NotificationService();
     await notificationService.send({
       walletAddress: owner,
       selectedName: `${label}.${ENS_NAME}`,
       package_type: 'SECNUM',
     });
-
-    return res.json({ label: result.label, owner: result.owner, name: result.name });
   } catch (err) {
-    console.error('[chain] activation error:', err.message);
-    return res.status(500).json({ error: err.message });
+    console.warn(`[chain] notification failed (non-fatal): ${err.message}`);
   }
+
+  return res.json({
+    label: result.label ?? label,
+    owner: result.owner ?? owner,
+    name: result.name ?? `${label}.${ENS_NAME}`,
+  });
 }
 
 // ─── Exports ──────────────────────────────────────────────────────────────────

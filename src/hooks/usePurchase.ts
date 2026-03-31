@@ -54,7 +54,6 @@ export function usePurchase() {
         successUrl: buildSuccessUrl(),
         failureUrl: buildFailureUrl(),
         userId: generateUserId(),
-        isProd: false, // use Stripe test key (STRIPE_API_KEY)
       });
 
       window.location.href = url;

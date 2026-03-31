@@ -4,16 +4,16 @@
  */
 
 const DEV_URLS = {
-  /** Blockchain CF (`purchase` / `expire` / `activate`) */
+  /** Public chain-activate function (action: activate from /claim). */
   API_URL:
-    "https://europe-west1-arnacon-nl.cloudfunctions.net/secnum-blockchain-api",
+    "https://europe-west1-arnacon-nl.cloudfunctions.net/secnum-chain-activate",
+  /** Stripe checkout session creator (creates the session, not the webhook receiver). */
   STRIPE_URL: "https://us-central1-arnacon-nl.cloudfunctions.net/send_stripe",
   /**
    * Base URL for polling — app calls `{base}/order-result`.
-   * Use the payment **handler** directly, or the **Stripe adapter** base if it proxies to HANDLER_URL.
    */
   ORDER_RESULT_URL:
-    "https://europe-west1-arnacon-nl.cloudfunctions.net/secnum-payment-handler",
+    "https://europe-west1-arnacon-nl.cloudfunctions.net/secnum-order-result",
 };
 
 const PROD_URLS = {

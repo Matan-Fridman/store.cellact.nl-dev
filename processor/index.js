@@ -1,45 +1,74 @@
 /**
- * Payment processor (ingest only) — validates adapters, dedupes ingest, writes **buckets**, publishes to Pub/Sub.
- * Does **not** update orders or call the blockchain; the **handler** subscribes and runs side effects.
+ * Payment processor (ingest only) — validates adapters, dedupes ingest, writes buckets, publishes to Pub/Sub.
+ * Does NOT update orders or call the blockchain; the handler subscribes and runs side effects.
  *
- * POST /v1/events — adapters + X-Processor-Secret
+ * POST /v1/events  — adapter → X-Processor-Secret + canonical envelope body
  *
- * Buckets (Firestore):
- *   payment_event_buckets/{bucket}/items/{autoId}
- *   fields: envelope (full canonical object), ingested_at
+ * Firestore:
+ *   payment_event_ingest_keys/{provider:evtId}      — ingest dedup key
+ *   payment_event_buckets/{bucket}/items/{autoId}   — durable event store
  *
- * Pub/Sub: topic PAYMENT_EVENTS_TOPIC — message body = JSON envelope, attributes.bucket = canonical type
- *
- * Ingest dedup (Firestore): payment_event_ingest_keys/{provider:evtId} — prevents double enqueue
+ * Pub/Sub: PAYMENT_EVENTS_TOPIC — body = canonical JSON, attributes = { bucket, provider, type }
  *
  * See docs/PAYMENT_ARCHITECTURE.md
  */
+
 const functions = require('@google-cloud/functions-framework');
 const { Firestore, FieldValue } = require('@google-cloud/firestore');
 const { PubSub } = require('@google-cloud/pubsub');
+const Ajv = require('ajv');
+
+// ─── Config ──────────────────────────────────────────────────────────────────
 
 const PROCESSOR_INGEST_SECRET = process.env.PROCESSOR_INGEST_SECRET || '';
-const INGEST_KEYS_COLLECTION =
-  process.env.INGEST_KEYS_COLLECTION || 'payment_event_ingest_keys';
+const INGEST_KEYS_COLLECTION = process.env.INGEST_KEYS_COLLECTION || 'payment_event_ingest_keys';
 const BUCKET_ROOT = process.env.PAYMENT_EVENT_BUCKET_ROOT || 'payment_event_buckets';
-
 const PROJECT_ID =
   process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT;
-const PAYMENT_EVENTS_TOPIC =
-  process.env.PAYMENT_EVENTS_TOPIC || 'secnum-payment-events';
+const PAYMENT_EVENTS_TOPIC = process.env.PAYMENT_EVENTS_TOPIC || 'secnum-payment-events';
+
+// ─── Clients ─────────────────────────────────────────────────────────────────
 
 const db = new Firestore();
 const pubsub = PROJECT_ID ? new PubSub({ projectId: PROJECT_ID }) : new PubSub();
 
+// ─── Schema ───────────────────────────────────────────────────────────────────
+// Validates the canonical event envelope. additionalProperties: true so future
+// envelope fields don't break ingest.
+
+const ajv = new Ajv({ allErrors: true });
+
+const ENVELOPE_SCHEMA = {
+  type: 'object',
+  required: ['spec_version', 'type', 'provider', 'provider_event_id', 'occurred_at', 'data'],
+  additionalProperties: true,
+  properties: {
+    spec_version: { type: 'string', enum: ['1'] },
+    type: { type: 'string', minLength: 1 },
+    provider: { type: 'string', minLength: 1 },
+    provider_event_id: { type: 'string', minLength: 1 },
+    occurred_at: { type: 'string' },
+    data: { type: 'object' },
+  },
+};
+
+const validateEnvelope = ajv.compile(ENVELOPE_SCHEMA);
+
+function validateOrError(validator, data) {
+  if (validator(data)) return null;
+  return ajv.errorsText(validator.errors);
+}
+
+// ─── CORS ─────────────────────────────────────────────────────────────────────
+
 function setCors(res) {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.set(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Accept, Authorization, X-Processor-Secret',
-  );
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Processor-Secret');
   res.set('Access-Control-Max-Age', '3600');
 }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function pathname(req) {
   const p = req.path || (req.url || '/').split('?')[0];
@@ -50,7 +79,7 @@ function dedupDocId(provider, providerEventId) {
   return `${provider}:${providerEventId}`.replace(/[/\\]/g, '_').slice(0, 1500);
 }
 
-/** Firestore collection document id safe bucket name from canonical type */
+/** Firestore-safe collection id from canonical event type. */
 function bucketSlug(type) {
   return String(type || 'unknown')
     .replace(/[^a-zA-Z0-9_-]/g, '_')
@@ -65,6 +94,8 @@ function isAlreadyExistsError(e) {
   );
 }
 
+// ─── Handler ──────────────────────────────────────────────────────────────────
+
 functions.http('main', async (req, res) => {
   setCors(res);
 
@@ -75,19 +106,16 @@ functions.http('main', async (req, res) => {
   const path = pathname(req);
 
   if (req.method === 'GET' && path === '/') {
-    return res.status(200).json({
-      service: 'payment-processor',
-      ok: true,
-      role: 'ingest-only',
-    });
+    return res.status(200).json({ service: 'payment-processor', ok: true, role: 'ingest-only' });
   }
 
   if (req.method !== 'POST' || !path.endsWith('/v1/events')) {
     return res.status(404).json({ error: 'Not found' });
   }
 
+  // ── Auth ───────────────────────────────────────────────────────────────────
   if (!PROCESSOR_INGEST_SECRET) {
-    console.log('PROCESSOR_INGEST_SECRET is not set');
+    console.error('[processor] PROCESSOR_INGEST_SECRET is not configured');
     return res.status(500).json({ error: 'Processor not configured' });
   }
 
@@ -96,6 +124,7 @@ functions.http('main', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  // ── Parse body ────────────────────────────────────────────────────────────
   let body = req.body;
   if (typeof body === 'string') {
     try {
@@ -108,36 +137,20 @@ functions.http('main', async (req, res) => {
     return res.status(400).json({ error: 'Expected JSON object' });
   }
 
-  if (body.spec_version !== '1') {
-    return res.status(400).json({ error: 'Unsupported spec_version' });
+  // ── Schema validation ─────────────────────────────────────────────────────
+  const validationError = validateOrError(validateEnvelope, body);
+  if (validationError) {
+    console.warn(`[processor] schema validation failed: ${validationError}`);
+    return res.status(400).json({ error: `Invalid envelope: ${validationError}` });
   }
 
-  const eventType = body.type;
-  const provider = body.provider;
-  const providerEventId = body.provider_event_id;
-  const data = body.data;
+  const { type: eventType, provider, provider_event_id: providerEventId, data } = body;
 
-  if (!eventType || typeof eventType !== 'string') {
-    return res.status(400).json({ error: 'Missing type' });
-  }
-  if (!provider || typeof provider !== 'string') {
-    return res.status(400).json({ error: 'Missing provider' });
-  }
-  if (!providerEventId || typeof providerEventId !== 'string') {
-    return res.status(400).json({ error: 'Missing provider_event_id' });
-  }
-  if (!data || typeof data !== 'object') {
-    return res.status(400).json({ error: 'Missing data object' });
-  }
-
+  // ── Ingest dedup ──────────────────────────────────────────────────────────
   const ingestKeyId = dedupDocId(provider, providerEventId);
   const ingestKeyRef = db.collection(INGEST_KEYS_COLLECTION).doc(ingestKeyId);
   const bucket = bucketSlug(eventType);
-  const bucketItemRef = db
-    .collection(BUCKET_ROOT)
-    .doc(bucket)
-    .collection('items')
-    .doc();
+  const bucketItemRef = db.collection(BUCKET_ROOT).doc(bucket).collection('items').doc();
 
   try {
     await ingestKeyRef.create({
@@ -149,33 +162,27 @@ functions.http('main', async (req, res) => {
     });
   } catch (e) {
     if (isAlreadyExistsError(e)) {
-      console.log(`[processor] deduplicated ingest provider=${provider} id=${providerEventId}`);
+      console.log(`[processor] deduplicated provider=${provider} id=${providerEventId}`);
       return res.status(200).json({ ok: true, deduplicated: true });
     }
     console.error('[processor] ingest key create failed', e);
     return res.status(500).json({ error: 'Ingest dedup failed' });
   }
 
+  // ── Firestore bucket write ────────────────────────────────────────────────
   try {
-    await bucketItemRef.set({
-      envelope: body,
-      ingested_at: FieldValue.serverTimestamp(),
-    });
+    await bucketItemRef.set({ envelope: body, ingested_at: FieldValue.serverTimestamp() });
   } catch (e) {
     console.error('[processor] bucket write failed', e);
     await ingestKeyRef.delete().catch(() => {});
     return res.status(500).json({ error: 'Bucket write failed' });
   }
 
-  const topic = pubsub.topic(PAYMENT_EVENTS_TOPIC);
+  // ── Pub/Sub publish ───────────────────────────────────────────────────────
   try {
-    await topic.publishMessage({
+    await pubsub.topic(PAYMENT_EVENTS_TOPIC).publishMessage({
       data: Buffer.from(JSON.stringify(body), 'utf8'),
-      attributes: {
-        bucket: eventType,
-        provider,
-        type: eventType,
-      },
+      attributes: { bucket: eventType, provider, type: eventType },
     });
   } catch (e) {
     console.error('[processor] Pub/Sub publish failed', e);

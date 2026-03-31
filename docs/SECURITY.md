@@ -31,20 +31,27 @@ gcloud run services add-iam-policy-binding PROCESSOR_SERVICE_NAME \
 
 ---
 
-## Handler (same URL for `GET /order-result` and `POST /_pubsub`)
+## Order-result (`GET /order-result`) vs payment worker (`POST /_pubsub`)
 
-**Constraint:** One Cloud Run service = **one** invoker policy for **all** paths.
+These are **two** Cloud Run services in production (`handler/orderResult.js` and `handler/worker.js`).
 
-- **`GET /order-result`** is usually called from the **browser** → it cannot send a Google ID token for your API → you typically keep this endpoint **publicly invokable** (`allUsers` invoker) and treat `session_id` as an unguessable capability id (or add a separate small public function later).
-- **`POST /_pubsub`** should be **authenticated**: use a [Pub/Sub push subscription with authentication](https://cloud.google.com/pubsub/docs/push#authentication) so Google calls your URL with a valid identity, and grant **`roles/run.invoker`** only to Pub/Sub’s push service account (or the SA you attach to push).
-
-If you need **both** strict IAM on push **and** no public access on the same host, split into two services (e.g. public `order-result` + private `/_pubsub`).
+- **Order-result:** **Public** invoker (`allUsers`). The browser cannot send a Google ID token. Add a **poll token** on the success URL when you want stronger binding than `session_id` alone.
+- **Payment worker:** **No** public invoker. Use [authenticated Pub/Sub push](https://cloud.google.com/pubsub/docs/push#authentication); grant **`roles/run.invoker`** only to the push service account. The worker calls **chain-server** with an **ID token** (`BLOCKCHAIN_SERVER_URL`); grant the **worker’s** runtime SA **`roles/run.invoker`** on **chain-server**.
 
 ---
 
-## Pub/Sub → handler
+## Chain-server vs chain-activate
 
-When creating the push subscription, use **`--push-auth-service-account`** (see `gcloud pubsub subscriptions create` help). Grant that SA **`roles/run.invoker`** on the handler Cloud Run service. Pub/Sub will attach the token; Cloud Run enforces it.
+- **chain-server** (`api/chainServer.js`): **`purchase`** and **`expire`** only — **private**; invoker = payment worker SA (or break-glass admin SA).
+- **chain-activate** (`api/chainActivate.js`): **`activate`** only — **public** invoker for `/claim`; consider App Check / rate limits later.
+
+Legacy **`api/index.js`** (`main`) combines all three actions on one URL — avoid for production IAM.
+
+---
+
+## Pub/Sub → payment worker
+
+When creating the push subscription, use **`--push-auth-service-account`**. Grant that SA **`roles/run.invoker`** on the **payment-worker** service (not on order-result).
 
 ---
 

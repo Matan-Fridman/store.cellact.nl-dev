@@ -17,7 +17,14 @@ const DEV_URLS = {
 };
 
 const PROD_URLS = {
-  API_URL: import.meta.env.VITE_PROD_API_URL ?? DEV_URLS.API_URL,
+  /**
+   * Public chain-activate function (`action: activate` from /claim).
+   * Prefer VITE_PROD_CHAIN_ACTIVATE_URL; VITE_PROD_API_URL kept for older deploys.
+   */
+  API_URL:
+    import.meta.env.VITE_PROD_CHAIN_ACTIVATE_URL ??
+    import.meta.env.VITE_PROD_API_URL ??
+    DEV_URLS.API_URL,
   STRIPE_URL: import.meta.env.VITE_PROD_STRIPE_URL ?? DEV_URLS.STRIPE_URL,
   ORDER_RESULT_URL:
     import.meta.env.VITE_PROD_ORDER_RESULT_URL ?? DEV_URLS.ORDER_RESULT_URL,

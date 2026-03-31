@@ -78,9 +78,9 @@ export default defineConfig([
 
 | Directory | Role |
 |-----------|------|
-| `api/` | Blockchain Cloud Function — `purchase`, `expire`, `activate` |
+| `api/` | Blockchain: **`chainServer.js`** (private `purchase`/`expire`), **`chainActivate.js`** (public `activate`), legacy **`index.js`** |
 | `processor/` | Ingest only — canonical `POST /v1/events`, Firestore **buckets**, **Pub/Sub** |
-| `handler/` | Subscriber + `GET /order-result` — orders, blockchain CF |
-| `webhook/` | Stripe adapter → processor; proxies order-result → **handler** |
+| `handler/` | **`orderResult.js`** (public poll), **`worker.js`** (private Pub/Sub), legacy **`index.js`** |
+| `webhook/` | Stripe adapter → processor; proxies **`HANDLER_URL`** (order-result) |
 
-Docs: **`docs/DEPLOYMENT.md`** (step-by-step deploy & env), **`docs/FLOW.md`**, **`docs/PAYMENT_ARCHITECTURE.md`**, **`docs/SECURITY.md`**.
+Docs: **`docs/DEPLOYMENT.md`**, **`docs/FLOW.md`**, **`docs/PAYMENT_ARCHITECTURE.md`**, **`docs/SECURITY.md`**.

@@ -4,7 +4,8 @@
 
 - **One canonical event model** for checkout/billing, independent of Stripe, Paddle, etc.
 - **Processor** (ingest only): validate, **dedupe ingest**, write **Firestore buckets**, **publish Pub/Sub**. No orders, no blockchain.
-- **Handler** (subscriber): **subscribes** to Pub/Sub (and/or can be extended to other triggers), runs **Firestore + blockchain** side effects, serves **`GET /order-result`**.
+- **Payment worker** (subscriber): **subscribes** via Pub/Sub push, runs **Firestore + private chain-server** side effects.
+- **Order-result** (read-only HTTP): serves **`GET /order-result`** for the browser (public; tighten with poll token — see product backlog).
 - **Adapters**: verify provider webhooks, map to canonical JSON, **`POST` processor** only.
 
 ---
@@ -14,15 +15,20 @@
 | Service | Role |
 |---------|------|
 | **`processor/`** | `POST /v1/events` → ingest dedup key → **`payment_event_buckets/{bucket}/items`** → **Pub/Sub** topic. Returns **202** accepted. |
-| **`handler/`** | **One HTTP** Cloud Function (`main`): **`GET /order-result`** + **`POST /_pubsub`** for [Pub/Sub push](https://cloud.google.com/pubsub/docs/push) (same envelope as topic). No second function — use a push subscription to this URL. |
-| **`webhook/`** (Stripe adapter) | Stripe verify → `POST` **processor**; proxies **`GET /order-result`** to **`HANDLER_URL`** (or legacy `PROCESSOR_URL`). |
-| **`api/`** | Blockchain only (`purchase`, `expire`, `activate`). Called by **handler**, not processor. |
+| **`handler/orderResult.js`** | **Public** HTTP (`orderResult`): **`GET /order-result`** only. |
+| **`handler/worker.js`** | **Private** HTTP (`worker`): **`POST /_pubsub`** [push](https://cloud.google.com/pubsub/docs/push); push subscription points here. |
+| **`handler/index.js`** | Legacy **`main`**: both routes in one deploy (dev / migration only). |
+| **`webhook/`** (Stripe adapter) | Stripe verify → `POST` **processor**; proxies **`GET /order-result`** when **`HANDLER_URL`** is set (use **order-result** URL in prod). |
+| **`api/chainServer.js`** | **Private** `purchase` + `expire` — payment worker only (`BLOCKCHAIN_SERVER_URL`). |
+| **`api/chainActivate.js`** | **Public** `activate` — browser `/claim`. |
+| **`api/index.js`** | Legacy **`main`**: all chain actions in one deploy. |
 
 ```
 Stripe  →  adapter  →  processor (buckets + Pub/Sub)
                            ↓
-                     handler (subscriber)  →  Firestore orders + api/
-Browser →  adapter or handler  →  GET /order-result (handler)
+                     payment-worker  →  Firestore orders + chain-server (private)
+Browser →  order-result  →  GET /order-result
+Browser →  chain-activate  →  POST activate (/claim)
 ```
 
 ---
@@ -46,7 +52,7 @@ This is the **durable bucket** you can inspect in console; the **handler** is dr
 - **Message data:** UTF-8 JSON of the **full envelope** (same as `POST /v1/events` body).
 - **Attributes:** `bucket` (= canonical `type`), `provider`, `type`.
 
-Create a **push subscription** on this topic whose endpoint is **`{HANDLER_URL}/_pubsub`** (see `handler/README.md`). You do **not** deploy a separate Pub/Sub-triggered function.
+Create a **push subscription** on this topic whose endpoint is **`{PAYMENT_WORKER_URL}/_pubsub`** (private service + authenticated push). See **`docs/DEPLOYMENT.md`**.
 
 ---
 
@@ -95,10 +101,10 @@ Same as before — see previous sections in git history or **`docs/FLOW.md`**: `
 |----------|--------|---------|
 | `PROCESSOR_INGEST_SECRET` | Processor + adapters | Ingest auth. |
 | `PAYMENT_EVENTS_TOPIC`, `GOOGLE_CLOUD_PROJECT` | Processor | Pub/Sub publish. |
-| `HANDLER_URL` | Stripe adapter | `GET /order-result` proxy target (**handler** HTTP URL). |
+| `HANDLER_URL` | Stripe adapter | `GET /order-result` proxy target (**order-result** URL). |
 | `PROCESSOR_URL` | Stripe adapter | Ingest URL. |
-| `BLOCKCHAIN_CF_URL`, `STORE_ORIGIN`, … | **Handler** | Side effects + claim URLs. |
-| `DEDUP_COLLECTION` | **Handler** | Default `payment_events_processed`. |
+| `BLOCKCHAIN_SERVER_URL` | **Payment worker** | Private **chain-server** (`purchase` / `expire`). Legacy: `BLOCKCHAIN_CF_URL`. |
+| `STORE_ORIGIN`, `DEDUP_COLLECTION`, … | **Order-result** + **worker** | Orders + dedup + claim URL building. |
 
 ---
 
@@ -113,9 +119,9 @@ Same as before — see previous sections in git history or **`docs/FLOW.md`**: `
 ## Deploy order
 
 1. Create Pub/Sub topic; deploy **processor** (publisher + Firestore).
-2. Deploy **handler** once (`--entry-point=main`, HTTP); create **push subscription** → `{handlerUrl}/_pubsub`.
-3. Deploy **adapter** with `PROCESSOR_URL`, `HANDLER_URL`, secrets.
+2. Deploy **chain-server** (private) and **chain-activate** (public); deploy **payment-worker** (private) and **order-result** (public). Create **push subscription** → `{workerUrl}/_pubsub` with push auth.
+3. Deploy **adapter** with `PROCESSOR_URL`, `HANDLER_URL` = order-result URL, secrets.
 
-See `handler/README.md`, `processor/README.md`, `docs/FLOW.md`.
+See `processor/README.md`, `docs/FLOW.md`.
 
-**Deploy order & env vars:** `docs/DEPLOYMENT.md`. **IAM:** `docs/SECURITY.md`.
+**Deploy:** `docs/DEPLOYMENT.md`. **IAM:** `docs/SECURITY.md`.

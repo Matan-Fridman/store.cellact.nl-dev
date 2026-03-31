@@ -1,13 +1,17 @@
 {
   "name": "secnum-payment-handler",
   "version": "1.0.0",
-  "description": "Single HTTP function: order-result + Pub/Sub push (/ _pubsub)",
+  "description": "order-result (public) + payment-worker (private) + legacy main",
   "main": "index.js",
   "scripts": {
-    "start": "functions-framework --target=main --port=8080"
+    "start": "functions-framework --target=main --port=8080",
+    "start:order-result": "functions-framework --target=orderResult --source=orderResult.js --port=8080",
+    "start:worker": "functions-framework --target=worker --source=worker.js --port=8081"
   },
   "dependencies": {
     "@google-cloud/functions-framework": "^3.0.0",
-    "@google-cloud/firestore": "^7.11.0"
+    "@google-cloud/firestore": "^7.11.0",
+    "google-auth-library": "^9.0.0",
+    "ajv": "^8.17.1"
   }
 }

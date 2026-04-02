@@ -9,7 +9,8 @@ interface ClaimState {
   error: string | null;
 }
 
-const STEP_INTERVAL_MS = 8000;
+const STEP_INTERVAL_MS = 2200;
+const MIN_LOADING_MS = STEP_INTERVAL_MS * 3; // show all 3 steps before resolving
 
 export function useClaim() {
   const [state, setState] = useState<ClaimState>({
@@ -42,7 +43,10 @@ export function useClaim() {
       }, STEP_INTERVAL_MS);
 
       try {
-        const data = await activateNumber(secret, label, owner);
+        const [data] = await Promise.all([
+          activateNumber(secret, label, owner),
+          new Promise<void>((r) => setTimeout(r, MIN_LOADING_MS)),
+        ]);
         clearStepInterval();
         setState({ status: "success", step: 4, data, error: null });
       } catch (err) {

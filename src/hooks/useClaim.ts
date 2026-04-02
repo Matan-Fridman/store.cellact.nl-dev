@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { activateNumber } from "../services/api";
+import { getGroupMembers, activateWithProof } from "../services/api";
+import { generateActivationProof } from "../utils/semaphore";
 import type { ActivateResponse, AsyncStatus } from "../types";
 
 interface ClaimState {
@@ -9,8 +10,7 @@ interface ClaimState {
   error: string | null;
 }
 
-const STEP_INTERVAL_MS = 2200;
-const MIN_LOADING_MS = STEP_INTERVAL_MS * 3; // show all 3 steps before resolving
+const STEP_INTERVAL_MS = 8000;
 
 export function useClaim() {
   const [state, setState] = useState<ClaimState>({
@@ -43,10 +43,9 @@ export function useClaim() {
       }, STEP_INTERVAL_MS);
 
       try {
-        const [data] = await Promise.all([
-          activateNumber(secret, label, owner),
-          new Promise<void>((r) => setTimeout(r, MIN_LOADING_MS)),
-        ]);
+        const { commitments, scope } = await getGroupMembers();
+        const proof = await generateActivationProof(secret, label, commitments, scope);
+        const data = await activateWithProof(proof, label, owner);
         clearStepInterval();
         setState({ status: "success", step: 4, data, error: null });
       } catch (err) {

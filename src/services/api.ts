@@ -1,5 +1,6 @@
 import { getApiConfig } from "../config/constants";
 import type { CheckoutSessionResponse, ActivateResponse, OrderResultResponse } from "../types";
+import type { ActivationProof } from "../utils/semaphore";
 
 class ApiError extends Error {
   status: number;
@@ -98,6 +99,39 @@ export function activateNumber(
   return post<ActivateResponse>(API_URL, {
     action: "activate",
     userSecret,
+    label,
+    owner,
+  });
+}
+
+export interface GroupMembersResponse {
+  commitments: string[];
+  scope: string;
+}
+
+/** Fetches all Semaphore group commitments and the REGISTER_SCOPE from the chain-activate function. */
+export function getGroupMembers(): Promise<GroupMembersResponse> {
+  const { API_URL } = getApiConfig();
+  const url = `${API_URL.replace(/\/$/, "")}/group-members`;
+  return fetch(url, { method: "GET", headers: { Accept: "application/json" } }).then(
+    async (res) => {
+      const data = await res.json();
+      if (!res.ok) throw new ApiError(data.error || "Failed to fetch group members", res.status);
+      return data as GroupMembersResponse;
+    },
+  );
+}
+
+/** Sends a pre-generated ZK proof to the server for transaction submission. */
+export function activateWithProof(
+  proof: ActivationProof,
+  label: string,
+  owner: string,
+): Promise<ActivateResponse> {
+  const { API_URL } = getApiConfig();
+  return post<ActivateResponse>(API_URL, {
+    action: "activateWithProof",
+    proof,
     label,
     owner,
   });

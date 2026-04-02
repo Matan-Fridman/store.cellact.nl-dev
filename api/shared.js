@@ -52,9 +52,33 @@ const ACTIVATE_SCHEMA = {
   },
 };
 
+const ACTIVATE_WITH_PROOF_SCHEMA = {
+  type: 'object',
+  required: ['action', 'proof', 'label', 'owner'],
+  additionalProperties: true,
+  properties: {
+    action: { type: 'string', enum: ['activateWithProof'] },
+    proof: {
+      type: 'object',
+      required: ['merkleTreeDepth', 'merkleTreeRoot', 'nullifier', 'message', 'scope', 'points'],
+      properties: {
+        merkleTreeDepth: { type: 'number' },
+        merkleTreeRoot: { type: 'string' },
+        nullifier: { type: 'string' },
+        message: { type: 'string' },
+        scope: { type: 'string' },
+        points: { type: 'array', items: { type: 'string' } },
+      },
+    },
+    label: { type: 'string', minLength: 1 },
+    owner: { type: 'string', pattern: '^0x[a-fA-F0-9]{40}$' },
+  },
+};
+
 const validatePurchase = ajv.compile(PURCHASE_SCHEMA);
 const validateExpire = ajv.compile(EXPIRE_SCHEMA);
 const validateActivate = ajv.compile(ACTIVATE_SCHEMA);
+const validateActivateWithProof = ajv.compile(ACTIVATE_WITH_PROOF_SCHEMA);
 
 function schemaError(validator) {
   return ajv.errorsText(validator.errors);
@@ -126,7 +150,7 @@ async function takeNextNumber() {
 
 function setCors(res) {
   res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type');
 }
 
@@ -225,6 +249,70 @@ async function handleActivate(req, res) {
   });
 }
 
+/**
+ * Returns all Semaphore group commitments and the REGISTER_SCOPE constant.
+ * Called by the frontend before generating a ZK proof client-side.
+ */
+async function handleGetGroupMembers(req, res) {
+  try {
+    const { sdk: s } = getContext();
+    const commitments = await s.getGroupMembers();
+    console.log(`[chain] getGroupMembers: ${commitments.length} members`);
+    return res.json({
+      commitments,
+      scope: '1',
+    });
+  } catch (err) {
+    console.error('[chain] getGroupMembers error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ * Submits a pre-generated ZK proof to the contract.
+ * Proof is generated client-side; server only submits the transaction.
+ */
+async function handleActivateWithProof(req, res) {
+  const body = req.body || {};
+  if (!validateActivateWithProof(body)) {
+    return res.status(400).json({ error: `Invalid request: ${schemaError(validateActivateWithProof)}` });
+  }
+
+  const { proof, label, owner } = body;
+  console.log(`[chain] activateWithProof label: ${label} for ${owner}`);
+
+  try {
+    const { sdk: s } = getContext();
+    const si = s.semaphore._getSemaphoreInteractor();
+    const tx = await s.semaphore.deploymentManager.executeTransaction(
+      si,
+      'registerSubnodeWithProof',
+      [proof, owner, ENS_NAME],
+      'Registering subnode with pre-generated ZK proof',
+    );
+    console.log(`[chain] activateWithProof complete — tx: ${tx.hash}`);
+  } catch (err) {
+    console.error(`[chain] activateWithProof error (non-fatal, manual follow-up required): ${err.message}`);
+  }
+
+  try {
+    const notificationService = new NotificationService();
+    await notificationService.send({
+      walletAddress: owner,
+      selectedName: `${label}.${ENS_NAME}`,
+      package_type: 'SECNUM',
+    });
+  } catch (err) {
+    console.warn(`[chain] notification failed (non-fatal): ${err.message}`);
+  }
+
+  return res.json({
+    label,
+    owner,
+    name: `${label}.${ENS_NAME}`,
+  });
+}
+
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -232,5 +320,7 @@ module.exports = {
   handlePurchase,
   handleExpire,
   handleActivate,
+  handleGetGroupMembers,
+  handleActivateWithProof,
   setCors,
 };

@@ -7,6 +7,7 @@ import {
   SUBSCRIPTION_PRICE,
   PRICE_CURRENCY,
 } from "../config/constants";
+import { DEMO_MODE, nextDemoResult } from "../config/demo";
 import type { AsyncStatus, PurchaseResponse } from "../types";
 import { buildArnaconClaimUrl } from "../utils/format";
 
@@ -69,6 +70,20 @@ export function usePurchase() {
    */
   const completePurchase = useCallback(async (sessionId: string) => {
     setState({ status: "loading", data: null, error: null });
+
+    // ── Demo mode: fake a short delay then show pre-provisioned result ───────
+    if (DEMO_MODE) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const result = nextDemoResult();
+      if (!result) {
+        setState({ status: "error", data: null, error: "Demo mode: no results configured in src/config/demo.ts" });
+        return;
+      }
+      const claimUrl = buildArnaconClaimUrl(result.userSecret, result.label, window.location.origin);
+      setState({ status: "success", data: { claimUrl, label: result.label, userSecret: result.userSecret }, error: null });
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     const POLL_INTERVAL_MS = 2000;
     const MAX_ATTEMPTS = 45; // ~90s

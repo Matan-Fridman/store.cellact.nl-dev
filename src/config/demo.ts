@@ -18,9 +18,8 @@ export interface DemoResult {
 // Each entry is a {userSecret, label} returned by a prior real blockchain call.
 // The demo cycles through them in order, wrapping around.
 export const DEMO_RESULTS: DemoResult[] = [
-  { userSecret: "0x33851d9b65489dd3b354ffded6b4768181f2bcabfc95b2bcb2506f2597c9e8f5", label: "972557012402" },
-  { userSecret: "0xd7064e4be516604d91c71cc3f07cefa0e1de774e7b1af2396a17c41739c2d09e", label: "972557012403" },
-  { userSecret: "0x1d0c03106eadb2defb38d829ef6556c05dac3acf61ec756ff2b3b011d811d7f7", label: "972557012404" },
+  { userSecret: "0x33851d9b65489dd3b354ffded6b4768181f2bcabfc95b2bcb2506f2597c9e8f5", label: "972557012406" },
+  { userSecret: "0xd7064e4be516604d91c71cc3f07cefa0e1de774e7b1af2396a17c41739c2d09e", label: "972557012405" }
 ];
 // ─────────────────────────────────────────────────────────────────────────────
 

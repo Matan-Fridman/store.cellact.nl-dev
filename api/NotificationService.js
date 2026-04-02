@@ -52,8 +52,13 @@ class NotificationService {
             const text = await response.text();
             throw new Error(`Notification failed (${response.status}): ${text}`);
         }
-        console.log("✅ Notification sent:", response);
-        const data = await response.json();
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch {
+            data = text;
+        }
         console.log("✅ Notification sent:", data);
         return data;
     }

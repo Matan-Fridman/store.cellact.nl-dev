@@ -55,12 +55,23 @@ FN_CHAIN_ACTIVATE="${FN_CHAIN_ACTIVATE:-secnum-chain-activate}"
 FN_ORDER_RESULT="${FN_ORDER_RESULT:-secnum-order-result}"
 FN_PAYMENT_WORKER="${FN_PAYMENT_WORKER:-secnum-payment-worker}"
 FN_STRIPE_ADAPTER="${FN_STRIPE_ADAPTER:-secnum-stripe-adapter}"
+FN_PROVIDER_SETUP="${FN_PROVIDER_SETUP:-secnum-provider-setup}"
 
 PUBSUB_PUSH_SA="${PUBSUB_PUSH_SA:-sa-pubsub-push}"
 PUBSUB_TOPIC="${PUBSUB_TOPIC:-secnum-payment-events}"
 PUBSUB_SUBSCRIPTION="${PUBSUB_SUBSCRIPTION:-secnum-payment-events-push}"
 NODE_RUNTIME="${NODE_RUNTIME:-nodejs22}"
 PYTHON_RUNTIME="${PYTHON_RUNTIME:-python312}"
+
+# Blockchain network — used by chain-server and chain-activate (customer flow)
+CHAIN_ID="${CHAIN_ID:-137}"
+ENS_NAME="${ENS_NAME:-secnum}"
+# Optional RPC URL — passed to chain-server and chain-activate
+RPC_URL="${RPC_URL:-}"
+
+# Provider setup may run on a different network (e.g. Sepolia for testing)
+PROVIDER_SETUP_CHAIN_ID="${PROVIDER_SETUP_CHAIN_ID:-${CHAIN_ID}}"
+PROVIDER_SETUP_RPC_URL="${PROVIDER_SETUP_RPC_URL:-${RPC_URL}}"
 
 phase() { echo ""; echo "=== $* ==="; }
 
@@ -115,12 +126,14 @@ FN_CHAIN_ACTIVATE=${FN_CHAIN_ACTIVATE}
 FN_ORDER_RESULT=${FN_ORDER_RESULT}
 FN_PAYMENT_WORKER=${FN_PAYMENT_WORKER}
 FN_STRIPE_ADAPTER=${FN_STRIPE_ADAPTER}
+FN_PROVIDER_SETUP=${FN_PROVIDER_SETUP}
 PROCESSOR_URL=${PROCESSOR_URL:-}
 CHAIN_SERVER_URL=${CHAIN_SERVER_URL:-}
 CHAIN_ACTIVATE_URL=${CHAIN_ACTIVATE_URL:-}
 ORDER_RESULT_URL=${ORDER_RESULT_URL:-}
 WORKER_URL=${WORKER_URL:-}
 ADAPTER_URL=${ADAPTER_URL:-}
+PROVIDER_SETUP_URL=${PROVIDER_SETUP_URL:-}
 PUBSUB_TOPIC=${PUBSUB_TOPIC}
 PUBSUB_SUBSCRIPTION=${PUBSUB_SUBSCRIPTION}
 PUBSUB_PUSH_SA=${PUBSUB_PUSH_SA}
@@ -214,7 +227,7 @@ else
     --entry-point=chainServer \
     --trigger-http \
     --no-allow-unauthenticated \
-    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},CHAIN_ID=137,ENS_NAME=secnum,BUCKET_NAME=${BUCKET_NAME}" \
+    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},CHAIN_ID=${CHAIN_ID},ENS_NAME=${ENS_NAME},BUCKET_NAME=${BUCKET_NAME}${RPC_URL:+,RPC_URL=${RPC_URL}}" \
     --set-secrets="COORDINATES=${COORDINATES_SECRET_ID}:latest"
   popd >/dev/null
   CHAIN_SERVER_URL="$(fn_uri "${FN_CHAIN_SERVER}")"
@@ -236,7 +249,7 @@ else
     --entry-point=chainActivate \
     --trigger-http \
     --allow-unauthenticated \
-    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},CHAIN_ID=137,ENS_NAME=secnum,BUCKET_NAME=${BUCKET_NAME}" \
+    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},CHAIN_ID=${CHAIN_ID},ENS_NAME=${ENS_NAME},BUCKET_NAME=${BUCKET_NAME}${RPC_URL:+,RPC_URL=${RPC_URL}}" \
     --set-secrets="COORDINATES=${COORDINATES_SECRET_ID}:latest"
   popd >/dev/null
   CHAIN_ACTIVATE_URL="$(fn_uri "${FN_CHAIN_ACTIVATE}")"
@@ -280,11 +293,44 @@ else
     --entry-point=worker \
     --trigger-http \
     --no-allow-unauthenticated \
-    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},BLOCKCHAIN_SERVER_URL=${CHAIN_SERVER_URL},STORE_ORIGIN=${STORE_ORIGIN},DEDUP_COLLECTION=payment_events_processed"
+    --timeout=660s \
+    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},BLOCKCHAIN_SERVER_URL=${CHAIN_SERVER_URL},STORE_ORIGIN=${STORE_ORIGIN},DEDUP_COLLECTION=payment_events_processed${PROVIDER_SETUP_URL:+,PROVIDER_SETUP_URL=${PROVIDER_SETUP_URL}}"
   popd >/dev/null
   WORKER_URL="$(fn_uri "${FN_PAYMENT_WORKER}")"
 fi
 echo "WORKER_URL=${WORKER_URL}"
+
+phase "G.5 — Provider setup (private) — ${FN_PROVIDER_SETUP}"
+# Requires: SERVER_PRIVATE_KEY secret in Secret Manager (COORDINATES_SECRET_ID or its own secret).
+# Skip if PROVIDER_SETUP_SKIP=1 or if SERVER_PRIVATE_KEY / CHAIN_ID_POLYGON are not configured.
+if [[ "${PROVIDER_SETUP_SKIP:-}" == "1" ]]; then
+  PROVIDER_SETUP_URL="${PROVIDER_SETUP_URL:-}"
+  echo "Skipping provider-setup deploy (PROVIDER_SETUP_SKIP=1)"
+elif [[ -z "${COORDINATES_SECRET_ID:-}" ]]; then
+  PROVIDER_SETUP_URL="${PROVIDER_SETUP_URL:-}"
+  echo "Skipping provider-setup deploy — COORDINATES_SECRET_ID not set"
+elif ! force_deploy && fn_exists "${FN_PROVIDER_SETUP}"; then
+  PROVIDER_SETUP_URL="$(fn_uri "${FN_PROVIDER_SETUP}")"
+  echo "Provider-setup already deployed — skip (DEPLOY_FORCE=1 to redeploy)"
+else
+  pushd "${REPO_ROOT}/provider-setup" >/dev/null
+  gcloud functions deploy "${FN_PROVIDER_SETUP}" \
+    --gen2 \
+    --project="${PROJECT_ID}" \
+    --region="${REGION}" \
+    --runtime="${NODE_RUNTIME}" \
+    --source=. \
+    --entry-point=providerSetup \
+    --trigger-http \
+    --no-allow-unauthenticated \
+    --timeout=540s \
+    --memory=512Mi \
+    --set-env-vars="CHAIN_ID=${PROVIDER_SETUP_CHAIN_ID}${PROVIDER_SETUP_RPC_URL:+,RPC_URL=${PROVIDER_SETUP_RPC_URL}}" \
+    --set-secrets="SERVER_PRIVATE_KEY=${COORDINATES_SECRET_ID}:latest"
+  popd >/dev/null
+  PROVIDER_SETUP_URL="$(fn_uri "${FN_PROVIDER_SETUP}")"
+fi
+echo "PROVIDER_SETUP_URL=${PROVIDER_SETUP_URL:-<skipped>}"
 
 phase "H — Stripe adapter (public) — ${FN_STRIPE_ADAPTER}"
 # Prefer Secret Manager IDs (STRIPE_SECRET_ID / STRIPE_PROD_SECRET_ID) for production.
@@ -309,7 +355,7 @@ else
     --gen2 \
     --project="${PROJECT_ID}" \
     --region="${REGION}" \
-    --runtime="${PYTHON_RUNTIME}" \
+    --runtime="${NODE_RUNTIME}" \
     --source=. \
     --entry-point=webhook \
     --trigger-http \
@@ -349,7 +395,8 @@ else
     --topic="${PUBSUB_TOPIC}" \
     --push-endpoint="${WORKER_URL}/_pubsub" \
     --push-auth-service-account="${PUBSUB_PUSH_EMAIL}" \
-    --push-auth-token-audience="${WORKER_URL}"
+    --push-auth-token-audience="${WORKER_URL}" \
+    --ack-deadline=600
   SUBSCRIPTION_WAS_PRESENT=created
 fi
 
@@ -370,6 +417,14 @@ if [[ "${WORKER_SA}" != "${RUNTIME_SA}" ]]; then
   run_invoker_bind "${FN_CHAIN_SERVER}" "serviceAccount:${WORKER_SA}"
 fi
 
+# Worker must be able to call provider-setup (private function)
+if [[ -n "${PROVIDER_SETUP_URL:-}" ]]; then
+  run_invoker_bind "${FN_PROVIDER_SETUP}" "serviceAccount:${RUNTIME_SA}"
+  if [[ "${WORKER_SA}" != "${RUNTIME_SA}" ]]; then
+    run_invoker_bind "${FN_PROVIDER_SETUP}" "serviceAccount:${WORKER_SA}"
+  fi
+fi
+
 write_deploy_state
 
 phase "Done — paste into Stripe / Vercel"
@@ -379,11 +434,19 @@ Stripe test webhook URL (events: checkout.session.completed, customer.subscripti
   ${ADAPTER_URL}/webhook
   (or ${ADAPTER_URL} if you route POST / only)
 
-Vercel (production build):
-  VITE_USE_PRODUCTION_URLS=true
-  VITE_PROD_ORDER_RESULT_URL=${ORDER_RESULT_URL}
-  VITE_PROD_CHAIN_ACTIVATE_URL=${CHAIN_ACTIVATE_URL}
-  VITE_PROD_STRIPE_URL=<your Checkout session Cloud Function URL>
+Vercel / frontend env vars:
+  secnum-store (production build):
+    VITE_USE_PRODUCTION_URLS=true
+    VITE_PROD_ORDER_RESULT_URL=${ORDER_RESULT_URL}
+    VITE_PROD_CHAIN_ACTIVATE_URL=${CHAIN_ACTIVATE_URL}
+    VITE_PROD_STRIPE_URL=<your Checkout session Cloud Function URL>
 
-Optional note: order-result is public; processor + worker + chain-server are private; adapter + chain-activate are public.
+  sp-registration-store:
+    VITE_STRIPE_URL=<your payment-link-generator URL>
+    VITE_ORDER_RESULT_URL=${ORDER_RESULT_URL}
+
+Provider setup URL (set in deploy.env as PROVIDER_SETUP_URL for next run):
+  ${PROVIDER_SETUP_URL:-<skipped — set CHAIN_ID_POLYGON + SERVER_PRIVATE_KEY_SECRET_ID to deploy>}
+
+Optional note: order-result + adapter + chain-activate are public; processor + worker + chain-server + provider-setup are private.
 EOF

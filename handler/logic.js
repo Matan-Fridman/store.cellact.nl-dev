@@ -14,10 +14,15 @@ const BLOCKCHAIN_SERVER_URL =
   process.env.BLOCKCHAIN_CF_URL ||
   'https://insert-commitment-esimera-309305771885.europe-west1.run.app';
 
+/** Provider setup function URL — handles full SP registration on-chain. */
+const PROVIDER_SETUP_URL = (process.env.PROVIDER_SETUP_URL || '').replace(/\/$/, '');
+
 const STORE_ORIGIN = process.env.STORE_ORIGIN || 'https://esimera-store.vercel.app';
 const SECNUM_PACKAGE_ID = process.env.SECNUM_PACKAGE_ID || 'secnum_number';
+const SP_PACKAGE_ID = 'service_provider';
 const ORDERS_COLLECTION = process.env.ORDERS_COLLECTION || 'orders';
 const DEDUP_COLLECTION = process.env.DEDUP_COLLECTION || 'payment_events_processed';
+const SP_COLLECTION = process.env.SP_COLLECTION || 'service_providers';
 
 // ─── Clients ──────────────────────────────────────────────────────────────────
 
@@ -33,10 +38,12 @@ const CHECKOUT_DATA_SCHEMA = {
   required: ['order_id'],
   additionalProperties: true,
   properties: {
-    order_id: { type: 'string', minLength: 1 },
-    payment_status: { type: 'string' },
+    order_id:        { type: 'string', minLength: 1 },
+    payment_status:  { type: 'string' },
     subscription_id: { type: ['string', 'null'] },
-    livemode: { type: 'boolean' },
+    livemode:        { type: 'boolean' },
+    // present for all packages — defaults to 'secnum_number' for existing flow
+    package_type:    { type: 'string' },
   },
 };
 
@@ -140,6 +147,14 @@ async function callExpire(label) {
   return postJson(BLOCKCHAIN_SERVER_URL, { action: 'expire', label: String(label) }, 120000);
 }
 
+// ─── Provider setup call ──────────────────────────────────────────────────────
+
+async function callProviderSetup(spConfig) {
+  if (!PROVIDER_SETUP_URL) throw new Error('PROVIDER_SETUP_URL is not configured');
+  // SP registration involves many on-chain transactions — allow up to 10 minutes
+  return postJson(PROVIDER_SETUP_URL, spConfig, 600000);
+}
+
 // ─── Order helpers ────────────────────────────────────────────────────────────
 
 function buildClaimUrl(userSecret, label, storeOrigin) {
@@ -165,18 +180,85 @@ async function findOrderDocBySubscriptionId(subscriptionId) {
 // ─── Order result (public poll) ───────────────────────────────────────────────
 
 async function getOrderResult(sessionId) {
+  // Check secnum_number orders first
   const doc = await db.collection(ORDERS_COLLECTION).doc(sessionId).get();
-  if (!doc.exists) return { claimUrl: null, label: null, userSecret: null };
-  const data = doc.data() || {};
-  const { label, userSecret, claimUrl: legacyClaim } = data;
-  if (label && userSecret) {
-    return { claimUrl: buildClaimUrl(userSecret, label, STORE_ORIGIN), label, userSecret };
+  if (doc.exists) {
+    const data = doc.data() || {};
+    const { label, userSecret, claimUrl: legacyClaim, package_type: packageType } = data;
+
+    // SP order — check service_providers collection for the completed registration
+    if (packageType === SP_PACKAGE_ID) {
+      const spDoc = await db.collection(SP_COLLECTION).doc(sessionId).get();
+      if (!spDoc.exists) return { type: 'service_provider', ready: false };
+      const sp = spDoc.data() || {};
+      if (!sp.address) return { type: 'service_provider', ready: false };
+      return {
+        type:       'service_provider',
+        ready:      true,
+        address:    sp.address,
+        privateKey: sp.private_key || null,
+        name:       sp.name || null,
+      };
+    }
+
+    // secnum_number order
+    if (label && userSecret) {
+      return { claimUrl: buildClaimUrl(userSecret, label, STORE_ORIGIN), label, userSecret };
+    }
+    if (legacyClaim) return { claimUrl: legacyClaim, label: null, userSecret: null };
   }
-  if (legacyClaim) return { claimUrl: legacyClaim, label: null, userSecret: null };
+
   return { claimUrl: null, label: null, userSecret: null };
 }
 
 // ─── Event handlers ───────────────────────────────────────────────────────────
+
+/** Handles service_provider package: runs full SP on-chain registration. */
+async function handleServiceProviderCheckout(orderUuid, spConfigRaw, subscription_id) {
+  let spConfig;
+  try {
+    spConfig = typeof spConfigRaw === 'string' ? JSON.parse(spConfigRaw) : spConfigRaw;
+  } catch {
+    return { status: 400, json: { error: 'sp_config is not valid JSON' }, retryable: false };
+  }
+
+  if (!spConfig || !spConfig.name) {
+    return { status: 400, json: { error: 'sp_config missing required field: name' }, retryable: false };
+  }
+
+  // Check if this order already has an SP registered (idempotency on retry)
+  const spRef = db.collection(SP_COLLECTION).doc(orderUuid);
+  const spSnap = await spRef.get();
+  if (spSnap.exists && spSnap.data().address) {
+    console.log(`[handler] SP already registered for order=${orderUuid} — skipping`);
+    return { status: 200, empty: true, retryable: false };
+  }
+
+  try {
+    console.log(`[handler] starting SP registration for order=${orderUuid} name=${spConfig.name}`);
+    const result = await callProviderSetup(spConfig);
+    const { address, privateKey, ...rest } = result;
+
+    if (!address) throw new Error('Provider setup response missing address');
+
+    // Store SP record — privateKey must be moved to Secret Manager for production
+    await spRef.set({
+      order_id:        orderUuid,
+      name:            spConfig.name,
+      address,
+      private_key:     privateKey, // ⚠️ move to Secret Manager in production
+      registered_at:   new Date().toISOString(),
+      ...(subscription_id && { stripe_subscription_id: String(subscription_id) }),
+      setup_result:    rest,
+    });
+
+    console.log(`[handler] SP registered order=${orderUuid} address=${address}`);
+    return { status: 200, empty: true, retryable: false };
+  } catch (e) {
+    console.error(`[handler] SP registration failed for order=${orderUuid}:`, e);
+    return { status: 502, json: { error: e.message || String(e) }, retryable: true };
+  }
+}
 
 /** @returns {Promise<{ status: number, json?: object, empty?: boolean, retryable?: boolean }>} */
 async function handleCheckoutCompleted(data) {
@@ -186,16 +268,37 @@ async function handleCheckoutCompleted(data) {
     return { status: 400, json: { error: `Invalid checkout data: ${err}` }, retryable: false };
   }
 
-  const { order_id: orderUuid, payment_status: paymentStatus = '', subscription_id } = data;
+  const {
+    order_id: orderUuid,
+    payment_status: paymentStatus = '',
+    subscription_id,
+    package_type: packageType = SECNUM_PACKAGE_ID,
+  } = data;
 
   const orderRef = db.collection(ORDERS_COLLECTION).doc(orderUuid);
-  const updatePayload = { status: paymentStatus, updated_at: new Date().toISOString() };
+  const updatePayload = {
+    status: paymentStatus,
+    updated_at: new Date().toISOString(),
+    package_type: packageType,
+  };
   if (subscription_id) updatePayload.stripe_subscription_id = String(subscription_id);
   await orderRef.update(updatePayload);
 
   if (paymentStatus !== 'paid') {
     return { status: 200, empty: true, retryable: false };
   }
+
+  // ── Route by package type ─────────────────────────────────────────────────
+
+  if (packageType === SP_PACKAGE_ID) {
+    // sp_config is stored in the order doc by the payment generator
+    // (not in the Stripe event, to avoid the 500-char metadata limit).
+    const orderSnap = await orderRef.get();
+    const spConfig = orderSnap.exists ? (orderSnap.data().sp_config || null) : null;
+    return handleServiceProviderCheckout(orderUuid, spConfig, subscription_id);
+  }
+
+  // ── Default: secnum_number — phone number provisioning ────────────────────
 
   const orderDoc = await orderRef.get();
   if (!orderDoc.exists) {
@@ -204,6 +307,7 @@ async function handleCheckoutCompleted(data) {
   const orderData = orderDoc.data() || {};
 
   if (!isSecnumOrder(orderData)) {
+    console.log(`[handler] unrecognised package_type=${packageType} order=${orderUuid} — ignoring`);
     return { status: 200, empty: true, retryable: false };
   }
 

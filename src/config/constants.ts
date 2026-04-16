@@ -1,19 +1,21 @@
 /**
  * Dev vs prod: set VITE_USE_PRODUCTION_URLS=true for production builds.
+ * "Dev" URLs here point at staging (arnacon-staging-production), not legacy arnacon-nl.
  * In development you can override with the in-app toggle (stored in localStorage).
  */
 
 const DEV_URLS = {
   /** Public chain-activate function (action: activate from /claim). */
   API_URL:
-    "https://europe-west1-arnacon-nl.cloudfunctions.net/secnum-chain-activate",
-  /** Stripe checkout session creator (creates the session, not the webhook receiver). */
-  STRIPE_URL: "https://us-central1-arnacon-nl.cloudfunctions.net/send_stripe",
+    "https://europe-west1-arnacon-staging-production.cloudfunctions.net/secnum-chain-activate",
+  /** Stripe checkout session creator (payment-link-generator on staging). */
+  STRIPE_URL:
+    "https://europe-west1-arnacon-staging-production.cloudfunctions.net/payment-link-generator",
   /**
    * Base URL for polling — app calls `{base}/order-result`.
    */
   ORDER_RESULT_URL:
-    "https://europe-west1-arnacon-nl.cloudfunctions.net/secnum-order-result",
+    "https://europe-west1-arnacon-staging-production.cloudfunctions.net/secnum-order-result",
 };
 
 const PROD_URLS = {

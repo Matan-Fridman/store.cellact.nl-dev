@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { createCheckoutSession, getOrderResult } from "../services/api";
+import { getUseProduction } from "../config/constants";
 import {
   PACKAGE_ID,
   PACKAGE_NAME,
@@ -21,13 +22,15 @@ function generateUserId(): string {
 }
 
 function buildSuccessUrl(): string {
+  const prod = getUseProduction();
   // Must be a bare URL — the GCP function appends ?session_id=<uuid>&user_address=<id>
-  return `${window.location.origin}/success`;
+  return `${window.location.origin}/success?dev=${prod ? "false" : "true"}`;
 }
 
 function buildFailureUrl(): string {
   // Must be a bare URL — the GCP function appends ?user_address=<id>
-  return `${window.location.origin}/`;
+  const prod = getUseProduction();
+  return `${window.location.origin}/?dev=${prod ? "false" : "true"}`;
 }
 
 export function usePurchase() {
@@ -83,7 +86,7 @@ export function usePurchase() {
         const label = result.label ?? undefined;
         const userSecret = result.userSecret ?? undefined;
         if (!claimUrl && label && userSecret) {
-          claimUrl = buildArnaconClaimUrl(userSecret, label, window.location.origin);
+          claimUrl = buildArnaconClaimUrl(userSecret, label, window.location.origin, getUseProduction());
         }
         if (claimUrl) {
           setState({

@@ -34,8 +34,15 @@ const PROD_URLS = {
     "https://europe-west1-arnacon-production-gcp.cloudfunctions.net/secnum-order-result",
 };
 
-function getUseProduction(): boolean {
+export function getUseProduction(): boolean {
   if (import.meta.env.VITE_USE_PRODUCTION_URLS === "true") return true;
+  // URL param set by the purchase flow takes priority over localStorage
+  if (typeof window !== "undefined") {
+    const params = new URLSearchParams(window.location.search);
+    const dev = params.get("dev");
+    if (dev === "false") return true;
+    if (dev === "true") return false;
+  }
   if (typeof localStorage !== "undefined") {
     return localStorage.getItem("secnum_use_production") === "true";
   }

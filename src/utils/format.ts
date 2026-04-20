@@ -23,8 +23,10 @@ export function buildArnaconClaimUrl(
   userSecret: string,
   label: string,
   storeOrigin: string,
+  prod?: boolean,
 ): string {
   const base = storeOrigin.replace(/\/$/, "");
-  const claimPage = `${base}/claim?secret=${encodeURIComponent(userSecret)}&label=${encodeURIComponent(label)}`;
+  const devParam = prod !== undefined ? `&dev=${prod ? "false" : "true"}` : "";
+  const claimPage = `${base}/claim?secret=${encodeURIComponent(userSecret)}&label=${encodeURIComponent(label)}${devParam}`;
   return `arnacon://install?url=${encodeURIComponent(claimPage)}&provider=Secnum`;
 }

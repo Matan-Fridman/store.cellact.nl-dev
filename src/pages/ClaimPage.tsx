@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { ClaimCard } from "./claim/ClaimCard";
+import { setUseProductionUrls } from "../config/constants";
 
 export function ClaimPage() {
   const [searchParams] = useSearchParams();
@@ -8,6 +10,12 @@ export function ClaimPage() {
   const secret = searchParams.get("secret");
   const label = searchParams.get("label");
   const walletAddress = searchParams.get("walletAddress");
+  const dev = searchParams.get("dev");
+
+  useEffect(() => {
+    if (dev === "false") setUseProductionUrls(true);
+    else if (dev === "true") setUseProductionUrls(false);
+  }, [dev]);
 
   if (!secret || !label || !walletAddress) {
     return (

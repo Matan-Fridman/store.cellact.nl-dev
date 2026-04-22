@@ -7,13 +7,20 @@ export function ErrorAlert({ message, onDismiss }: ErrorAlertProps) {
   if (!message) return null;
 
   return (
-    <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    <div
+      className="mt-4 rounded-xl px-4 py-3 text-sm"
+      style={{
+        background: "rgba(239,68,68,0.12)",
+        border: "1px solid rgba(239,68,68,0.3)",
+        color: "#f87171",
+      }}
+    >
       <div className="flex items-start justify-between gap-3">
         <p>{message}</p>
         {onDismiss && (
           <button
             onClick={onDismiss}
-            className="shrink-0 text-red-400 hover:text-red-600"
+            className="shrink-0 opacity-70 hover:opacity-100 transition-opacity"
             aria-label="Dismiss"
           >
             &times;

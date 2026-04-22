@@ -1,5 +1,5 @@
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../../components/Button";
-import { StepProgress } from "../../components/StepProgress";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { ClaimResult } from "./ClaimResult";
 import { useClaim } from "../../hooks/useClaim";
@@ -7,15 +7,9 @@ import { formatPhone } from "../../utils/format";
 import type { ClaimParams } from "../../types";
 
 const STEPS = [
-  { label: "Verifying your purchase" },
-  { label: "Preparing your number" },
-  { label: "Activating your number" },
-];
-
-const STEP_MESSAGES = [
-  "Verifying purchase...",
-  "Preparing number...",
-  "Activating...",
+  "Verifying your purchase",
+  "Preparing your number",
+  "Activating your number",
 ];
 
 interface ClaimCardProps {
@@ -29,58 +23,170 @@ export function ClaimCard({ params }: ClaimCardProps) {
     claim(params.secret, params.label, params.walletAddress);
   };
 
+  // Success — replace entire card
+  if (status === "success" && data) {
+    return <ClaimResult data={data} label={params.label} />;
+  }
+
+  const activeStepIndex = Math.max(0, Math.min(step - 1, 2));
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-50 text-3xl mb-5">
-        📱
+    <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+
+      {/* Heading */}
+      <div>
+        <p
+          style={{
+            fontSize: "11px",
+            fontWeight: 600,
+            letterSpacing: "0.13em",
+            textTransform: "uppercase",
+            color: "#60a5fa",
+            marginBottom: "14px",
+          }}
+        >
+          Number Activation
+        </p>
+        <h1
+          style={{
+            fontSize: "clamp(1.75rem, 7vw, 2.25rem)",
+            fontWeight: 800,
+            letterSpacing: "-0.03em",
+            lineHeight: 1.1,
+            color: "var(--color-text)",
+          }}
+        >
+          Activate your<br />Israeli number.
+        </h1>
       </div>
 
-      <h1 className="text-2xl font-bold text-slate-900">
-        Activate Your Number
-      </h1>
-      <p className="mt-2 text-sm text-slate-500 leading-relaxed">
-        Complete the activation to start using your secondary number. This will
-        only take a moment.
-      </p>
-
-      <div className="mt-6 space-y-0 divide-y divide-slate-100">
-        <div className="flex items-center justify-between py-3">
-          <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
-            Number
-          </span>
-          <span className="text-sm font-semibold text-slate-700">
-            {formatPhone(params.label)}
-          </span>
-        </div>
+      {/* Number display */}
+      <div
+        style={{
+          padding: "18px 20px",
+          borderRadius: "14px",
+          background: "rgba(59,130,246,0.05)",
+          border: "1px solid rgba(96,165,250,0.18)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "16px",
+        }}
+      >
+        <span
+          style={{
+            fontSize: "10.5px",
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--color-text-muted)",
+          }}
+        >
+          Your number
+        </span>
+        <span
+          style={{
+            fontSize: "1.05rem",
+            fontWeight: 700,
+            color: "var(--color-text)",
+            letterSpacing: "0.01em",
+          }}
+        >
+          {formatPhone(params.label)}
+        </span>
       </div>
 
-      <div className="my-6 h-px bg-slate-100" />
-
-      <StepProgress steps={STEPS} currentStep={step} />
-
-      <div className="mt-6">
-        {status === "success" ? (
-          <Button variant="success" disabled>
-            Activated Successfully
-          </Button>
-        ) : (
-          <Button
-            onClick={handleClaim}
-            loading={status === "loading"}
-            disabled={status === "loading"}
+      {/* Step progress — only visible while loading */}
+      <AnimatePresence>
+        {status === "loading" && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3 }}
           >
-            {status === "loading"
-              ? STEP_MESSAGES[Math.min(step - 1, 2)]
-              : status === "error"
-                ? "Retry"
-                : "Activate Number"}
-          </Button>
+            {/* Progress bars */}
+            <div style={{ display: "flex", gap: "6px", marginBottom: "14px" }}>
+              {STEPS.map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    flex: 1,
+                    height: "3px",
+                    borderRadius: "2px",
+                    background:
+                      i < activeStepIndex
+                        ? "#3b82f6"
+                        : i === activeStepIndex
+                        ? "rgba(96,165,250,0.7)"
+                        : "var(--color-border)",
+                    transition: "background 0.4s ease",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                >
+                  {/* Animated shimmer on active bar */}
+                  {i === activeStepIndex && (
+                    <motion.div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        background:
+                          "linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)",
+                      }}
+                      animate={{ x: ["-100%", "100%"] }}
+                      transition={{ repeat: Infinity, duration: 1.4, ease: "linear" }}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Current step label */}
+            <p
+              style={{
+                fontSize: "0.875rem",
+                color: "var(--color-text-muted)",
+                lineHeight: 1.5,
+              }}
+            >
+              {STEPS[activeStepIndex]}…
+            </p>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
 
-      {data && <ClaimResult data={data} />}
-
+      {/* Error */}
       <ErrorAlert message={error} onDismiss={reset} />
+
+      {/* CTA */}
+      <Button
+        onClick={handleClaim}
+        loading={status === "loading"}
+        disabled={status === "loading"}
+        className="!py-4 !text-base"
+      >
+        {status === "loading"
+          ? STEPS[activeStepIndex]
+          : status === "error"
+          ? "Try Again"
+          : "Activate Number"}
+      </Button>
+
+      {status !== "loading" && (
+        <p
+          style={{
+            fontSize: "12px",
+            color: "var(--color-text-muted)",
+            textAlign: "center",
+            lineHeight: 1.5,
+          }}
+        >
+          This will link your number to your device.
+          <br />
+          The process takes only a few seconds.
+        </p>
+      )}
     </div>
   );
 }

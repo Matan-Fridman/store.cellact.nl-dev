@@ -18,24 +18,30 @@ export function StepProgress({ steps, currentStep }: StepProgressProps) {
         return (
           <div key={stepNum} className="flex items-start gap-3">
             <div
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-colors ${
-                isDone
-                  ? "bg-emerald-50 text-emerald-600"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-colors"
+              style={{
+                background: isDone
+                  ? "rgba(16,185,129,0.15)"
                   : isActive
-                    ? "bg-blue-50 text-blue-600"
-                    : "bg-slate-100 text-slate-400"
-              }`}
+                  ? "rgba(142,45,226,0.2)"
+                  : "rgba(255,255,255,0.05)",
+                color: isDone
+                  ? "#34d399"
+                  : isActive
+                  ? "#C45BFF"
+                  : "var(--color-text-muted)",
+              }}
             >
               {isDone ? "✓" : stepNum}
             </div>
             <span
-              className={`pt-0.5 text-sm leading-snug transition-colors ${
-                isActive
-                  ? "font-medium text-slate-900"
-                  : isDone
-                    ? "text-slate-500"
-                    : "text-slate-400"
-              }`}
+              className="pt-0.5 text-sm leading-snug transition-colors"
+              style={{
+                color: isActive
+                  ? "var(--color-text)"
+                  : "var(--color-text-muted)",
+                fontWeight: isActive ? 500 : 400,
+              }}
             >
               {step.label}
             </span>

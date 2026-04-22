@@ -1,29 +1,151 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --color-blue-50: #eff6ff;
-  --color-blue-100: #dbeafe;
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* Core palette */
+  --color-bg:         #0e0e10;
+  --color-bg-raised:  #161618;
+  --color-border:     rgba(255, 255, 255, 0.07);
+  --color-text:       #eeedf5;
+  --color-text-muted: #6e6d83;
+
+  /* Brand gradient stops */
+  --color-grad-1: #8E2DE2;
+  --color-grad-2: #C45BFF;
+  --color-grad-3: #FF58B0;
+
+  /* Blue */
   --color-blue-500: #3b82f6;
   --color-blue-600: #2563eb;
-  --color-blue-700: #1d4ed8;
-  --animate-in: animate-in 0.2s ease-out;
 }
 
+/* ── keyframes ─────────────────────────────────────────── */
+
 @keyframes animate-in {
-  from {
-    opacity: 0;
-    transform: scale(0.96) translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+  from { opacity: 0; transform: scale(0.97) translateY(6px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px);   }
+  50%      { transform: translateY(-16px); }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-33.333%); }
+}
+
+/* ── base ──────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f8fafc;
+  background: var(--color-bg);
+  color: var(--color-text);
+  overflow-x: hidden;
+}
+
+/* Grain texture — adds richness to the dark background */
+body::after {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 300px;
+}
+
+/* ── futuristic button variants ────────────────────────── */
+
+.btn-primary {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(96, 165, 250, 0.38);
+  color: var(--color-text);
+  letter-spacing: 0.015em;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+}
+
+.btn-primary:not(:disabled):hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(96, 165, 250, 0.9);
+  color: #fff;
+  box-shadow:
+    0 0 0 1px rgba(96, 165, 250, 0.25),
+    0 0 28px rgba(59, 130, 246, 0.35),
+    0 0 64px rgba(59, 130, 246, 0.15);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  letter-spacing: 0.015em;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.btn-secondary:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--color-text);
+}
+
+.btn-success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: #34d399;
+  letter-spacing: 0.015em;
+  cursor: default;
+}
+
+/* ── layout helpers ────────────────────────────────────── */
+
+/* Hero: copy (5) / phone (7) — phone intentionally dominates */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .hero-grid {
+    grid-template-columns: 5fr 7fr;
+    gap: 2rem;
+  }
+}
+
+/* ── utilities ─────────────────────────────────────────── */
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.animate-in {
+  animation: animate-in 0.3s ease-out;
+}
+
+.gradient-text {
+  background: linear-gradient(120deg, #60a5fa 0%, #2563eb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

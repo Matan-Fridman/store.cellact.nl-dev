@@ -3,21 +3,21 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "success";
   loading?: boolean;
+  /** Default true — set false for inline/auto-width buttons */
+  fullWidth?: boolean;
   children: ReactNode;
 }
 
-const variantStyles: Record<string, string> = {
-  primary:
-    "bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 disabled:bg-blue-300",
-  secondary:
-    "bg-slate-100 text-slate-700 hover:bg-slate-200 active:bg-slate-300 disabled:bg-slate-50 disabled:text-slate-400",
-  success:
-    "bg-emerald-500 text-white cursor-default",
+const variantClass: Record<string, string> = {
+  primary:   "btn-primary",
+  secondary: "btn-secondary",
+  success:   "btn-success",
 };
 
 export function Button({
   variant = "primary",
   loading = false,
+  fullWidth = true,
   children,
   className = "",
   disabled,
@@ -26,17 +26,17 @@ export function Button({
   return (
     <button
       className={`
-        w-full rounded-xl px-6 py-3.5 text-sm font-semibold
-        transition-colors duration-150
-        disabled:cursor-not-allowed
-        ${variantStyles[variant]}
+        ${fullWidth ? "w-full" : "w-auto"}
+        rounded-xl px-6 py-3.5 text-sm font-semibold
+        disabled:opacity-40 disabled:!cursor-not-allowed
+        ${variantClass[variant]}
         ${className}
       `}
       disabled={disabled || loading}
       {...props}
     >
       {loading ? (
-        <span className="inline-flex items-center gap-2">
+        <span className="inline-flex items-center justify-center gap-2">
           <Spinner />
           {children}
         </span>

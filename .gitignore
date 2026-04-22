@@ -25,6 +25,18 @@ dist-ssr
 
 /webhook
 
+# Non-frontend folders (moved to GCP-functions repo)
+/api
+/handler
+/payment-link-generator
+/processor
+/provider-setup
+/scripts
+/app
+/docs
+numbers.json
+test-numbers.json
+
 .env
 .env.yaml
 deploy.env

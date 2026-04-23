@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import type { ActivateResponse } from "../../types";
 import { formatPhone } from "../../utils/format";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 interface ClaimResultProps {
   data: ActivateResponse;
@@ -8,11 +9,13 @@ interface ClaimResultProps {
 }
 
 export function ClaimResult({ data, label }: ClaimResultProps) {
+  const { t } = useLanguage();
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] as const }}
       style={{ display: "flex", flexDirection: "column", gap: "28px" }}
     >
       {/* Check icon */}
@@ -20,7 +23,7 @@ export function ClaimResult({ data, label }: ClaimResultProps) {
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] as const }}
           style={{
             width: "72px",
             height: "72px",
@@ -49,10 +52,10 @@ export function ClaimResult({ data, label }: ClaimResultProps) {
             marginBottom: "10px",
           }}
         >
-          You're all set.
+          {t.claim.successTitle}
         </h2>
         <p style={{ fontSize: "0.9375rem", lineHeight: 1.65, color: "var(--color-text-muted)" }}>
-          Your Israeli number is now active and ready to use.
+          {t.claim.successDesc}
         </p>
       </div>
 
@@ -75,7 +78,7 @@ export function ClaimResult({ data, label }: ClaimResultProps) {
             marginBottom: "8px",
           }}
         >
-          Active number
+          {t.claim.activeNumberLabel}
         </p>
         <p
           style={{
@@ -106,11 +109,10 @@ export function ClaimResult({ data, label }: ClaimResultProps) {
           textAlign: "center",
           color: "var(--color-text-muted)",
           lineHeight: 1.6,
+          whiteSpace: "pre-line",
         }}
       >
-        You can now receive calls and SMS on this number.
-        <br />
-        Open the Arnacon app to manage your number.
+        {t.claim.successFooter}
       </p>
     </motion.div>
   );

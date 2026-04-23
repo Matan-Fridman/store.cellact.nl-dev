@@ -1,4 +1,6 @@
 import { useState, useEffect, type ReactNode } from "react";
+import { useLanguage } from "../contexts/LanguageContext";
+import type { Language } from "../i18n/translations";
 
 interface LayoutProps {
   children: ReactNode;
@@ -6,6 +8,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [scrolled, setScrolled] = useState(false);
+  const { lang, setLang, t } = useLanguage();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -29,18 +32,67 @@ export function Layout({ children }: LayoutProps) {
             className="text-xl font-bold tracking-tight"
             style={{ color: "var(--color-text)" }}
           >
-            Secnum
+            {t.nav.brand}
           </a>
-          <span
-            className="text-xs font-medium tracking-widest uppercase"
-            style={{ color: "var(--color-text-muted)" }}
-          >
-            by Cellact
-          </span>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <LangToggle lang={lang} setLang={setLang} />
+            <span
+              className="text-xs font-medium tracking-widest uppercase"
+              style={{ color: "var(--color-text-muted)" }}
+            >
+              by Cellact
+            </span>
+          </div>
         </div>
       </header>
 
       <main>{children}</main>
+    </div>
+  );
+}
+
+function LangToggle({
+  lang,
+  setLang,
+}: {
+  lang: Language;
+  setLang: (l: Language) => void;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "2px",
+        padding: "3px",
+        borderRadius: "8px",
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid var(--color-border)",
+      }}
+    >
+      {(["en", "he"] as const).map((l) => (
+        <button
+          key={l}
+          onClick={() => setLang(l)}
+          style={{
+            padding: "4px 11px",
+            borderRadius: "5px",
+            fontSize: "11px",
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            border: "none",
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            background: lang === l ? "rgba(255,255,255,0.1)" : "transparent",
+            color:
+              lang === l ? "var(--color-text)" : "var(--color-text-muted)",
+          }}
+        >
+          {l === "en" ? "EN" : "HE"}
+        </button>
+      ))}
     </div>
   );
 }

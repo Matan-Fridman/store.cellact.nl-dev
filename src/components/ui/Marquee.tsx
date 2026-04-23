@@ -1,21 +1,12 @@
-const ITEMS = [
-  "Calls & SMS",
-  "From anywhere",
-  "One payment",
-  "No extra SIM",
-  "Activate in minutes",
-  "Secnum",
-  "Israeli numbers",
-  "Your existing phone",
-];
+import { useLanguage } from "../../contexts/LanguageContext";
 
 /**
  * Continuously scrolling horizontal ticker.
  * Items are repeated 3× so the animation loop is seamless.
- * Speed and opacity are deliberately restrained — ambient, not distracting.
  */
 export function Marquee() {
-  const allItems = [...ITEMS, ...ITEMS, ...ITEMS];
+  const { t } = useLanguage();
+  const allItems = [...t.marquee, ...t.marquee, ...t.marquee];
 
   return (
     <div

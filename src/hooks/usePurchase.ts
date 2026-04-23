@@ -9,7 +9,7 @@ import {
   PRICE_CURRENCY,
 } from "../config/constants";
 import type { AsyncStatus, PurchaseResponse } from "../types";
-import { buildArnaconClaimUrl } from "../utils/format";
+import { buildArnaconClaimUrl, ensureClaimUrlDevParam } from "../utils/format";
 
 interface PurchaseState {
   status: AsyncStatus;
@@ -85,10 +85,14 @@ export function usePurchase() {
         let claimUrl = result.claimUrl;
         const label = result.label ?? undefined;
         const userSecret = result.userSecret ?? undefined;
+        const isProd = getUseProduction();
         if (!claimUrl && label && userSecret) {
-          claimUrl = buildArnaconClaimUrl(userSecret, label, window.location.origin, getUseProduction());
+          claimUrl = buildArnaconClaimUrl(userSecret, label, window.location.origin, isProd);
         }
+        // Always ensure the dev param matches this client session,
+        // even when the server returned a pre-built claimUrl.
         if (claimUrl) {
+          claimUrl = ensureClaimUrlDevParam(claimUrl, isProd);
           setState({
             status: "success",
             data: { claimUrl, ...(label ? { label } : {}), ...(userSecret ? { userSecret } : {}) },

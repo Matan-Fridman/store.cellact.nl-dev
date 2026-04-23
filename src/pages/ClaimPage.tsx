@@ -1,7 +1,6 @@
-import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClaimCard } from "./claim/ClaimCard";
-import { setUseProductionUrls } from "../config/constants";
+import { useLanguage } from "../contexts/LanguageContext";
 
 /**
  * Mobile-optimised full-screen wrapper — no desktop navbar needed here.
@@ -9,17 +8,11 @@ import { setUseProductionUrls } from "../config/constants";
  */
 export function ClaimPage() {
   const [searchParams] = useSearchParams();
+  const { t } = useLanguage();
 
-  const secret       = searchParams.get("secret");
-  const label        = searchParams.get("label");
+  const secret        = searchParams.get("secret");
+  const label         = searchParams.get("label");
   const walletAddress = searchParams.get("walletAddress");
-  const dev          = searchParams.get("dev");
-
-  useEffect(() => {
-    if (dev === "false") setUseProductionUrls(true);
-    else if (dev === "true") setUseProductionUrls(false);
-  }, [dev]);
-
   return (
     <div
       style={{
@@ -29,7 +22,7 @@ export function ClaimPage() {
         flexDirection: "column",
       }}
     >
-      {/* Minimal wordmark — no nav clutter */}
+      {/* Minimal wordmark */}
       <header style={{ padding: "22px 28px" }}>
         <a
           href="/"
@@ -41,7 +34,7 @@ export function ClaimPage() {
             letterSpacing: "-0.01em",
           }}
         >
-          Secnum
+          {t.claim.brand}
         </a>
       </header>
 
@@ -69,6 +62,8 @@ export function ClaimPage() {
 }
 
 function InvalidLink() {
+  const { t } = useLanguage();
+
   return (
     <div style={{ textAlign: "center" }}>
       <div
@@ -96,11 +91,10 @@ function InvalidLink() {
           marginBottom: "10px",
         }}
       >
-        Invalid link
+        {t.claim.invalidLinkTitle}
       </h2>
       <p style={{ fontSize: "0.9375rem", lineHeight: 1.6, color: "var(--color-text-muted)" }}>
-        This activation link is incomplete. Please use the link provided after
-        your purchase or scan the QR code from the Arnacon app.
+        {t.claim.invalidLinkDesc}
       </p>
     </div>
   );

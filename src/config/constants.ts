@@ -35,41 +35,27 @@ const PROD_URLS = {
 };
 
 export function getUseProduction(): boolean {
-  if (import.meta.env.VITE_USE_PRODUCTION_URLS === "true") return true;
-  // URL param set by the purchase flow takes priority over localStorage
+  // Only dev/staging when explicitly requested via URL param (?dev=true).
+  // Everything else — including no param at all — uses production.
   if (typeof window !== "undefined") {
-    const params = new URLSearchParams(window.location.search);
-    const dev = params.get("dev");
-    if (dev === "false") return true;
+    const dev = new URLSearchParams(window.location.search).get("dev");
     if (dev === "true") return false;
   }
-  if (typeof localStorage !== "undefined") {
-    return localStorage.getItem("secnum_use_production") === "true";
-  }
-  return false;
+  return true;
 }
 
 export function getApiConfig() {
   return getUseProduction() ? PROD_URLS : DEV_URLS;
 }
 
-export function getUseProductionUrls(): boolean {
-  return getUseProduction();
-}
-
-/** Call after toggling dev/prod in the UI so the next API call uses the new URLs. */
-export function setUseProductionUrls(useProd: boolean): void {
-  if (typeof localStorage !== "undefined") {
-    localStorage.setItem("secnum_use_production", useProd ? "true" : "false");
-  }
-}
 
 /** Stripe / product metadata */
 export const PACKAGE_ID = "secnum_number";
 export const PACKAGE_NAME = "Israeli Mobile Number";
 
 /** Pricing (decimal strings — the GCP function multiplies by 100 internally) */
-export const PRICE_DISPLAY_AMOUNT = "0.5";
-export const SUBSCRIPTION_PRICE = "0.5";
+export const PRICE_DISPLAY_AMOUNT = "3.99";  // one-time setup fee
+export const SUBSCRIPTION_PRICE   = "4.99";  // monthly subscription
 export const PRICE_CURRENCY = "eur";
-export const PRICE_DISPLAY = `€${PRICE_DISPLAY_AMOUNT}`;
+/** Display-only price shown in CTAs (one-time setup fee) */
+export const PRICE_DISPLAY = "€3.99";

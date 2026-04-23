@@ -4,13 +4,8 @@ import { ErrorAlert } from "../../components/ErrorAlert";
 import { ClaimResult } from "./ClaimResult";
 import { useClaim } from "../../hooks/useClaim";
 import { formatPhone } from "../../utils/format";
+import { useLanguage } from "../../contexts/LanguageContext";
 import type { ClaimParams } from "../../types";
-
-const STEPS = [
-  "Verifying your purchase",
-  "Preparing your number",
-  "Activating your number",
-];
 
 interface ClaimCardProps {
   params: ClaimParams;
@@ -18,12 +13,12 @@ interface ClaimCardProps {
 
 export function ClaimCard({ params }: ClaimCardProps) {
   const { status, step, data, error, claim, reset } = useClaim();
+  const { t } = useLanguage();
 
   const handleClaim = () => {
     claim(params.secret, params.label, params.walletAddress);
   };
 
-  // Success — replace entire card
   if (status === "success" && data) {
     return <ClaimResult data={data} label={params.label} />;
   }
@@ -45,7 +40,7 @@ export function ClaimCard({ params }: ClaimCardProps) {
             marginBottom: "14px",
           }}
         >
-          Number Activation
+          {t.claim.activationLabel}
         </p>
         <h1
           style={{
@@ -56,7 +51,9 @@ export function ClaimCard({ params }: ClaimCardProps) {
             color: "var(--color-text)",
           }}
         >
-          Activate your<br />Israeli number.
+          {t.claim.activateHeadlineA}
+          <br />
+          {t.claim.activateHeadlineB}
         </h1>
       </div>
 
@@ -82,7 +79,7 @@ export function ClaimCard({ params }: ClaimCardProps) {
             color: "var(--color-text-muted)",
           }}
         >
-          Your number
+          {t.claim.yourNumber}
         </span>
         <span
           style={{
@@ -107,7 +104,7 @@ export function ClaimCard({ params }: ClaimCardProps) {
           >
             {/* Progress bars */}
             <div style={{ display: "flex", gap: "6px", marginBottom: "14px" }}>
-              {STEPS.map((_, i) => (
+              {t.claim.steps.map((_, i) => (
                 <div
                   key={i}
                   style={{
@@ -125,7 +122,6 @@ export function ClaimCard({ params }: ClaimCardProps) {
                     overflow: "hidden",
                   }}
                 >
-                  {/* Animated shimmer on active bar */}
                   {i === activeStepIndex && (
                     <motion.div
                       style={{
@@ -142,7 +138,6 @@ export function ClaimCard({ params }: ClaimCardProps) {
               ))}
             </div>
 
-            {/* Current step label */}
             <p
               style={{
                 fontSize: "0.875rem",
@@ -150,7 +145,7 @@ export function ClaimCard({ params }: ClaimCardProps) {
                 lineHeight: 1.5,
               }}
             >
-              {STEPS[activeStepIndex]}…
+              {t.claim.steps[activeStepIndex]}…
             </p>
           </motion.div>
         )}
@@ -167,10 +162,10 @@ export function ClaimCard({ params }: ClaimCardProps) {
         className="!py-4 !text-base"
       >
         {status === "loading"
-          ? STEPS[activeStepIndex]
+          ? t.claim.steps[activeStepIndex]
           : status === "error"
-          ? "Try Again"
-          : "Activate Number"}
+          ? t.claim.retryBtn
+          : t.claim.activateBtn}
       </Button>
 
       {status !== "loading" && (
@@ -182,9 +177,7 @@ export function ClaimCard({ params }: ClaimCardProps) {
             lineHeight: 1.5,
           }}
         >
-          This will link your number to your device.
-          <br />
-          The process takes only a few seconds.
+          {t.claim.finePrint}
         </p>
       )}
     </div>

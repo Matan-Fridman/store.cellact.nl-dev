@@ -2,6 +2,7 @@ import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Button } from "../Button";
 import { PRICE_DISPLAY } from "../../config/constants";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 interface BottomCtaProps {
   onPurchase: () => void;
@@ -11,6 +12,7 @@ interface BottomCtaProps {
 export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-15% 0px" });
+  const { t, isRTL } = useLanguage();
 
   return (
     <section
@@ -21,7 +23,7 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
         textAlign: "center",
       }}
     >
-      {/* Single centered glow — the only light source in this section */}
+      {/* Single centered glow */}
       <div
         aria-hidden
         style={{
@@ -58,24 +60,26 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
       <div ref={ref} style={{ position: "relative", zIndex: 10, maxWidth: "600px", margin: "0 auto" }}>
         <motion.h2
           animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 32 }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] as const }}
           style={{
             fontSize: "clamp(2.75rem, 5vw, 5rem)",
             fontWeight: 900,
-            letterSpacing: "-0.04em",
+            letterSpacing: isRTL ? "-0.01em" : "-0.04em",
             lineHeight: 1.02,
             color: "var(--color-text)",
             marginBottom: "1.25rem",
           }}
         >
-          Your number.
+          {t.bottomCta.headlineA}
           <br />
-          <span className="gradient-text" style={{ fontStyle: "normal" }}>Ready in minutes.</span>
+          <span className="gradient-text" style={{ fontStyle: "normal" }}>
+            {t.bottomCta.headlineB}
+          </span>
         </motion.h2>
 
         <motion.p
           animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 20 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] as const, delay: 0.1 }}
           style={{
             fontSize: "1.0625rem",
             lineHeight: 1.65,
@@ -86,14 +90,12 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
             marginRight: "auto",
           }}
         >
-          One payment. No contracts.
-          <br />
-          Activate immediately with the Arnacon app.
+          {t.bottomCta.sub}
         </motion.p>
 
         <motion.div
           animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 16 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.18 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] as const, delay: 0.18 }}
           style={{ display: "inline-flex" }}
         >
           <Button
@@ -103,7 +105,7 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
             fullWidth={false}
             className="!px-8 !py-4 !text-base"
           >
-            {loading ? "Redirecting…" : `Get Your Number — ${PRICE_DISPLAY}`}
+            {loading ? t.bottomCta.ctaLoading : t.bottomCta.cta(PRICE_DISPLAY)}
           </Button>
         </motion.div>
       </div>

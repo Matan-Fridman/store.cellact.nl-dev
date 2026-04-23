@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Layout } from "../components/Layout";
 import { usePurchase } from "../hooks/usePurchase";
 import { buildQrUrl } from "../utils/format";
+import { useLanguage } from "../contexts/LanguageContext";
 import type { PurchaseResponse } from "../types";
 
 export function SuccessPage() {
@@ -52,13 +53,14 @@ export function SuccessPage() {
 // ─── Loading ──────────────────────────────────────────────────────────────────
 
 function LoadingState() {
+  const { t } = useLanguage();
+
   return (
     <motion.div
-      key="loading"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -16 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] as const }}
       style={{ textAlign: "center", maxWidth: "400px" }}
     >
       <div
@@ -95,12 +97,10 @@ function LoadingState() {
           marginBottom: "10px",
         }}
       >
-        Preparing your number…
+        {t.success.loading}
       </p>
       <p style={{ fontSize: "0.9rem", color: "var(--color-text-muted)", lineHeight: 1.6 }}>
-        Payment received. We're reserving your Israeli number.
-        <br />
-        This usually takes just a few seconds.
+        {t.success.loadingDesc}
       </p>
     </motion.div>
   );
@@ -110,20 +110,20 @@ function LoadingState() {
 
 function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void }) {
   const qrUrl = buildQrUrl(data.claimUrl, 280);
+  const { t } = useLanguage();
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] as const }}
       style={{
         width: "100%",
         maxWidth: "420px",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: "0",
       }}
     >
       {/* Badge */}
@@ -143,14 +143,7 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
         }}
       >
         <span style={{ fontSize: "12px", color: "#34d399" }}>✓</span>
-        <span
-          style={{
-            fontSize: "11.5px",
-            fontWeight: 600,
-            letterSpacing: "0.05em",
-            color: "#34d399",
-          }}
-        >
+        <span style={{ fontSize: "11.5px", fontWeight: 600, letterSpacing: "0.05em", color: "#34d399" }}>
           Payment complete
         </span>
       </motion.div>
@@ -167,7 +160,9 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
           marginBottom: "12px",
         }}
       >
-        Scan to activate<br />your number.
+        {t.success.scanTitle}
+        <br />
+        {t.success.scanTitleB}
       </h1>
       <p
         style={{
@@ -178,16 +173,19 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
           marginBottom: "36px",
           maxWidth: "320px",
         }}
-      >
-        Open the <strong style={{ color: "var(--color-text)" }}>Arnacon</strong> app
-        on your phone and scan this code to activate your Israeli number.
-      </p>
+        dangerouslySetInnerHTML={{
+          __html: t.success.scanDesc("Arnacon").replace(
+            "Arnacon",
+            "<strong style=\"color:var(--color-text)\">Arnacon</strong>",
+          ),
+        }}
+      />
 
       {/* QR Code frame */}
       <motion.div
         initial={{ opacity: 0, scale: 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ delay: 0.2, duration: 0.55, ease: [0.22, 1, 0.36, 1] as const }}
         style={{ position: "relative", marginBottom: "32px" }}
       >
         {/* Outer glow */}
@@ -226,18 +224,15 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
                 height: "18px",
                 borderColor: "#3b82f6",
                 borderStyle: "solid",
-                borderTopWidth: pos.bottom !== undefined ? 0 : "2.5px",
-                borderBottomWidth: pos.top !== undefined ? 0 : "2.5px",
-                borderLeftWidth: pos.right !== undefined ? 0 : "2.5px",
-                borderRightWidth: pos.left !== undefined ? 0 : "2.5px",
+                borderTopWidth:    pos.bottom !== undefined ? 0 : "2.5px",
+                borderBottomWidth: pos.top    !== undefined ? 0 : "2.5px",
+                borderLeftWidth:   pos.right  !== undefined ? 0 : "2.5px",
+                borderRightWidth:  pos.left   !== undefined ? 0 : "2.5px",
                 borderRadius:
-                  pos.top !== undefined && pos.left !== undefined
-                    ? "4px 0 0 0"
-                    : pos.top !== undefined && pos.right !== undefined
-                    ? "0 4px 0 0"
-                    : pos.bottom !== undefined && pos.left !== undefined
-                    ? "0 0 0 4px"
-                    : "0 0 4px 0",
+                  pos.top    !== undefined && pos.left  !== undefined ? "4px 0 0 0"
+                : pos.top    !== undefined && pos.right !== undefined ? "0 4px 0 0"
+                : pos.bottom !== undefined && pos.left  !== undefined ? "0 0 0 4px"
+                : "0 0 4px 0",
                 ...pos,
               }}
             />
@@ -254,24 +249,10 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
       </motion.div>
 
       {/* Step guide */}
-      <div
-        style={{
-          display: "flex",
-          gap: "8px",
-          alignItems: "center",
-          marginBottom: "28px",
-        }}
-      >
-        {["Open Arnacon", "Tap Scan", "Done"].map((s, i) => (
+      <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "28px" }}>
+        {t.success.steps.map((s, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span
-              style={{
-                fontSize: "12px",
-                fontWeight: 500,
-                color: "var(--color-text-muted)",
-                whiteSpace: "nowrap",
-              }}
-            >
+            <span style={{ fontSize: "12px", fontWeight: 500, color: "var(--color-text-muted)", whiteSpace: "nowrap" }}>
               {s}
             </span>
             {i < 2 && (
@@ -295,10 +276,10 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
           borderRadius: "6px",
           transition: "color 0.2s",
         }}
-        onMouseEnter={e => (e.currentTarget.style.color = "var(--color-text)")}
-        onMouseLeave={e => (e.currentTarget.style.color = "var(--color-text-muted)")}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-text)")}
+        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
       >
-        ← Back to store
+        {t.success.back}
       </button>
     </motion.div>
   );
@@ -307,12 +288,14 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
 // ─── Error ────────────────────────────────────────────────────────────────────
 
 function ErrorState({ error, onBack }: { error: string | null; onBack: () => void }) {
+  const { t } = useLanguage();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -16 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] as const }}
       style={{ textAlign: "center", maxWidth: "400px" }}
     >
       <div
@@ -340,7 +323,7 @@ function ErrorState({ error, onBack }: { error: string | null; onBack: () => voi
           marginBottom: "10px",
         }}
       >
-        Something went wrong
+        {t.success.errorTitle}
       </p>
       <p
         style={{
@@ -366,10 +349,10 @@ function ErrorState({ error, onBack }: { error: string | null; onBack: () => voi
           borderRadius: "10px",
           transition: "opacity 0.2s",
         }}
-        onMouseEnter={e => (e.currentTarget.style.opacity = "0.75")}
-        onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+        onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.75")}
+        onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
       >
-        Back to Store
+        {t.success.errorBack}
       </button>
     </motion.div>
   );

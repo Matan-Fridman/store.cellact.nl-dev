@@ -43,8 +43,8 @@ export function useClaim() {
       }, STEP_INTERVAL_MS);
 
       try {
-        const { commitments, scope } = await getGroupMembers();
-        const proof = await generateActivationProof(secret, label, commitments, scope);
+        const { commitments, scope, merkleTreeRoot } = await getGroupMembers();
+        const proof = await generateActivationProof(secret, label, commitments, scope, merkleTreeRoot);
         const data = await activateWithProof(proof, label, owner);
         clearStepInterval();
         setState({ status: "success", step: 4, data, error: null });

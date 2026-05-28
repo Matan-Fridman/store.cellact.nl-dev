@@ -19,10 +19,12 @@ async function post<T>(url: string, body: Record<string, unknown>): Promise<T> {
     body: JSON.stringify(body),
   });
 
-  const data = await res.json();
+  const data = (await res.json()) as Record<string, unknown>;
 
   if (!res.ok) {
-    throw new ApiError(data.error || "Request failed", res.status);
+    const error = typeof data.error === "string" ? data.error : "Request failed";
+    const message = typeof data.message === "string" ? data.message : null;
+    throw new ApiError(message ? `${error}: ${message}` : error, res.status);
   }
 
   return data as T;
@@ -107,6 +109,9 @@ export function activateNumber(
 export interface GroupMembersResponse {
   commitments: string[];
   scope: string;
+  groupId?: string;
+  merkleTreeRoot?: string;
+  memberCount?: string;
 }
 
 /** Fetches all Semaphore group commitments and the REGISTER_SCOPE from the chain-activate function. */

@@ -38,6 +38,7 @@ export async function generateActivationProof(
   label: string,
   commitments: string[],
   scope: string,
+  expectedMerkleTreeRoot?: string,
 ): Promise<ActivationProof> {
   const identity = createIdentity(userSecret, label);
 
@@ -46,12 +47,44 @@ export async function generateActivationProof(
     group.addMember(BigInt(c));
   }
 
+  if (group.indexOf(identity.commitment) === -1) {
+    throw new Error("Activation secret does not match the current claim group");
+  }
+
+  const groupRoot = group.root.toString();
+  if (expectedMerkleTreeRoot && groupRoot !== expectedMerkleTreeRoot) {
+    throw new Error(
+      `Claim group root mismatch. Client root ${groupRoot} does not match chain root ${expectedMerkleTreeRoot}`,
+    );
+  }
+
   // Encode label the same way the contract does: formatBytes32String → BigNumber → string
   const message = ethers.BigNumber.from(
     ethers.utils.formatBytes32String(label),
   ).toString();
 
+  console.info("[secnum] proof inputs", {
+    label,
+    commitment: identity.commitment.toString(),
+    commitmentIndex: group.indexOf(identity.commitment),
+    memberCount: commitments.length,
+    groupRoot,
+    expectedMerkleTreeRoot,
+    scope,
+    message,
+  });
+
   const proof = await generateProof(identity, group, message, scope);
+
+  console.info("[secnum] generated proof", {
+    merkleTreeDepth: proof.merkleTreeDepth,
+    merkleTreeRoot: String(proof.merkleTreeRoot),
+    rootMatches: String(proof.merkleTreeRoot) === groupRoot,
+    scope: String(proof.scope),
+    message: String(proof.message),
+    nullifier: String(proof.nullifier),
+    pointsLength: proof.points.length,
+  });
 
   return {
     merkleTreeDepth: proof.merkleTreeDepth,

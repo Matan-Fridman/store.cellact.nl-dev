@@ -87,7 +87,7 @@ export function HeroCopy({ onPurchase, loading, error, onDismissError }: HeroCop
 
         {/* Inline proof — replaces checkmark list */}
         <p style={{ fontSize: "12.5px", color: "var(--color-text-muted)", letterSpacing: "0.01em" }}>
-          One-time payment &nbsp;·&nbsp; No subscription &nbsp;·&nbsp; No extra SIM
+          €3.99 one-time setup &nbsp;·&nbsp; then €4.99/month &nbsp;·&nbsp; No extra SIM
         </p>
 
         <ErrorAlert message={error} onDismiss={onDismissError} />

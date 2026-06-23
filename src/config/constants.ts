@@ -57,5 +57,5 @@ export const PACKAGE_NAME = "Israeli Mobile Number";
 export const PRICE_DISPLAY_AMOUNT = "3.99";  // one-time setup fee
 export const SUBSCRIPTION_PRICE   = "4.99";  // monthly subscription
 export const PRICE_CURRENCY = "eur";
-/** Display-only price shown in CTAs (one-time setup fee) */
-export const PRICE_DISPLAY = "€3.99";
+/** Display-only price shown in CTAs (monthly subscription) */
+export const PRICE_DISPLAY = "€4.99 / month";

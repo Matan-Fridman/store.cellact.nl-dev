@@ -145,6 +145,8 @@ export const translations: Record<Language, TranslationsShape> = {
       scanDesc: (app) =>
         `Open the ${app} app on your phone and scan this code to activate your Israeli number.`,
       steps: ["Open Arnacon", "Tap Scan", "Done"],
+      orDivider: "or",
+      installOnDevice: "Activate on this device",
       back: "← Back to store",
       errorTitle: "Something went wrong",
       errorBack: "Back to Store",
@@ -238,6 +240,8 @@ export const translations: Record<Language, TranslationsShape> = {
       scanDesc: (app) =>
         `פתח את אפליקציית ${app} בטלפון שלך וסרוק את הקוד להפעלת המספר הישראלי שלך.`,
       steps: ["פתח Arnacon", "הקש סריקה", "סיום"],
+      orDivider: "או",
+      installOnDevice: "הפעל ב-Arnacon במכשיר זה",
       back: "→ חזרה לחנות",
       errorTitle: "משהו השתבש",
       errorBack: "חזרה לחנות",

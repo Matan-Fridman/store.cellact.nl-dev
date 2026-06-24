@@ -249,7 +249,7 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
       </motion.div>
 
       {/* Step guide */}
-      <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "28px" }}>
+      <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "32px" }}>
         {t.success.steps.map((s, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span style={{ fontSize: "12px", fontWeight: 500, color: "var(--color-text-muted)", whiteSpace: "nowrap" }}>
@@ -261,6 +261,61 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
           </div>
         ))}
       </div>
+
+      {/* — or — divider */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          width: "100%",
+          marginBottom: "16px",
+        }}
+      >
+        <div style={{ flex: 1, height: "1px", background: "var(--color-border)" }} />
+        <span
+          style={{
+            fontSize: "11px",
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--color-text-muted)",
+          }}
+        >
+          {t.success.orDivider}
+        </span>
+        <div style={{ flex: 1, height: "1px", background: "var(--color-border)" }} />
+      </div>
+
+      {/* Install on this device */}
+      <button
+        type="button"
+        onClick={() => { window.location.href = data.claimUrl; }}
+        style={{
+          width: "100%",
+          padding: "14px 20px",
+          borderRadius: "12px",
+          border: "1px solid rgba(142,45,226,0.35)",
+          background: "rgba(142,45,226,0.08)",
+          color: "var(--color-text)",
+          fontSize: "0.9375rem",
+          fontWeight: 600,
+          cursor: "pointer",
+          letterSpacing: "-0.01em",
+          transition: "background 0.2s, border-color 0.2s",
+          marginBottom: "20px",
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = "rgba(142,45,226,0.16)";
+          (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(142,45,226,0.55)";
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = "rgba(142,45,226,0.08)";
+          (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(142,45,226,0.35)";
+        }}
+      >
+        {t.success.installOnDevice}
+      </button>
 
       {/* Back link */}
       <button

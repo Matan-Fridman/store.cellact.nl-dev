@@ -49,6 +49,8 @@ type TranslationsShape = {
     scanTitleB: string;
     scanDesc: (appName: string) => string;
     steps: [string, string, string];
+    orDivider: string;
+    installOnDevice: string;
     back: string;
     errorTitle: string;
     errorBack: string;

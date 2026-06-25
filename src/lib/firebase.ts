@@ -1,39 +1,24 @@
 /**
  * Firebase initialisation + App Check.
  *
- * Required env vars (add to .env / deployment config):
+ * Required env vars:
+ *   VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID,
+ *   VITE_FIREBASE_STORAGE_BUCKET, VITE_FIREBASE_MESSAGING_SENDER_ID,
+ *   VITE_FIREBASE_APP_ID, VITE_FIREBASE_MEASUREMENT_ID,
+ *   VITE_RECAPTCHA_SITE_KEY  ← reCAPTCHA v3 site key for App Check
  *
- *   VITE_FIREBASE_API_KEY
- *   VITE_FIREBASE_AUTH_DOMAIN
- *   VITE_FIREBASE_PROJECT_ID
- *   VITE_FIREBASE_STORAGE_BUCKET
- *   VITE_FIREBASE_MESSAGING_SENDER_ID
- *   VITE_FIREBASE_APP_ID
- *   VITE_FIREBASE_MEASUREMENT_ID
- *   VITE_RECAPTCHA_SITE_KEY   ← reCAPTCHA v3 site key for App Check
- *
- * App Check enforces that only requests originating from your registered
- * domain are accepted by Firestore. The matching security rule is:
- *
+ * Firestore security rule:
  *   match /qrLoginSessions/{sessionId} {
- *     allow read:  if request.app.verified;   // App Check required
- *     allow write: if false;                  // server-side writes only
+ *     allow read:  if request.app.verified;
+ *     allow write: if false;
  *   }
- *
- * To enable App Check in the Firebase console:
- *   Build → App Check → Apps → Register your web app with reCAPTCHA v3
- *   Then add your domain under "Authorized domains".
  */
 
-import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
+import { initializeApp } from "firebase/app";
 import { getFirestore, type Firestore } from "firebase/firestore";
-import {
-  initializeAppCheck,
-  ReCaptchaV3Provider,
-  type AppCheck,
-} from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
-// ─── Config from env ──────────────────────────────────────────────────────────
+// ─── Config ───────────────────────────────────────────────────────────────────
 
 const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
@@ -45,54 +30,39 @@ const firebaseConfig = {
   measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-// ─── Singleton init ───────────────────────────────────────────────────────────
+// ─── Initialise eagerly at module load time ───────────────────────────────────
+// App Check MUST be attached to the app before any Firestore call is made.
+// Doing it at the top level guarantees ordering regardless of call sites.
 
-let app: FirebaseApp;
-let db: Firestore;
-let appCheck: AppCheck | null = null;
+const app = initializeApp(firebaseConfig);
 
-function getApp(): FirebaseApp {
-  if (!app) {
-    app = getApps().length ? getApps()[0]! : initializeApp(firebaseConfig);
-  }
-  return app;
-}
+const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
-export function getDb(): Firestore {
-  if (!db) {
-    db = getFirestore(getApp());
-  }
-  return db;
-}
-
-/**
- * Call once at app startup (e.g. main.tsx) to activate App Check.
- * Safe to call multiple times — subsequent calls are no-ops.
- *
- * In development you can bypass App Check by setting:
- *   VITE_FIREBASE_APPCHECK_DEBUG=true
- * which sets the global debug token flag before initialisation.
- */
-export function initAppCheck(): void {
-  if (appCheck) return;
-
-  const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
-  if (!siteKey) {
-    console.warn(
-      "[firebase] VITE_RECAPTCHA_SITE_KEY not set — App Check disabled. " +
-      "Set VITE_FIREBASE_APPCHECK_DEBUG=true for local dev.",
-    );
-    return;
-  }
-
-  // Allow local dev to bypass App Check using the debug token flow
+if (siteKey) {
+  // Allow local dev to bypass reCAPTCHA using the Firebase debug token flow.
+  // Set VITE_FIREBASE_APPCHECK_DEBUG=true and copy the token printed to the
+  // console into Firebase Console → App Check → Manage debug tokens.
   if (import.meta.env.VITE_FIREBASE_APPCHECK_DEBUG === "true") {
     // @ts-expect-error — official debug flag documented by Firebase
     self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
   }
 
-  appCheck = initializeAppCheck(getApp(), {
+  initializeAppCheck(app, {
     provider: new ReCaptchaV3Provider(siteKey),
     isTokenAutoRefreshEnabled: true,
   });
+} else {
+  console.warn("[firebase] VITE_RECAPTCHA_SITE_KEY not set — App Check disabled.");
 }
+
+// ─── Exports ──────────────────────────────────────────────────────────────────
+
+let _db: Firestore | null = null;
+
+export function getDb(): Firestore {
+  if (!_db) _db = getFirestore(app);
+  return _db;
+}
+
+/** No-op kept for backwards compatibility with main.tsx import. */
+export function initAppCheck(): void {}

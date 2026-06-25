@@ -55,7 +55,6 @@ export function buildPortQrPayload(session: PortSession): string {
 export async function createPortSession(): Promise<PortSession> {
   if (IS_MOCK) {
     await delay(700);
-    _mockPollCount = 0;
     return {
       sessionId:   `sess_${Math.random().toString(36).slice(2, 14)}`,
       endpointUrl: "https://mock-port-ws.example.com",
@@ -73,17 +72,18 @@ export async function submitPortRequest(
   sessionId: string,
   walletAddress: string,
   phoneNumber: string,
+  email: string,
 ): Promise<void> {
   if (IS_MOCK) {
     await delay(900);
-    console.info("[port mock] submit", { sessionId, walletAddress, phoneNumber });
+    console.info("[port mock] submit", { sessionId, walletAddress, phoneNumber, email });
     return;
   }
 
   const res = await fetch(`${BASE}/port-request`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sessionId, walletAddress, phoneNumber }),
+    body: JSON.stringify({ sessionId, walletAddress, phoneNumber, email }),
   });
   if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
 }

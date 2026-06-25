@@ -393,16 +393,24 @@ function QRLoginStep({ hook }: { hook: ReturnType<typeof usePortSession> }) {
 
 function NumberEntryStep({ hook }: { hook: ReturnType<typeof usePortSession> }) {
   const [raw, setRaw] = useState("");
-  const [touched, setTouched] = useState(false);
+  const [touchedPhone, setTouchedPhone] = useState(false);
+  const [email, setEmail] = useState("");
+  const [touchedEmail, setTouchedEmail] = useState(false);
 
   const normalized = normalizeIsraeliNumber(raw);
-  const isValid = normalized !== null;
-  const showError = touched && raw.trim() !== "" && !isValid;
+  const phoneValid = normalized !== null;
+  const showPhoneError = touchedPhone && raw.trim() !== "" && !phoneValid;
+
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const showEmailError = touchedEmail && email.trim() !== "" && !emailValid;
+
+  const canSubmit = phoneValid && emailValid;
 
   const handleSubmit = () => {
-    setTouched(true);
-    if (!isValid || !normalized) return;
-    hook.submitPort(normalized);
+    setTouchedPhone(true);
+    setTouchedEmail(true);
+    if (!canSubmit || !normalized) return;
+    hook.submitPort(normalized, email.trim());
   };
 
   const walletShort = hook.walletAddress
@@ -462,15 +470,18 @@ function NumberEntryStep({ hook }: { hook: ReturnType<typeof usePortSession> }) 
               marginBottom: "6px",
             }}
           >
-            Enter your number
+            Your details
           </h2>
           <p style={{ fontSize: "0.9rem", lineHeight: 1.6, color: "var(--color-text-muted)" }}>
-            The Israeli mobile number you want to port to your wallet.
+            Enter the number you want to port and your email for updates.
           </p>
         </div>
 
-        {/* Input group */}
+        {/* Phone input */}
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            Israeli mobile number
+          </label>
           <div style={{ position: "relative" }}>
             {/* Flag + prefix */}
             <div
@@ -512,8 +523,8 @@ function NumberEntryStep({ hook }: { hook: ReturnType<typeof usePortSession> }) 
               placeholder="05X-XXX-XXXX"
               value={raw}
               autoFocus
-              onChange={(e) => { setRaw(e.target.value); setTouched(false); }}
-              onBlur={() => setTouched(true)}
+              onChange={(e) => { setRaw(e.target.value); setTouchedPhone(false); }}
+              onBlur={() => setTouchedPhone(true)}
               style={{
                 width: "100%",
                 paddingLeft: "104px",
@@ -522,9 +533,9 @@ function NumberEntryStep({ hook }: { hook: ReturnType<typeof usePortSession> }) 
                 paddingBottom: "15px",
                 borderRadius: "12px",
                 border: `1px solid ${
-                  showError
+                  showPhoneError
                     ? "rgba(239,68,68,0.5)"
-                    : isValid && raw
+                    : phoneValid && raw
                     ? "rgba(96,165,250,0.4)"
                     : "var(--color-border)"
                 }`,
@@ -535,16 +546,16 @@ function NumberEntryStep({ hook }: { hook: ReturnType<typeof usePortSession> }) 
                 outline: "none",
                 boxSizing: "border-box",
                 transition: "border-color 0.2s, box-shadow 0.2s",
-                boxShadow: isValid && raw ? "0 0 0 3px rgba(59,130,246,0.08)" : "none",
+                boxShadow: phoneValid && raw ? "0 0 0 3px rgba(59,130,246,0.08)" : "none",
               }}
             />
           </div>
 
-          {/* Feedback */}
+          {/* Phone feedback */}
           <AnimatePresence>
-            {showError && (
+            {showPhoneError && (
               <motion.p
-                key="err"
+                key="phone-err"
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
@@ -554,21 +565,78 @@ function NumberEntryStep({ hook }: { hook: ReturnType<typeof usePortSession> }) 
                 Enter a valid Israeli mobile number — e.g. 050-123-4567 or +972501234567
               </motion.p>
             )}
-            {isValid && normalized && (
+            {phoneValid && normalized && (
               <motion.p
-                key="ok"
+                key="phone-ok"
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                style={{
-                  fontSize: "12px",
-                  color: "#60a5fa",
-                  paddingLeft: "2px",
-                  fontFamily: "ui-monospace, monospace",
-                }}
+                style={{ fontSize: "12px", color: "#60a5fa", paddingLeft: "2px", fontFamily: "ui-monospace, monospace" }}
               >
                 ✓ Will be ported as +{normalized}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Email input */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-text-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            Email address
+          </label>
+          <input
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setTouchedEmail(false); }}
+            onBlur={() => setTouchedEmail(true)}
+            style={{
+              width: "100%",
+              padding: "15px 16px",
+              borderRadius: "12px",
+              border: `1px solid ${
+                showEmailError
+                  ? "rgba(239,68,68,0.5)"
+                  : emailValid && email
+                  ? "rgba(96,165,250,0.4)"
+                  : "var(--color-border)"
+              }`,
+              background: "rgba(255,255,255,0.04)",
+              color: "var(--color-text)",
+              fontSize: "1rem",
+              fontWeight: 500,
+              outline: "none",
+              boxSizing: "border-box",
+              transition: "border-color 0.2s, box-shadow 0.2s",
+              boxShadow: emailValid && email ? "0 0 0 3px rgba(59,130,246,0.08)" : "none",
+            }}
+          />
+
+          {/* Email feedback */}
+          <AnimatePresence>
+            {showEmailError && (
+              <motion.p
+                key="email-err"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ fontSize: "12px", color: "rgba(239,68,68,0.85)", paddingLeft: "2px" }}
+              >
+                Enter a valid email address.
+              </motion.p>
+            )}
+            {emailValid && email && (
+              <motion.p
+                key="email-ok"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ fontSize: "12px", color: "#60a5fa", paddingLeft: "2px" }}
+              >
+                ✓ {email.trim()}
               </motion.p>
             )}
           </AnimatePresence>
@@ -587,7 +655,7 @@ function NumberEntryStep({ hook }: { hook: ReturnType<typeof usePortSession> }) 
           <Button
             onClick={handleSubmit}
             loading={hook.submitting}
-            disabled={hook.submitting || !raw.trim()}
+            disabled={hook.submitting || !raw.trim() || !email.trim()}
             className="!rounded-[13px] !py-4 !text-base"
           >
             {hook.submitting ? "Submitting…" : "Submit Porting Request"}

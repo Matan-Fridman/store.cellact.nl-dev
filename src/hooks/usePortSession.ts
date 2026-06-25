@@ -85,11 +85,11 @@ export function usePortSession() {
   }, [stopListening]);
 
   const submitPort = useCallback(
-    async (phoneNumber: string) => {
+    async (phoneNumber: string, email: string) => {
       if (!state.session || !state.walletAddress) return;
       setState((prev) => ({ ...prev, submitting: true, error: null }));
       try {
-        await submitPortRequest(state.session.sessionId, state.walletAddress, phoneNumber);
+        await submitPortRequest(state.session.sessionId, state.walletAddress, phoneNumber, email);
         setState((prev) => ({
           ...prev,
           step: "submitted",

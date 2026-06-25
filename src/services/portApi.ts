@@ -30,7 +30,7 @@ function delay(ms: number) {
 export interface PortSession {
   sessionId: string;
   /** Returned by the server — embedded in the deeplink so Arnacon knows where to connect. */
-  endpointUrl: string;
+  confirmEndpoint: string;
 }
 
 
@@ -45,7 +45,7 @@ export function buildPortQrPayload(session: PortSession): string {
     `arnacon://auth` +
     `?session=${encodeURIComponent(session.sessionId)}` +
     `&provider=Secnum` +
-    `&endpoint=${encodeURIComponent(session.endpointUrl)}`
+    `&endpoint=${encodeURIComponent(session.confirmEndpoint)}`
   );
 }
 
@@ -56,8 +56,8 @@ export async function createPortSession(): Promise<PortSession> {
   if (IS_MOCK) {
     await delay(700);
     return {
-      sessionId:   `sess_${Math.random().toString(36).slice(2, 14)}`,
-      endpointUrl: "https://mock-port-ws.example.com",
+      sessionId:       `sess_${Math.random().toString(36).slice(2, 14)}`,
+      confirmEndpoint: "https://mock-port-ws.example.com",
     };
   }
 

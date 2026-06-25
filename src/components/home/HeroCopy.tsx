@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../Button";
 import { PRICE_DISPLAY } from "../../config/constants";
 import { ErrorAlert } from "../ErrorAlert";
@@ -17,6 +18,7 @@ const item = (delay: number) => ({
 });
 
 export function HeroCopy({ onPurchase, loading, error, onDismissError }: HeroCopyProps) {
+  const navigate = useNavigate();
   return (
     <div className="flex flex-col gap-7">
 
@@ -85,10 +87,34 @@ export function HeroCopy({ onPurchase, loading, error, onDismissError }: HeroCop
           </Button>
         </div>
 
-        {/* Inline proof — replaces checkmark list */}
+        {/* Inline proof */}
         <p style={{ fontSize: "12.5px", color: "var(--color-text-muted)", letterSpacing: "0.01em" }}>
           €3.99 one-time setup &nbsp;·&nbsp; then €4.99/month &nbsp;·&nbsp; No extra SIM
         </p>
+
+        {/* Port link */}
+        <button
+          type="button"
+          onClick={() => navigate("/port")}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontSize: "13px",
+            color: "var(--color-text-muted)",
+            letterSpacing: "0.01em",
+            padding: 0,
+            textAlign: "left",
+            transition: "color 0.2s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-text)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
+        >
+          Already have an Israeli number?{" "}
+          <span style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>
+            Port it to Arnacon →
+          </span>
+        </button>
 
         <ErrorAlert message={error} onDismiss={onDismissError} />
       </motion.div>

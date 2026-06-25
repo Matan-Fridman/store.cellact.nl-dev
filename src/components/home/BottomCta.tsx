@@ -1,5 +1,6 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../Button";
 import { PRICE_DISPLAY } from "../../config/constants";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -13,6 +14,7 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-15% 0px" });
   const { t, isRTL } = useLanguage();
+  const navigate = useNavigate();
 
   return (
     <section
@@ -96,7 +98,7 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
         <motion.div
           animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 16 }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] as const, delay: 0.18 }}
-          style={{ display: "inline-flex" }}
+          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}
         >
           <Button
             onClick={onPurchase}
@@ -107,6 +109,29 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
           >
             {loading ? t.bottomCta.ctaLoading : t.bottomCta.cta(PRICE_DISPLAY)}
           </Button>
+
+          {/* Port existing number link */}
+          <button
+            type="button"
+            onClick={() => navigate("/port")}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "13.5px",
+              color: "var(--color-text-muted)",
+              letterSpacing: "0.01em",
+              transition: "color 0.2s",
+              padding: "2px 6px",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-text)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
+          >
+            Already have an Israeli number?{" "}
+            <span style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>
+              Port it to Arnacon →
+            </span>
+          </button>
         </motion.div>
       </div>
     </section>

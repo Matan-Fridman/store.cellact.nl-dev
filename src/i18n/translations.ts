@@ -135,7 +135,7 @@ export const translations: Record<Language, TranslationsShape> = {
       successDesc: "Your Israeli number is now active and ready to use.",
       activeNumberLabel: "Active number",
       successFooter:
-        "You can now call and message other Israeli numbers.\nOpen the Arnacon app to manage your number.",
+        "You can now call and message other Israeli numbers.",
     },
 
     success: {
@@ -230,7 +230,7 @@ export const translations: Record<Language, TranslationsShape> = {
       successDesc: "המספר הישראלי שלך פעיל ומוכן לשימוש.",
       activeNumberLabel: "מספר פעיל",
       successFooter:
-        "כעת תוכל להתקשר ולשלוח הודעות למספרים ישראליים אחרים.\nפתח את אפליקציית Arnacon לניהול המספר.",
+        "כעת תוכל להתקשר ולשלוח הודעות למספרים ישראליים אחרים.",
     },
 
     success: {

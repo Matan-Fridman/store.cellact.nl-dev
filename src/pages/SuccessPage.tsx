@@ -33,7 +33,7 @@ export function SuccessPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "48px 24px",
+          padding: "16px 24px",
         }}
       >
         <AnimatePresence mode="wait">
@@ -109,7 +109,7 @@ function LoadingState() {
 // ─── QR Card ─────────────────────────────────────────────────────────────────
 
 function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void }) {
-  const qrUrl = buildQrUrl(data.claimUrl, 280);
+  const qrUrl = buildQrUrl(data.claimUrl, 200);
   const { t } = useLanguage();
 
   return (
@@ -135,11 +135,11 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
           display: "inline-flex",
           alignItems: "center",
           gap: "7px",
-          padding: "5px 14px",
+          padding: "4px 12px",
           borderRadius: "99px",
           background: "rgba(16,185,129,0.1)",
           border: "1px solid rgba(52,211,153,0.22)",
-          marginBottom: "24px",
+          marginBottom: "12px",
         }}
       >
         <span style={{ fontSize: "12px", color: "#34d399" }}>✓</span>
@@ -151,27 +151,25 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
       {/* Headline */}
       <h1
         style={{
-          fontSize: "clamp(1.75rem, 5vw, 2.25rem)",
+          fontSize: "clamp(1.4rem, 5vw, 1.75rem)",
           fontWeight: 800,
           letterSpacing: "-0.03em",
           lineHeight: 1.1,
           color: "var(--color-text)",
           textAlign: "center",
-          marginBottom: "12px",
+          marginBottom: "8px",
         }}
       >
-        {t.success.scanTitle}
-        <br />
-        {t.success.scanTitleB}
+        {t.success.scanTitle} {t.success.scanTitleB}
       </h1>
       <p
         style={{
-          fontSize: "0.9375rem",
+          fontSize: "0.875rem",
           color: "var(--color-text-muted)",
-          lineHeight: 1.65,
+          lineHeight: 1.5,
           textAlign: "center",
-          marginBottom: "36px",
-          maxWidth: "320px",
+          marginBottom: "16px",
+          maxWidth: "300px",
         }}
         dangerouslySetInnerHTML={{
           __html: t.success.scanDesc("Arnacon").replace(
@@ -186,14 +184,14 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
         initial={{ opacity: 0, scale: 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2, duration: 0.55, ease: [0.22, 1, 0.36, 1] as const }}
-        style={{ position: "relative", marginBottom: "32px" }}
+        style={{ position: "relative", marginBottom: "16px" }}
       >
         {/* Outer glow */}
         <div
           style={{
             position: "absolute",
-            inset: "-18px",
-            borderRadius: "28px",
+            inset: "-14px",
+            borderRadius: "24px",
             background: "radial-gradient(ellipse at center, rgba(96,165,250,0.12) 0%, transparent 70%)",
             pointerEvents: "none",
           }}
@@ -203,31 +201,31 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
         <div
           style={{
             position: "relative",
-            padding: "20px",
-            borderRadius: "20px",
+            padding: "14px",
+            borderRadius: "16px",
             background: "#ffffff",
-            boxShadow: "0 0 0 1px rgba(96,165,250,0.2), 0 24px 48px rgba(0,0,0,0.4)",
+            boxShadow: "0 0 0 1px rgba(96,165,250,0.2), 0 16px 40px rgba(0,0,0,0.35)",
           }}
         >
           {/* Corner decorations */}
           {[
-            { top: 8, left: 8 },
-            { top: 8, right: 8 },
-            { bottom: 8, left: 8 },
-            { bottom: 8, right: 8 },
+            { top: 6, left: 6 },
+            { top: 6, right: 6 },
+            { bottom: 6, left: 6 },
+            { bottom: 6, right: 6 },
           ].map((pos, i) => (
             <div
               key={i}
               style={{
                 position: "absolute",
-                width: "18px",
-                height: "18px",
+                width: "14px",
+                height: "14px",
                 borderColor: "#3b82f6",
                 borderStyle: "solid",
-                borderTopWidth:    pos.bottom !== undefined ? 0 : "2.5px",
-                borderBottomWidth: pos.top    !== undefined ? 0 : "2.5px",
-                borderLeftWidth:   pos.right  !== undefined ? 0 : "2.5px",
-                borderRightWidth:  pos.left   !== undefined ? 0 : "2.5px",
+                borderTopWidth:    pos.bottom !== undefined ? 0 : "2px",
+                borderBottomWidth: pos.top    !== undefined ? 0 : "2px",
+                borderLeftWidth:   pos.right  !== undefined ? 0 : "2px",
+                borderRightWidth:  pos.left   !== undefined ? 0 : "2px",
                 borderRadius:
                   pos.top    !== undefined && pos.left  !== undefined ? "4px 0 0 0"
                 : pos.top    !== undefined && pos.right !== undefined ? "0 4px 0 0"
@@ -241,22 +239,22 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
           <img
             src={qrUrl}
             alt="Scan to activate your number"
-            width={240}
-            height={240}
+            width={180}
+            height={180}
             style={{ display: "block" }}
           />
         </div>
       </motion.div>
 
       {/* Step guide */}
-      <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "32px" }}>
+      <div style={{ display: "flex", gap: "6px", alignItems: "center", marginBottom: "16px" }}>
         {t.success.steps.map((s, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "12px", fontWeight: 500, color: "var(--color-text-muted)", whiteSpace: "nowrap" }}>
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "11.5px", fontWeight: 500, color: "var(--color-text-muted)", whiteSpace: "nowrap" }}>
               {s}
             </span>
             {i < 2 && (
-              <span style={{ fontSize: "11px", color: "var(--color-border)", lineHeight: 1 }}>→</span>
+              <span style={{ fontSize: "10px", color: "var(--color-border)", lineHeight: 1 }}>→</span>
             )}
           </div>
         ))}
@@ -269,7 +267,7 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
           alignItems: "center",
           gap: "12px",
           width: "100%",
-          marginBottom: "16px",
+          marginBottom: "12px",
         }}
       >
         <div style={{ flex: 1, height: "1px", background: "var(--color-border)" }} />
@@ -303,7 +301,7 @@ function QRState({ data, onBack }: { data: PurchaseResponse; onBack: () => void 
           cursor: "pointer",
           letterSpacing: "-0.01em",
           transition: "background 0.2s, border-color 0.2s",
-          marginBottom: "20px",
+          marginBottom: "10px",
         }}
         onMouseEnter={(e) => {
           (e.currentTarget as HTMLButtonElement).style.background = "rgba(142,45,226,0.16)";

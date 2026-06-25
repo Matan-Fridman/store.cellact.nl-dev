@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   motion,
   AnimatePresence,
@@ -56,6 +57,7 @@ function MomentPanel({
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: false, margin: "-20% 0px -20% 0px" });
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
   return (
     <div
@@ -159,6 +161,29 @@ function MomentPanel({
               <p style={{ fontSize: "12.5px", color: "var(--color-text-muted)" }}>
                 {t.hero.finePrint}
               </p>
+
+              <button
+                type="button"
+                onClick={() => navigate("/port")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  color: "var(--color-text-muted)",
+                  letterSpacing: "0.01em",
+                  padding: 0,
+                  textAlign: "left",
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-text)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
+              >
+                Already have an Israeli number?{" "}
+                <span style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>
+                  Port it to Arnacon →
+                </span>
+              </button>
 
               <ErrorAlert message={error} onDismiss={onDismissError} />
             </div>

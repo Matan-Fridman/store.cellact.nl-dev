@@ -30,7 +30,7 @@ const DEV_URLS = {
   /** QR login — creates a new session, returns { sessionId }. */
   QR_CREATE_SESSION_URL: `${STAGING_BASE}/qr-login-create-session`,
   /** QR login — confirm endpoint embedded in the deeplink for Arnacon to call. */
-  QR_CONFIRM_URL:        `${STAGING_BASE}/qr-login-confirm`,
+  QR_CONFIRM_URL:        `${STAGING_BASE}/qr-login-confirm/confirm`,
   /** Number-porting request submission. */
   PORT_REQUEST_URL:      `${STAGING_BASE}/port-number-request`,
 };

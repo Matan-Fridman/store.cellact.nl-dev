@@ -40,7 +40,7 @@ const PROD_URLS = {
   STRIPE_URL:            `${PROD_BASE}/payment-link-generator`,
   ORDER_RESULT_URL:      `${PROD_BASE}/secnum-order-result`,
   QR_CREATE_SESSION_URL: `${PROD_BASE}/qr-login-create-session`,
-  QR_CONFIRM_URL:        `${PROD_BASE}/qr-login-confirm`,
+  QR_CONFIRM_URL:        `${PROD_BASE}/qr-login-confirm/confirm`,
   PORT_REQUEST_URL:      `${PROD_BASE}/port-number-request`,
 };
 

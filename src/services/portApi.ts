@@ -1,21 +1,12 @@
 /**
  * Number-porting session API.
  *
- * Staging endpoints (default):
- *   qr-login-create-session  →  POST, returns { sessionId, endpointUrl }
- *   qr-login-confirm         →  POST { sessionId }, returns { walletAddress } | { walletAddress: null }
- *
- * Override the base URL via:
- *   VITE_PORT_API_BASE_URL   (defaults to arnacon-staging-production)
+ * All URLs are resolved through getApiConfig() in constants.ts, so they
+ * automatically follow the testnet/mainnet selection (no ?dev=true → mainnet,
+ * ?dev=true → staging). No URL env vars live here.
  */
 
-// ─── Config ───────────────────────────────────────────────────────────────────
-
-const BASE =
-  import.meta.env.VITE_PORT_API_BASE_URL ??
-  "https://europe-west1-arnacon-staging-production.cloudfunctions.net";
-
-const CREATE_SESSION_URL = `${BASE}/qr-login-create-session`;
+import { getApiConfig } from "../config/constants";
 
 // ─── Mock helpers ─────────────────────────────────────────────────────────────
 
@@ -29,43 +20,40 @@ function delay(ms: number) {
 
 export interface PortSession {
   sessionId: string;
-  /** Returned by the server — embedded in the deeplink so Arnacon knows where to connect. */
-  confirmEndpoint: string;
 }
-
 
 // ─── Deeplink builder ─────────────────────────────────────────────────────────
 
 /**
- * Builds the arnacon:// deeplink encoded as a QR code.
- * Both sessionId and endpointUrl come from the server's create-session response.
+ * Builds the arnacon:// deeplink encoded in the QR code.
+ * The confirm endpoint is taken from the active API config (testnet or mainnet)
+ * so the Arnacon app always calls back to the right environment.
  */
 export function buildPortQrPayload(session: PortSession): string {
+  const { QR_CONFIRM_URL } = getApiConfig();
   return (
     `arnacon://auth` +
     `?session=${encodeURIComponent(session.sessionId)}` +
     `&provider=Secnum` +
-    `&endpoint=${encodeURIComponent(session.confirmEndpoint)}`
+    `&endpoint=${encodeURIComponent(QR_CONFIRM_URL)}`
   );
 }
 
 // ─── API calls ────────────────────────────────────────────────────────────────
 
-/** Ask the server for a new login session. Returns { sessionId, endpointUrl }. */
+/** Ask the server for a new login session. Returns { sessionId }. */
 export async function createPortSession(): Promise<PortSession> {
   if (IS_MOCK) {
     await delay(700);
-    return {
-      sessionId:       `sess_${Math.random().toString(36).slice(2, 14)}`,
-      confirmEndpoint: "https://mock-port-ws.example.com",
-    };
+    return { sessionId: `sess_${Math.random().toString(36).slice(2, 14)}` };
   }
 
-  const res = await fetch(CREATE_SESSION_URL, { method: "POST" });
+  const { QR_CREATE_SESSION_URL } = getApiConfig();
+  const res = await fetch(QR_CREATE_SESSION_URL, { method: "POST" });
   if (!res.ok) throw new Error(`Session create failed: ${res.status}`);
-  return res.json(); // { sessionId: string, endpointUrl: string }
+  const data = await res.json();
+  return { sessionId: data.sessionId };
 }
-
 
 /** Submit the porting request once the wallet is authenticated. */
 export async function submitPortRequest(
@@ -80,10 +68,11 @@ export async function submitPortRequest(
     return;
   }
 
-  const res = await fetch(`${BASE}/port-request`, {
+  const { PORT_REQUEST_URL } = getApiConfig();
+  const res = await fetch(PORT_REQUEST_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sessionId, walletAddress, phoneNumber, email }),
+    body: JSON.stringify({ number: phoneNumber, walletAddress, email }),
   });
   if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
 }

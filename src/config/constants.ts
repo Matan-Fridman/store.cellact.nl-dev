@@ -1,37 +1,47 @@
 /**
- * Dev vs prod: set VITE_USE_PRODUCTION_URLS=true for production builds.
- * "Dev" URLs here point at staging (arnacon-staging-production), not legacy arnacon-nl.
- * In development you can override with the in-app toggle (stored in localStorage).
+ * All GCP function URLs are derived from a single base URL per environment.
+ *
+ * Staging (dev / testnet) — used when the page is loaded with ?dev=true.
+ *   Override: VITE_DEV_BASE_URL
+ *
+ * Production (mainnet) — the default for all normal visits.
+ *   Override: VITE_PROD_BASE_URL
+ *
+ * You only ever need to set one env var per environment, not one per function.
  */
+
+const STAGING_BASE = (
+  import.meta.env.VITE_DEV_BASE_URL ??
+  "https://europe-west1-arnacon-staging-production.cloudfunctions.net"
+).replace(/\/$/, "");
+
+const PROD_BASE = (
+  import.meta.env.VITE_PROD_BASE_URL ??
+  "https://europe-west1-arnacon-production-gcp.cloudfunctions.net"
+).replace(/\/$/, "");
 
 const DEV_URLS = {
   /** Public chain-activate function (action: activate from /claim). */
-  API_URL:
-    "https://europe-west1-arnacon-staging-production.cloudfunctions.net/secnum-chain-activate",
-  /** Stripe checkout session creator (payment-link-generator on staging). */
-  STRIPE_URL:
-    "https://europe-west1-arnacon-staging-production.cloudfunctions.net/payment-link-generator",
-  /**
-   * Base URL for polling — app calls `{base}/order-result`.
-   */
-  ORDER_RESULT_URL:
-    "https://europe-west1-arnacon-staging-production.cloudfunctions.net/secnum-order-result",
+  API_URL:               `${STAGING_BASE}/secnum-chain-activate`,
+  /** Stripe checkout session creator. */
+  STRIPE_URL:            `${STAGING_BASE}/payment-link-generator`,
+  /** Base URL for order-result polling. */
+  ORDER_RESULT_URL:      `${STAGING_BASE}/secnum-order-result`,
+  /** QR login — creates a new session, returns { sessionId }. */
+  QR_CREATE_SESSION_URL: `${STAGING_BASE}/qr-login-create-session`,
+  /** QR login — confirm endpoint embedded in the deeplink for Arnacon to call. */
+  QR_CONFIRM_URL:        `${STAGING_BASE}/qr-login-confirm`,
+  /** Number-porting request submission. */
+  PORT_REQUEST_URL:      `${STAGING_BASE}/port-number-request`,
 };
 
 const PROD_URLS = {
-  /** Public chain-activate function (`action: activate` from /claim). */
-  API_URL:
-    import.meta.env.VITE_PROD_CHAIN_ACTIVATE_URL ??
-    import.meta.env.VITE_PROD_API_URL ??
-    "https://europe-west1-arnacon-production-gcp.cloudfunctions.net/secnum-chain-activate",
-  /** Stripe checkout session creator (production payment-link-generator). */
-  STRIPE_URL:
-    import.meta.env.VITE_PROD_STRIPE_URL ??
-    "https://europe-west1-arnacon-production-gcp.cloudfunctions.net/payment-link-generator",
-  /** Base URL for order-result polling. */
-  ORDER_RESULT_URL:
-    import.meta.env.VITE_PROD_ORDER_RESULT_URL ??
-    "https://europe-west1-arnacon-production-gcp.cloudfunctions.net/secnum-order-result",
+  API_URL:               `${PROD_BASE}/secnum-chain-activate`,
+  STRIPE_URL:            `${PROD_BASE}/payment-link-generator`,
+  ORDER_RESULT_URL:      `${PROD_BASE}/secnum-order-result`,
+  QR_CREATE_SESSION_URL: `${PROD_BASE}/qr-login-create-session`,
+  QR_CONFIRM_URL:        `${PROD_BASE}/qr-login-confirm`,
+  PORT_REQUEST_URL:      `${PROD_BASE}/port-number-request`,
 };
 
 export function getUseProduction(): boolean {
@@ -52,6 +62,10 @@ export function getApiConfig() {
 /** Stripe / product metadata */
 export const PACKAGE_ID = "secnum_number";
 export const PACKAGE_NAME = "Israeli Mobile Number";
+
+/** Port-a-number package */
+export const PORT_PACKAGE_ID = "secnum_port_number";
+export const PORT_PACKAGE_NAME = "Israeli Number Porting";
 
 /** Pricing (decimal strings — the GCP function multiplies by 100 internally) */
 export const PRICE_DISPLAY_AMOUNT = "3.99";  // one-time setup fee

@@ -42,13 +42,15 @@ export interface CreateCheckoutParams {
   failureUrl: string;
   /** Required by the GCP function — pass a generated UUID for anonymous users */
   userId: string;
+  /** For port orders — the Firestore doc ID in portedNumbers collection */
+  portDocId?: string;
 }
 
 export function createCheckoutSession(
   params: CreateCheckoutParams,
 ): Promise<CheckoutSessionResponse> {
   const { STRIPE_URL } = getApiConfig();
-  return post<CheckoutSessionResponse>(STRIPE_URL, {
+  const body: Record<string, unknown> = {
     packageId: params.packageId,
     packageName: params.packageName,
     transactionPrice: params.transactionPrice,
@@ -58,7 +60,9 @@ export function createCheckoutSession(
     failure_url: params.failureUrl,
     userId: params.userId,
     serviceProvider: "secnum",
-  });
+  };
+  if (params.portDocId) body.port_doc_id = params.portDocId;
+  return post<CheckoutSessionResponse>(STRIPE_URL, body);
 }
 
 /** Fetches claimUrl (or secret/label) from the webhook after payment. Success page polls this. */

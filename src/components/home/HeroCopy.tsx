@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
 import { Button } from "../Button";
 import { PRICE_DISPLAY } from "../../config/constants";
 import { ErrorAlert } from "../ErrorAlert";
@@ -18,7 +17,7 @@ const item = (delay: number) => ({
 });
 
 export function HeroCopy({ onPurchase, loading, error, onDismissError }: HeroCopyProps) {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   return (
     <div className="flex flex-col gap-7">
 

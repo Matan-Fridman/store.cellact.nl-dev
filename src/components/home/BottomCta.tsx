@@ -1,6 +1,5 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "../Button";
 import { PRICE_DISPLAY } from "../../config/constants";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -14,7 +13,7 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-15% 0px" });
   const { t, isRTL } = useLanguage();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   return (
     <section

@@ -92,8 +92,8 @@ export function HeroCopy({ onPurchase, loading, error, onDismissError }: HeroCop
           €3.99 one-time setup &nbsp;·&nbsp; then €4.99/month &nbsp;·&nbsp; No extra SIM
         </p>
 
-        {/* Port link */}
-        <button
+        {/* Port link — temporarily disabled */}
+        {/* <button
           type="button"
           onClick={() => navigate("/port")}
           style={{
@@ -114,7 +114,7 @@ export function HeroCopy({ onPurchase, loading, error, onDismissError }: HeroCop
           <span style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>
             Port it to Arnacon →
           </span>
-        </button>
+        </button> */}
 
         <ErrorAlert message={error} onDismiss={onDismissError} />
       </motion.div>

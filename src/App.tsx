@@ -3,6 +3,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { StorePage } from "./pages/StorePage";
 import { ClaimPage } from "./pages/ClaimPage";
 import { SuccessPage } from "./pages/SuccessPage";
+import { ActivatePage } from "./pages/ActivatePage";
 import { PortPage } from "./pages/PortPage";
 import { PortCompletePage } from "./pages/PortCompletePage";
 
@@ -14,6 +15,7 @@ export default function App() {
           <Route path="/" element={<StorePage />} />
           <Route path="/claim" element={<ClaimPage />} />
           <Route path="/success" element={<SuccessPage />} />
+          <Route path="/activate" element={<ActivatePage />} />
           <Route path="/port" element={<PortPage />} />
           <Route path="/port/complete" element={<PortCompletePage />} />
         </Routes>

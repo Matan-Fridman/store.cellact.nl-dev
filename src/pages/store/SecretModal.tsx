@@ -9,7 +9,7 @@ interface PurchaseModalProps {
 }
 
 export function PurchaseModal({ open, onClose, data }: PurchaseModalProps) {
-  const qrUrl = buildQrUrl(data.claimUrl);
+  const qrUrl = buildQrUrl(data.claimUrl!);
 
   return (
     <Modal open={open} onClose={onClose}>

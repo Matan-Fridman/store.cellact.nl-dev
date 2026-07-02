@@ -110,8 +110,8 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
             {loading ? t.bottomCta.ctaLoading : t.bottomCta.cta(PRICE_DISPLAY)}
           </Button>
 
-          {/* Port existing number link */}
-          <button
+          {/* Port existing number link — temporarily disabled */}
+          {/* <button
             type="button"
             onClick={() => navigate("/port")}
             style={{
@@ -131,7 +131,7 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
             <span style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>
               Port it to Arnacon →
             </span>
-          </button>
+          </button> */}
         </motion.div>
       </div>
     </section>

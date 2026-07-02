@@ -4,17 +4,22 @@ export interface CheckoutSessionResponse {
 }
 
 export interface OrderResultResponse {
-  /** Built by webhook from stored label + userSecret; null while still processing */
+  /** For secnum orders: built from label + userSecret. Null while still processing. */
   claimUrl: string | null;
   /** Stored in Firestore for server-side flows (e.g. subscription cancel) */
   label: string | null;
   userSecret: string | null;
+  /** For port orders: the phone number that was ported (e.g. "+972501234567") */
+  portedNumber?: string | null;
 }
 
 export interface PurchaseResponse {
-  claimUrl: string;
+  /** Set for normal secnum orders — used to build the claim QR. */
+  claimUrl?: string;
   label?: string;
   userSecret?: string;
+  /** Set for port orders — ENS was registered server-side, no QR needed. */
+  portedNumber?: string;
 }
 
 export interface ActivateResponse {

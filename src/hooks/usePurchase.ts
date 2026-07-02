@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { createCheckoutSession, getOrderResult } from "../services/api";
+import { createCheckoutSession } from "../services/api";
 import { getUseProduction } from "../config/constants";
 import {
   PACKAGE_ID,
@@ -8,12 +8,10 @@ import {
   SUBSCRIPTION_PRICE,
   PRICE_CURRENCY,
 } from "../config/constants";
-import type { AsyncStatus, PurchaseResponse } from "../types";
-import { buildArnaconClaimUrl, ensureClaimUrlDevParam } from "../utils/format";
+import type { AsyncStatus } from "../types";
 
 interface PurchaseState {
   status: AsyncStatus;
-  data: PurchaseResponse | null;
   error: string | null;
 }
 
@@ -23,29 +21,24 @@ function generateUserId(): string {
 
 function buildSuccessUrl(): string {
   const prod = getUseProduction();
-  // Must be a bare URL — the GCP function appends ?session_id=<uuid>&user_address=<id>
   return `${window.location.origin}/success?dev=${prod ? "false" : "true"}`;
 }
 
 function buildFailureUrl(): string {
-  // Must be a bare URL — the GCP function appends ?user_address=<id>
   const prod = getUseProduction();
   return `${window.location.origin}/?dev=${prod ? "false" : "true"}`;
 }
 
 export function usePurchase() {
-  const [state, setState] = useState<PurchaseState>({
-    status: "idle",
-    data: null,
-    error: null,
-  });
+  const [state, setState] = useState<PurchaseState>({ status: "idle", error: null });
 
   /**
-   * Step 1 — Create a Stripe Checkout session via the GCP endpoint and redirect.
-   * The browser leaves the page; control returns via /success?stripe_sid=cs_xxx.
+   * Creates a Stripe Checkout session and redirects the browser to Stripe.
+   * On success Stripe redirects to /success?session_id=<uuid> — no polling needed.
+   * The backend emails an activation link containing a one-time claim token.
    */
   const initiate = useCallback(async () => {
-    setState({ status: "loading", data: null, error: null });
+    setState({ status: "loading", error: null });
 
     try {
       const { url } = await createCheckoutSession({
@@ -62,66 +55,11 @@ export function usePurchase() {
       window.location.href = url;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not start checkout";
-      setState({ status: "error", data: null, error: message });
+      setState({ status: "error", error: message });
     }
   }, []);
 
-  /**
-   * Step 2 — Called from SuccessPage with session_id (order UUID).
-   * Polls the webhook until provision is done (claimUrl from server, or label+userSecret to build locally).
-   */
-  const completePurchase = useCallback(async (sessionId: string) => {
-    setState({ status: "loading", data: null, error: null });
+  const reset = useCallback(() => setState({ status: "idle", error: null }), []);
 
-    const POLL_INTERVAL_MS = 2000;
-    const MAX_ATTEMPTS = 45; // ~90s
-
-    let attempt = 0;
-
-    const poll = async (): Promise<void> => {
-      attempt += 1;
-      try {
-        const result = await getOrderResult(sessionId);
-        let claimUrl = result.claimUrl;
-        const label = result.label ?? undefined;
-        const userSecret = result.userSecret ?? undefined;
-        const isProd = getUseProduction();
-        if (!claimUrl && label && userSecret) {
-          claimUrl = buildArnaconClaimUrl(userSecret, label, window.location.origin, isProd);
-        }
-        // Always ensure the dev param matches this client session,
-        // even when the server returned a pre-built claimUrl.
-        if (claimUrl) {
-          claimUrl = ensureClaimUrlDevParam(claimUrl, isProd);
-          setState({
-            status: "success",
-            data: { claimUrl, ...(label ? { label } : {}), ...(userSecret ? { userSecret } : {}) },
-            error: null,
-          });
-          return;
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Could not load your number";
-        setState({ status: "error", data: null, error: message });
-        return;
-      }
-      if (attempt >= MAX_ATTEMPTS) {
-        setState({
-          status: "error",
-          data: null,
-          error: "Provision is taking longer than expected. Please check your email or contact support.",
-        });
-        return;
-      }
-      setTimeout(poll, POLL_INTERVAL_MS);
-    };
-
-    setTimeout(poll, 0);
-  }, []);
-
-  const reset = useCallback(() => {
-    setState({ status: "idle", data: null, error: null });
-  }, []);
-
-  return { ...state, initiate, completePurchase, reset };
+  return { ...state, initiate, reset };
 }

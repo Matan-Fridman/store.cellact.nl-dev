@@ -44,14 +44,30 @@ const PROD_URLS = {
   PORT_REQUEST_URL:      `${PROD_BASE}/port-number-request`,
 };
 
+const DEV_SESSION_KEY = "secnum_dev";
+
+// Eagerly read ?dev=true from the URL as soon as this module loads.
+// This runs before any React navigation can strip the param away.
+if (typeof window !== "undefined") {
+  const _dev = new URLSearchParams(window.location.search).get("dev");
+  if (_dev === "true") sessionStorage.setItem(DEV_SESSION_KEY, "true");
+  else if (_dev === "false") sessionStorage.removeItem(DEV_SESSION_KEY);
+}
+
 export function getUseProduction(): boolean {
-  // Only dev/staging when explicitly requested via URL param (?dev=true).
-  // Everything else — including no param at all — uses production.
-  if (typeof window !== "undefined") {
-    const dev = new URLSearchParams(window.location.search).get("dev");
-    if (dev === "true") return false;
+  if (typeof window === "undefined") return true;
+  const dev = new URLSearchParams(window.location.search).get("dev");
+  if (dev === "true") {
+    // Persist so navigation to other pages without the param stays in dev.
+    sessionStorage.setItem(DEV_SESSION_KEY, "true");
+    return false;
   }
-  return true;
+  if (dev === "false") {
+    sessionStorage.removeItem(DEV_SESSION_KEY);
+    return true;
+  }
+  // No URL param — check if dev was set earlier in this session.
+  return sessionStorage.getItem(DEV_SESSION_KEY) !== "true";
 }
 
 export function getApiConfig() {

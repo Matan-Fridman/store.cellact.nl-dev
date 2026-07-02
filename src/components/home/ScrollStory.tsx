@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   motion,
   AnimatePresence,
@@ -162,7 +161,8 @@ function MomentPanel({
                 {t.hero.finePrint}
               </p>
 
-              <button
+              {/* Port link — temporarily disabled */}
+              {/* <button
                 type="button"
                 onClick={() => navigate("/port")}
                 style={{
@@ -183,7 +183,7 @@ function MomentPanel({
                 <span style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>
                   Port it to Arnacon →
                 </span>
-              </button>
+              </button> */}
 
               <ErrorAlert message={error} onDismiss={onDismissError} />
             </div>

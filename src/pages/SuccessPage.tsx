@@ -161,6 +161,18 @@ function ConfirmedState({ onBack }: { onBack: () => void }) {
         ))}
       </div>
 
+      <p
+        style={{
+          fontSize: "11.5px",
+          color: "var(--color-text-muted)",
+          opacity: 0.6,
+          marginBottom: "20px",
+          maxWidth: "320px",
+        }}
+      >
+        The email can take up to 10 minutes to arrive. Check your spam folder if you don't see it.
+      </p>
+
       <button
         type="button"
         onClick={onBack}

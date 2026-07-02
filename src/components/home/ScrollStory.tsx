@@ -56,7 +56,7 @@ function MomentPanel({
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: false, margin: "-20% 0px -20% 0px" });
   const { t } = useLanguage();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   return (
     <div

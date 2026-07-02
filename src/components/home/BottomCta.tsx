@@ -109,6 +109,61 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
             {loading ? t.bottomCta.ctaLoading : t.bottomCta.cta(PRICE_DISPLAY)}
           </Button>
 
+          {/* App store badges */}
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center", marginTop: "8px" }}>
+            <a
+              href="https://apps.apple.com/app/arnacon/id6504406464"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "10px 18px",
+                borderRadius: "12px",
+                background: "#000",
+                border: "1px solid rgba(255,255,255,0.12)",
+                textDecoration: "none",
+                transition: "border-color 0.2s, background 0.2s",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,0.28)"; (e.currentTarget as HTMLAnchorElement).style.background = "#111"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,0.12)"; (e.currentTarget as HTMLAnchorElement).style.background = "#000"; }}
+            >
+              {/* Apple logo */}
+              <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" width="18" height="22" style={{ filter: "invert(1)" }} alt="Apple" />
+              <div style={{ textAlign: "left" }}>
+                <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.6)", letterSpacing: "0.05em", lineHeight: 1 }}>Download on the</div>
+                <div style={{ fontSize: "15px", fontWeight: 600, color: "#fff", lineHeight: 1.3, letterSpacing: "-0.01em" }}>App Store</div>
+              </div>
+            </a>
+
+            <a
+              href="https://play.google.com/store/apps/details?id=com.arnacon.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "10px 18px",
+                borderRadius: "12px",
+                background: "#000",
+                border: "1px solid rgba(255,255,255,0.12)",
+                textDecoration: "none",
+                transition: "border-color 0.2s, background 0.2s",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,0.28)"; (e.currentTarget as HTMLAnchorElement).style.background = "#111"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,0.12)"; (e.currentTarget as HTMLAnchorElement).style.background = "#000"; }}
+            >
+              {/* Google Play logo */}
+              <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/Google_Play_Arrow_logo.svg" width="20" height="20" alt="Google Play" />
+              <div style={{ textAlign: "left" }}>
+                <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.6)", letterSpacing: "0.05em", lineHeight: 1 }}>Get it on</div>
+                <div style={{ fontSize: "15px", fontWeight: 600, color: "#fff", lineHeight: 1.3, letterSpacing: "-0.01em" }}>Google Play</div>
+              </div>
+            </a>
+          </div>
+
           {/* Port existing number link — temporarily disabled */}
           {/* <button
             type="button"

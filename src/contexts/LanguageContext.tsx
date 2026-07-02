@@ -20,11 +20,16 @@ const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Language>(() => {
+    const VALID: Language[] = ["en", "he"];
+    const urlParam = new URLSearchParams(window.location.search).get("lang") as Language | null;
+    if (urlParam && VALID.includes(urlParam)) return urlParam;
     try {
-      return (localStorage.getItem("secnum_lang") as Language) ?? "en";
+      const stored = localStorage.getItem("secnum_lang") as Language | null;
+      if (stored && VALID.includes(stored)) return stored;
     } catch {
-      return "en";
+      // ignore
     }
+    return "en";
   });
 
   const setLang = (l: Language) => {
@@ -34,6 +39,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     } catch {
       // ignore
     }
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", l);
+    window.history.replaceState(null, "", url.toString());
   };
 
   const isRTL = lang === "he";

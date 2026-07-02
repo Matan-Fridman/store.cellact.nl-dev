@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from "react";
+import React, { useState, useEffect, type ReactNode } from "react";
 import { useLanguage } from "../contexts/LanguageContext";
 import type { Language } from "../i18n/translations";
 
@@ -35,19 +35,61 @@ export function Layout({ children }: LayoutProps) {
             {t.nav.brand}
           </a>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <AppStoreBadges />
             <LangToggle lang={lang} setLang={setLang} />
-            <span
-              className="text-xs font-medium tracking-widest uppercase"
-              style={{ color: "var(--color-text-muted)" }}
-            >
-              by Cellact
-            </span>
           </div>
         </div>
       </header>
 
       <main>{children}</main>
+    </div>
+  );
+}
+
+function AppStoreBadges() {
+  const badgeStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "7px",
+    padding: "5px 12px",
+    borderRadius: "8px",
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    textDecoration: "none",
+    transition: "border-color 0.2s, background 0.2s",
+    cursor: "pointer",
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+      <a
+        href="https://apps.apple.com/app/arnacon/id6504406464"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={badgeStyle}
+        onMouseEnter={(e) => { const el = e.currentTarget; el.style.background = "rgba(255,255,255,0.1)"; el.style.borderColor = "rgba(255,255,255,0.22)"; }}
+        onMouseLeave={(e) => { const el = e.currentTarget; el.style.background = "rgba(255,255,255,0.05)"; el.style.borderColor = "rgba(255,255,255,0.1)"; }}
+      >
+        <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" width="13" height="16" style={{ filter: "invert(1)" }} alt="Apple" />
+        <span style={{ fontSize: "11.5px", fontWeight: 600, color: "var(--color-text)", letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>
+          App Store
+        </span>
+      </a>
+
+      <a
+        href="https://play.google.com/store/apps/details?id=com.arnacon.app"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={badgeStyle}
+        onMouseEnter={(e) => { const el = e.currentTarget; el.style.background = "rgba(255,255,255,0.1)"; el.style.borderColor = "rgba(255,255,255,0.22)"; }}
+        onMouseLeave={(e) => { const el = e.currentTarget; el.style.background = "rgba(255,255,255,0.05)"; el.style.borderColor = "rgba(255,255,255,0.1)"; }}
+      >
+        <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/Google_Play_Arrow_logo.svg" width="14" height="14" alt="Google Play" />
+        <span style={{ fontSize: "11.5px", fontWeight: 600, color: "var(--color-text)", letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>
+          Google Play
+        </span>
+      </a>
     </div>
   );
 }

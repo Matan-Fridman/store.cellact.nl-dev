@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { activateNumber } from "../services/api";
+import { activateWithProof, getGroupMembers } from "../services/api";
+import { generateActivationProof } from "../utils/semaphore";
 import type { ActivateResponse, AsyncStatus } from "../types";
 
 interface ClaimState {
@@ -42,7 +43,9 @@ export function useClaim() {
       }, STEP_INTERVAL_MS);
 
       try {
-        const data = await activateNumber(secret, label, owner);
+        const { commitments, scope, merkleTreeRoot } = await getGroupMembers();
+        const proof = await generateActivationProof(secret, label, commitments, scope, merkleTreeRoot);
+        const data = await activateWithProof(proof, label, owner);
         clearStepInterval();
         setState({ status: "success", step: 4, data, error: null });
       } catch (err) {

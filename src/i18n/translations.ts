@@ -90,7 +90,7 @@ export const translations: Record<Language, TranslationsShape> = {
         step: "03",
         headlineA: "Call and message",
         headlineB: "Israeli numbers.",
-        sub: "Up to 1,500 outgoing minutes and 50 outgoing SMS per day. Use the number for WhatsApp or any app requiring an Israeli number.",
+        sub: "Up to 1,500 outgoing minutes per month and 50 outgoing SMS per day. Use the number for WhatsApp or any app requiring an Israeli number.",
       },
     ],
 
@@ -189,7 +189,7 @@ export const translations: Record<Language, TranslationsShape> = {
         step: "03",
         headlineA: "התקשר ושלח הודעות",
         headlineB: "למספרים ישראליים.",
-        sub: "עד 1,500 דקות יוצאות ו-50 SMS יוצאים ביום. השתמש במספר בווטסאפ או בכל אפליקציה שדורשת מספר ישראלי.",
+        sub: "עד 1,500 דקות יוצאות בחודש ו-50 SMS יוצאים ביום. השתמש במספר בווטסאפ או בכל אפליקציה שדורשת מספר ישראלי.",
       },
     ],
 

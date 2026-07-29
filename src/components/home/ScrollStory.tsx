@@ -9,7 +9,7 @@ import {
   useInView,
   useMotionValueEvent,
 } from "framer-motion";
-
+ 
 // ─── Phone screen assets ─────────────────────────────────────────────────────
 import phoneHero  from "../../assets/secnum-1.webp";
 import phoneStep1 from "../../assets/secnum-2.webp";

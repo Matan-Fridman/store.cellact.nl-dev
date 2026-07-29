@@ -26,16 +26,16 @@ export function Layout({ children }: LayoutProps) {
           borderBottom: scrolled ? "1px solid var(--color-border)" : "1px solid transparent",
         }}
       >
-        <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
+        <div className="site-header-inner mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <a
             href="/"
-            className="text-xl font-bold tracking-tight"
+            className="site-header-brand text-xl font-bold tracking-tight"
             style={{ color: "var(--color-text)" }}
           >
             {t.nav.brand}
           </a>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div className="site-header-controls" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <AppStoreBadges />
             <LangToggle lang={lang} setLang={setLang} />
           </div>
@@ -62,8 +62,9 @@ function AppStoreBadges() {
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+    <div className="app-store-badges" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
       <a
+        className="app-store-badge"
         href="https://apps.apple.com/app/arnacon/id6504406464"
         target="_blank"
         rel="noopener noreferrer"
@@ -78,6 +79,7 @@ function AppStoreBadges() {
       </a>
 
       <a
+        className="app-store-badge"
         href="https://play.google.com/store/apps/details?id=com.arnacon.app"
         target="_blank"
         rel="noopener noreferrer"
@@ -103,6 +105,7 @@ function LangToggle({
 }) {
   return (
     <div
+      className="language-toggle"
       style={{
         display: "flex",
         alignItems: "center",

@@ -60,17 +60,11 @@ function MomentPanel({
 
   return (
     <div
-      style={{
-        height: "100vh",
-        display: "flex",
-        alignItems: "center",
-        // In RTL the phone is on the left, so content padding flips
-        paddingInlineStart: "max(32px, calc((100vw - 1200px) / 2 + 32px))",
-        paddingInlineEnd: "24px",
-      }}
+      className={`scroll-story-panel${moment.isHero ? " scroll-story-panel--hero" : ""}`}
     >
-      <div ref={ref} style={{ width: "min(46%, 500px)", minWidth: "280px" }}>
+      <div ref={ref} className="scroll-story-copy">
         <motion.div
+          className="scroll-story-copy-inner"
           animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 28 }}
           transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] as const }}
         >
@@ -78,15 +72,7 @@ function MomentPanel({
           {moment.step && (
             <div
               aria-hidden
-              style={{
-                fontSize: "clamp(5.5rem, 12vw, 11rem)",
-                fontWeight: 900,
-                letterSpacing: "-0.055em",
-                lineHeight: 0.88,
-                color: "rgba(255,255,255,0.1)",
-                marginBottom: "-0.06em",
-                userSelect: "none",
-              }}
+              className="scroll-story-step"
             >
               {moment.step}
             </div>
@@ -95,14 +81,7 @@ function MomentPanel({
           {/* Eyebrow — blue accent */}
           {moment.eyebrow && (
             <p
-              style={{
-                fontSize: "11px",
-                fontWeight: 600,
-                letterSpacing: "0.13em",
-                textTransform: "uppercase",
-                color: "#60a5fa",
-                marginBottom: "28px",
-              }}
+              className="scroll-story-eyebrow"
             >
               {moment.eyebrow}
             </p>
@@ -110,12 +89,9 @@ function MomentPanel({
 
           {/* Headline */}
           <h2
+            className="scroll-story-headline"
             style={{
-              fontSize: "clamp(2.5rem, 4vw, 4.2rem)",
-              fontWeight: 900,
               letterSpacing: isRTL ? "-0.01em" : "-0.035em",
-              lineHeight: 1.04,
-              color: "var(--color-text)",
             }}
           >
             {moment.headlineA}
@@ -125,27 +101,16 @@ function MomentPanel({
 
           {/* Subtext */}
           <p
-            style={{
-              marginTop: "1.5rem",
-              fontSize: "1.0625rem",
-              lineHeight: 1.65,
-              color: "var(--color-text-muted)",
-              maxWidth: "36ch",
-            }}
+            className="scroll-story-subtext"
           >
             {moment.sub}
           </p>
+        </motion.div>
 
           {/* CTA — hero only */}
           {moment.isHero && (
             <div
-              style={{
-                marginTop: "2.25rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                alignItems: "flex-start",
-              }}
+              className="scroll-story-cta"
             >
               <Button
                 onClick={onPurchase}
@@ -188,7 +153,6 @@ function MomentPanel({
               <ErrorAlert message={error} onDismiss={onDismissError} />
             </div>
           )}
-        </motion.div>
       </div>
     </div>
   );
@@ -273,18 +237,11 @@ export function ScrollStory({
   const smoothRotateY = useSpring(rawRotateY, { stiffness: 45, damping: 18, mass: 0.7 });
 
   return (
-    <div ref={containerRef} style={{ position: "relative" }}>
+    <div ref={containerRef} className="scroll-story">
 
       {/* ── Sticky layer: phone + blue atmosphere ───────────────────────────── */}
       <div
-        style={{
-          position: "sticky",
-          top: 0,
-          height: "100vh",
-          zIndex: 1,
-          pointerEvents: "none",
-          overflow: "hidden",
-        }}
+        className="scroll-story-sticky"
       >
         {/* Blue atmospheric light source — mirrors the phone glow */}
         <div
@@ -300,16 +257,7 @@ export function ScrollStory({
 
         {/* Phone — pinned to the side opposite content (right in LTR, left in RTL) */}
         <div
-          style={{
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            ...(isRTL ? { left: 0 } : { right: 0 }),
-            width: "54%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+          className={`scroll-story-phone-stage${isRTL ? " scroll-story-phone-stage--rtl" : ""}`}
         >
           {/* Scroll-driven exit wrapper */}
           <motion.div style={{ y: phoneY, opacity: phoneOpacity, scale: phoneScale }}>
@@ -362,14 +310,14 @@ export function ScrollStory({
               Perspective container — required for rotateX/rotateY to render in 3D.
               The phone only moves in reaction to scroll; no autonomous animation.
             */}
-            <div style={{ perspective: "900px", position: "relative", zIndex: 10 }}>
+            <div className="scroll-story-phone-float" style={{ perspective: "900px", position: "relative", zIndex: 10 }}>
               <motion.div style={{ rotateX: smoothRotateX, rotateY: smoothRotateY }}>
                 {/*
                   Image 0 is position:static — sets container dimensions.
                   Images 1-3 are position:absolute stacked exactly on top.
                   All crossfade via opacity driven by activeScreen state.
                 */}
-                <div style={{ position: "relative", width: "clamp(300px, 38vw, 560px)" }}>
+                <div className="scroll-story-phone-art">
                   {PHONE_SCREENS.map((src, i) => (
                     <motion.img
                       key={i}
@@ -395,7 +343,7 @@ export function ScrollStory({
       </div>
 
       {/* ── Content panels — scroll over sticky phone ───────────────────────── */}
-      <div style={{ marginTop: "-100vh", position: "relative", zIndex: 10 }}>
+      <div className="scroll-story-panels">
         {moments.map((moment, i) => (
           <MomentPanel
             key={i}

@@ -16,7 +16,7 @@ export function ClaimCard({ params }: ClaimCardProps) {
   const { t } = useLanguage();
 
   const handleClaim = () => {
-    claim(params.secret, params.label, params.walletAddress);
+    claim(params.secret, params.label, params.web3identity);
   };
 
   if (status === "success" && data) {

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   motion,
   AnimatePresence,
@@ -157,11 +157,23 @@ export function ScrollStory({
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeScreen, setActiveScreen] = useState(0);
   const [showStickyBtn, setShowStickyBtn] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches,
+  );
+  const isMobileRef = useRef(isMobile);
+  isMobileRef.current = isMobile;
   const { t, isRTL } = useLanguage();
   const conversion = shouldShowConversionLanding();
   const hero = conversion ? t.campaignHero : t.hero;
   const steps = conversion ? t.campaignSteps : t.steps;
   const ctaLabel = hero.cta;
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const onChange = () => setIsMobile(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   // Build story panels from translations
   const moments: Moment[] = [
@@ -201,9 +213,26 @@ export function ScrollStory({
     setShowStickyBtn(latest > 0.17 && latest < 0.88);
   });
 
-  const phoneY       = useTransform(scrollYProgress, [0.72, 0.94], [0, -110]);
-  const phoneOpacity = useTransform(scrollYProgress, [0.70, 0.92], [1, 0]);
-  const phoneScale   = useTransform(scrollYProgress, [0, 0.75, 0.94], [1, 1, 0.94]);
+  const phoneY     = useTransform(scrollYProgress, [0.72, 0.94], [0, -110]);
+  const phoneScale = useTransform(scrollYProgress, [0, 0.75, 0.94], [1, 1, 0.94]);
+
+  // Desktop: stay opaque until the late exit fade.
+  // Mobile: dim hard once the first step arrives so copy stays readable over the phone.
+  const phoneOpacity = useTransform(scrollYProgress, (progress) => {
+    let opacity = 1;
+    if (progress >= 0.92) opacity = 0;
+    else if (progress > 0.7) opacity = 1 - (progress - 0.7) / 0.22;
+
+    if (isMobileRef.current) {
+      if (progress >= 0.24) opacity *= 0.18;
+      else if (progress > 0.17) {
+        const t = (progress - 0.17) / 0.07;
+        opacity *= 1 - t * 0.82; // 1 → 0.18
+      }
+    }
+
+    return opacity;
+  });
 
   // ── Scroll-reactive transforms ──────────────────────────────────────────────
   // Velocity tilt: fast downscroll → phone leans back (rotateX), like inertia.
@@ -246,6 +275,11 @@ export function ScrollStory({
         >
           {/* Scroll-driven exit wrapper */}
           <motion.div style={{ y: phoneY, opacity: phoneOpacity, scale: phoneScale }}>
+            {/* Mobile: dim phone once past hero so step copy stays readable */}
+            <motion.div
+              animate={{ opacity: isMobile && activeScreen >= 1 ? 0.18 : 1 }}
+              transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] as const }}
+            >
 
             {/* Outer diffuse halo — breathes slowly */}
             <motion.div
@@ -323,6 +357,7 @@ export function ScrollStory({
               </motion.div>
             </div>
 
+            </motion.div>
           </motion.div>
         </div>
       </div>

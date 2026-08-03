@@ -10,9 +10,9 @@ export function ClaimPage() {
   const [searchParams] = useSearchParams();
   const { t } = useLanguage();
 
-  const secret        = searchParams.get("secret");
-  const label         = searchParams.get("label");
-  const walletAddress = searchParams.get("walletAddress");
+  const secret       = searchParams.get("secret");
+  const label        = searchParams.get("label");
+  const web3identity = searchParams.get("web3identity");
   return (
     <div
       style={{
@@ -51,10 +51,10 @@ export function ClaimPage() {
           margin: "0 auto",
         }}
       >
-        {!secret || !label || !walletAddress ? (
+        {!secret || !label || !web3identity ? (
           <InvalidLink />
         ) : (
-          <ClaimCard params={{ secret, label, walletAddress }} />
+          <ClaimCard params={{ secret, label, web3identity }} />
         )}
       </main>
     </div>

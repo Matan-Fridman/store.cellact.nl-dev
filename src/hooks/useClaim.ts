@@ -32,7 +32,7 @@ export function useClaim() {
   useEffect(() => clearStepInterval, [clearStepInterval]);
 
   const claim = useCallback(
-    async (secret: string, label: string, owner: string) => {
+    async (secret: string, label: string, web3identity: string) => {
       setState({ status: "loading", step: 1, data: null, error: null });
 
       intervalRef.current = setInterval(() => {
@@ -45,7 +45,7 @@ export function useClaim() {
       try {
         const { commitments, scope, merkleTreeRoot } = await getGroupMembers();
         const proof = await generateActivationProof(secret, label, commitments, scope, merkleTreeRoot);
-        const data = await activateWithProof(proof, label, owner);
+        const data = await activateWithProof(proof, label, web3identity);
         clearStepInterval();
         setState({ status: "success", step: 4, data, error: null });
       } catch (err) {

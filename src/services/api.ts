@@ -136,8 +136,8 @@ export function getGroupMembers(): Promise<GroupMembersResponse> {
 export function activateWithProof(
   proof: ActivationProof,
   label: string,
-  owner: string,
+  web3identity: string,
 ): Promise<ActivateResponse> {
   const { ACTIVATE_URL } = getApiConfig();
-  return post<ActivateResponse>(ACTIVATE_URL, { proof, label, owner });
+  return post<ActivateResponse>(ACTIVATE_URL, { proof, label, web3identity });
 }

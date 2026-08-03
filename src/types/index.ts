@@ -24,14 +24,14 @@ export interface PurchaseResponse {
 
 export interface ActivateResponse {
   label: string;
-  name: string;
-  owner: string;
+  name?: string;
+  web3identity: string;
 }
 
 export interface ClaimParams {
   secret: string;
   label: string;
-  walletAddress: string;
+  web3identity: string;
 }
 
 export type AsyncStatus = "idle" | "loading" | "success" | "error";

@@ -14,7 +14,6 @@ export function SuccessPage() {
   const purchaseTracked = useRef(false);
 
   const sessionId = searchParams.get("session_id");
-  const dev = searchParams.get("dev");
 
   useEffect(() => {
     if (!sessionId) {
@@ -37,8 +36,7 @@ export function SuccessPage() {
       const token = data?.claim_token as string | undefined;
       if (token) {
         unsub();
-        const devParam = dev === "true" ? "&dev=true" : "";
-        navigate(`/activate?token=${encodeURIComponent(token)}${devParam}`, { replace: true });
+        navigate(`/activate?token=${encodeURIComponent(token)}`, { replace: true });
       }
     }, (err) => {
       // Firestore permission error or offline — stay on page, email fallback works.
@@ -48,7 +46,7 @@ export function SuccessPage() {
 
     unsubRef.current = unsub;
     return () => unsub();
-  }, [sessionId, dev, navigate]);
+  }, [sessionId, navigate]);
 
   return (
     <Layout>

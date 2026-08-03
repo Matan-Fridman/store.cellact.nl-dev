@@ -6,7 +6,6 @@ import { Layout } from "../components/Layout";
 import { ErrorAlert } from "../components/ErrorAlert";
 import { createCheckoutSession } from "../services/api";
 import { getDb } from "../lib/firebase";
-import { getUseProduction } from "../config/constants";
 import {
   PORT_PACKAGE_ID,
   PORT_PACKAGE_NAME,
@@ -48,8 +47,7 @@ function generateUserId(): string {
 }
 
 function buildSuccessUrl(): string {
-  const prod = getUseProduction();
-  return `${window.location.origin}/success?dev=${prod ? "false" : "true"}`;
+  return `${window.location.origin}/success`;
 }
 
 function buildFailureUrl(portDocId: string): string {

@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 import { createCheckoutSession } from "../services/api";
-import { getUseProduction } from "../config/constants";
 import {
   PACKAGE_ID,
   PACKAGE_NAME,
@@ -21,17 +20,11 @@ function generateUserId(): string {
 }
 
 function buildSuccessUrl(): string {
-  const prod = getUseProduction();
-  return `${window.location.origin}/success?dev=${prod ? "false" : "true"}`;
+  return `${window.location.origin}/success`;
 }
 
 function buildFailureUrl(): string {
-  const prod = getUseProduction();
-  const params = new URLSearchParams({
-    payment: "cancelled",
-    dev: prod ? "false" : "true",
-  });
-  return `${window.location.origin}/?${params.toString()}`;
+  return `${window.location.origin}/?payment=cancelled`;
 }
 
 export function usePurchase() {

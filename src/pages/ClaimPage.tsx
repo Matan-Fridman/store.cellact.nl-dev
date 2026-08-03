@@ -1,6 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import { ClaimCard } from "./claim/ClaimCard";
 import { useLanguage } from "../contexts/LanguageContext";
+import { canonicalWeb3Identity } from "../utils/format";
 
 /**
  * Mobile-optimised full-screen wrapper — no desktop navbar needed here.
@@ -10,9 +11,10 @@ export function ClaimPage() {
   const [searchParams] = useSearchParams();
   const { t } = useLanguage();
 
-  const secret       = searchParams.get("secret");
-  const label        = searchParams.get("label");
-  const web3identity = searchParams.get("web3identity");
+  const secret = searchParams.get("secret");
+  const label = searchParams.get("label");
+  const web3identityRaw = searchParams.get("web3identity");
+  const web3identity = web3identityRaw ? canonicalWeb3Identity(web3identityRaw) : null;
   return (
     <div
       style={{

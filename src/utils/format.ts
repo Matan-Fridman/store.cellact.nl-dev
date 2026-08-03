@@ -1,3 +1,19 @@
+const WEB3_IDENTITY_SUFFIX = ".arnacon.global";
+const ENS_LABEL_RE = /^(?:[a-z0-9]|[a-z0-9][a-z0-9-]{0,61}[a-z0-9])$/;
+
+/** Returns canonical full identity, e.g. `{uid}.arnacon.global`. */
+export function canonicalWeb3Identity(raw: string): string | null {
+  const value = raw.trim().toLowerCase();
+  if (value.endsWith(WEB3_IDENTITY_SUFFIX)) {
+    const uid = value.slice(0, -WEB3_IDENTITY_SUFFIX.length);
+    return ENS_LABEL_RE.test(uid) ? value : null;
+  }
+  if (ENS_LABEL_RE.test(value)) {
+    return `${value}${WEB3_IDENTITY_SUFFIX}`;
+  }
+  return null;
+}
+
 export function formatPhone(num: string): string {
   if (num.length >= 10) {
     return (

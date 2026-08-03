@@ -23,6 +23,8 @@ const PROD_BASE = (
 const DEV_URLS = {
   /** Public chain-activate function (action: activate from /claim). */
   API_URL:               `${STAGING_BASE}/secnum-chain-activate`,
+  /** Standalone activate-number function (proof-gated, no action field). */
+  ACTIVATE_URL:          `${STAGING_BASE}/secnum-activate-number`,
   /** Stripe checkout session creator. */
   STRIPE_URL:            `${STAGING_BASE}/payment-link-generator`,
   /** Base URL for order-result polling. */
@@ -37,6 +39,7 @@ const DEV_URLS = {
 
 const PROD_URLS = {
   API_URL:               `${PROD_BASE}/secnum-chain-activate`,
+  ACTIVATE_URL:          `${PROD_BASE}/secnum-activate-number`,
   STRIPE_URL:            `${PROD_BASE}/payment-link-generator`,
   ORDER_RESULT_URL:      `${PROD_BASE}/secnum-order-result`,
   QR_CREATE_SESSION_URL: `${PROD_BASE}/qr-login-create-session`,

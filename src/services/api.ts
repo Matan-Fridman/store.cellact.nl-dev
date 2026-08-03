@@ -132,17 +132,12 @@ export function getGroupMembers(): Promise<GroupMembersResponse> {
   );
 }
 
-/** Sends a pre-generated ZK proof to the server for transaction submission. */
+/** Sends a pre-generated ZK proof to secnum-activate-number for validation and ANS linking. */
 export function activateWithProof(
   proof: ActivationProof,
   label: string,
   owner: string,
 ): Promise<ActivateResponse> {
-  const { API_URL } = getApiConfig();
-  return post<ActivateResponse>(API_URL, {
-    action: "activateWithProof",
-    proof,
-    label,
-    owner,
-  });
+  const { ACTIVATE_URL } = getApiConfig();
+  return post<ActivateResponse>(ACTIVATE_URL, { proof, label, owner });
 }

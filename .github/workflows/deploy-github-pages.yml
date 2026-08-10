@@ -66,7 +66,11 @@ jobs:
         run: |
           set -euo pipefail
           test -f dist/index.html
+          test -f dist/404.html
           test -d dist/assets
+          for r in activate claim success port port/complete; do
+            test -f "dist/$r/index.html"
+          done
           if grep -q '/src/main.tsx' dist/index.html; then
             echo "Refusing to deploy: dist/index.html still points at /src/main.tsx"
             cat dist/index.html
@@ -77,7 +81,13 @@ jobs:
             cat dist/index.html
             exit 1
           fi
-          echo "Build OK:"
+          if ! grep -q '/assets/' dist/activate/index.html; then
+            echo "Refusing to deploy: dist/activate/index.html is not a built SPA shell"
+            cat dist/activate/index.html
+            exit 1
+          fi
+          echo "Build OK (SPA route shells + 404.html):"
+          ls -la dist/activate dist/claim dist/404.html
           head -30 dist/index.html
 
       - name: Upload Pages artifact

@@ -13,13 +13,27 @@ class ApiError extends Error {
 }
 
 async function post<T>(url: string, body: Record<string, unknown>): Promise<T> {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError("Failed to reach checkout server", 0);
+  }
 
-  const data = (await res.json()) as Record<string, unknown>;
+  const raw = await res.text();
+  let data: Record<string, unknown> = {};
+  try {
+    data = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+  } catch {
+    if (!res.ok) {
+      throw new ApiError(raw.slice(0, 180) || `Request failed (${res.status})`, res.status);
+    }
+    throw new ApiError("Invalid checkout response", res.status);
+  }
 
   if (!res.ok) {
     const error = typeof data.error === "string" ? data.error : "Request failed";

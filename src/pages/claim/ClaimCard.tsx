@@ -12,7 +12,7 @@ interface ClaimCardProps {
 }
 
 export function ClaimCard({ params }: ClaimCardProps) {
-  const { status, step, data, error, claim, reset } = useClaim();
+  const { status, step, data, error, errorKind, claim, reset } = useClaim();
   const { t } = useLanguage();
 
   const handleClaim = () => {
@@ -24,6 +24,7 @@ export function ClaimCard({ params }: ClaimCardProps) {
   }
 
   const activeStepIndex = Math.max(0, Math.min(step - 1, 2));
+  const alreadyActivated = status === "error" && errorKind === "already_activated";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
@@ -154,22 +155,75 @@ export function ClaimCard({ params }: ClaimCardProps) {
         )}
       </AnimatePresence>
 
-      {/* Error */}
-      <ErrorAlert message={error} onDismiss={reset} />
+      {/* Error / already-activated */}
+      {alreadyActivated ? (
+        <div
+          role="status"
+          style={{
+            borderRadius: "16px",
+            padding: "18px 18px 16px",
+            background: "rgba(16,185,129,0.08)",
+            border: "1px solid rgba(52,211,153,0.28)",
+          }}
+        >
+          <p
+            style={{
+              margin: "0 0 8px",
+              fontSize: "1.05rem",
+              fontWeight: 700,
+              color: "var(--color-text)",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {t.claim.alreadyActivatedTitle}
+          </p>
+          <p
+            style={{
+              margin: "0 0 12px",
+              fontSize: "0.9rem",
+              lineHeight: 1.55,
+              color: "var(--color-text-muted)",
+            }}
+          >
+            {t.claim.alreadyActivatedDesc}
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "0.85rem",
+              lineHeight: 1.5,
+              color: "var(--color-text-muted)",
+            }}
+          >
+            {t.claim.alreadyActivatedSupport.split("support@arnacon.com")[0]}
+            <a
+              href="mailto:support@arnacon.com"
+              style={{ color: "#6ee7b7", fontWeight: 600, textDecoration: "underline" }}
+            >
+              support@arnacon.com
+            </a>
+            {t.claim.alreadyActivatedSupport.split("support@arnacon.com")[1] || ""}
+          </p>
+        </div>
+      ) : (
+        <ErrorAlert message={error} onDismiss={reset} />
+      )}
 
-      {/* CTA */}
-      <Button
-        onClick={handleClaim}
-        loading={status === "loading"}
-        disabled={status === "loading"}
-        className="!py-4 !text-base"
-      >
-        {status === "loading"
-          ? t.claim.steps[activeStepIndex]
-          : status === "error"
-          ? t.claim.retryBtn
-          : t.claim.activateBtn}
-      </Button>
+      {/* CTA — hide retry when already activated (chain won't accept it again) */}
+      {!alreadyActivated && (
+        <Button
+          onClick={handleClaim}
+          loading={status === "loading"}
+          disabled={status === "loading"}
+          className="!py-4 !text-base"
+        >
+          {status === "loading"
+            ? t.claim.steps[activeStepIndex]
+            : status === "error"
+            ? t.claim.retryBtn
+            : t.claim.activateBtn}
+        </Button>
+      )}
 
       {status !== "loading" && (
         <p

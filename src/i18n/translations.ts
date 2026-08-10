@@ -87,6 +87,9 @@ type TranslationsShape = {
     successDesc: string;
     activeNumberLabel: string;
     successFooter: string;
+    alreadyActivatedTitle: string;
+    alreadyActivatedDesc: string;
+    alreadyActivatedSupport: string;
   };
   success: {
     paymentConfirmed: string;
@@ -266,6 +269,11 @@ export const translations: Record<Language, TranslationsShape> = {
       activeNumberLabel: "Active number",
       successFooter:
         "You can now call and message other Israeli numbers.",
+      alreadyActivatedTitle: "This number is already activated",
+      alreadyActivatedDesc:
+        "It looks like this Israeli number was already linked to a device. You don’t need to activate it again.",
+      alreadyActivatedSupport:
+        "If you believe that’s wrong, contact support at support@arnacon.com",
     },
 
     success: {
@@ -452,6 +460,11 @@ export const translations: Record<Language, TranslationsShape> = {
       activeNumberLabel: "מספר פעיל",
       successFooter:
         "כעת תוכל להתקשר ולשלוח הודעות למספרים ישראליים אחרים.",
+      alreadyActivatedTitle: "המספר הזה כבר הופעל",
+      alreadyActivatedDesc:
+        "נראה שהמספר הישראלי הזה כבר מקושר למכשיר. אין צורך להפעיל אותו שוב.",
+      alreadyActivatedSupport:
+        "אם לדעתכם זו טעות, פנו לתמיכה ב־support@arnacon.com",
     },
 
     success: {

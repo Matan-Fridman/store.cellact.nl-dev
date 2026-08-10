@@ -38,7 +38,11 @@ async function post<T>(url: string, body: Record<string, unknown>): Promise<T> {
   if (!res.ok) {
     const error = typeof data.error === "string" ? data.error : "Request failed";
     const message = typeof data.message === "string" ? data.message : null;
-    throw new ApiError(message ? `${error}: ${message}` : error, res.status);
+    const code = typeof data.code === "string" ? data.code : null;
+    const detail = [code, message ? `${error}: ${message}` : error]
+      .filter(Boolean)
+      .join(" | ");
+    throw new ApiError(detail || error, res.status);
   }
 
   return data as T;

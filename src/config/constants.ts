@@ -87,5 +87,5 @@ export const PORT_PACKAGE_NAME = "Israeli Number Porting";
 export const PRICE_DISPLAY_AMOUNT = "3.99";  // one-time setup fee
 export const SUBSCRIPTION_PRICE   = "4.99";  // monthly subscription
 export const PRICE_CURRENCY = "eur";
-/** Display-only price shown in CTAs — includes setup so Stripe is not a surprise */
-export const PRICE_DISPLAY = "€4.99/mo + €3.99 setup";
+/** Display-only monthly price (short). Full setup+monthly lives in translated finePrint. */
+export const PRICE_DISPLAY = "€4.99/mo";

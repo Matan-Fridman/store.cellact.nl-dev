@@ -1,9 +1,8 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Button } from "../Button";
-import { PRICE_DISPLAY } from "../../config/constants";
 import { useLanguage } from "../../contexts/LanguageContext";
-import { shouldShowFbLanding } from "../../lib/campaign";
+import { shouldShowConversionLanding } from "../../lib/campaign";
 
 interface BottomCtaProps {
   onPurchase: () => void;
@@ -14,7 +13,7 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-15% 0px" });
   const { t, isRTL } = useLanguage();
-  const fb = shouldShowFbLanding();
+  const fb = shouldShowConversionLanding();
   const copy = fb ? t.campaignBottomCta : t.bottomCta;
 
   return (
@@ -108,7 +107,7 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
             fullWidth={false}
             className="!px-8 !py-4 !text-base"
           >
-            {loading ? copy.ctaLoading : copy.cta(PRICE_DISPLAY)}
+            {loading ? copy.ctaLoading : copy.cta}
           </Button>
 
           {/* App store badges — hidden on FB landings (compete with purchase) */}

@@ -2,55 +2,46 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "../../contexts/LanguageContext";
 import {
-  getFbCouponId,
-  shouldShowOfferUi,
+  dismissFbBanner,
+  isFbBannerDismissed,
+  shouldShowFacebookChrome,
 } from "../../lib/campaign";
-import {
-  trackOfferClick,
-  trackOfferImpression,
-} from "../../lib/analytics";
+import { trackEvent } from "../../lib/analytics";
 
-interface CampaignBannerProps {
+interface FacebookWelcomeBannerProps {
   onPurchase: () => void;
   loading: boolean;
 }
 
 /**
- * Soft top strip for Facebook "offer" A/B arm — not a blocking alert.
- * 30% copy only when a real Stripe coupon env is configured.
+ * Soft welcome strip for Facebook campaign traffic — not a discount popup.
+ * Aligns the ad promise (secondary number / no primary) with a direct checkout CTA.
  */
-export function CampaignBanner({ onPurchase, loading }: CampaignBannerProps) {
+export function FacebookWelcomeBanner({
+  onPurchase,
+  loading,
+}: FacebookWelcomeBannerProps) {
   const { t, isRTL } = useLanguage();
   const [visible, setVisible] = useState(false);
-  const showOffer = shouldShowOfferUi();
-  const showDiscountCopy = showOffer && Boolean(getFbCouponId());
+  const show = shouldShowFacebookChrome();
 
   useEffect(() => {
-    if (!showOffer) return;
-    try {
-      if (sessionStorage.getItem("secnum_banner_dismissed") === "1") return;
-    } catch {
-      // ignore
-    }
+    if (!show || isFbBannerDismissed()) return;
     setVisible(true);
-    trackOfferImpression();
-  }, [showOffer]);
+    void trackEvent("fb_welcome_impression");
+  }, [show]);
 
-  if (!showOffer || !visible) return null;
+  if (!show || !visible) return null;
 
-  const copy = showDiscountCopy ? t.campaign.offerBanner : t.campaign.welcomeBanner;
+  const copy = t.campaign.welcomeBanner;
 
   const dismiss = () => {
     setVisible(false);
-    try {
-      sessionStorage.setItem("secnum_banner_dismissed", "1");
-    } catch {
-      // ignore
-    }
+    dismissFbBanner();
   };
 
   const handleCta = () => {
-    trackOfferClick();
+    void trackEvent("fb_welcome_click");
     onPurchase();
   };
 
@@ -82,9 +73,7 @@ export function CampaignBanner({ onPurchase, loading }: CampaignBannerProps) {
               padding: "14px 16px",
               borderRadius: "14px",
               background: "rgba(12,11,20,0.92)",
-              border: showDiscountCopy
-                ? "1px solid rgba(96,165,250,0.45)"
-                : "1px solid rgba(255,255,255,0.12)",
+              border: "1px solid rgba(96,165,250,0.35)",
               boxShadow: "0 12px 40px rgba(0,0,0,0.45)",
               backdropFilter: "blur(16px)",
             }}
@@ -96,7 +85,6 @@ export function CampaignBanner({ onPurchase, loading }: CampaignBannerProps) {
                   fontSize: "13px",
                   fontWeight: 700,
                   color: "var(--color-text)",
-                  letterSpacing: "-0.01em",
                 }}
               >
                 {copy.title}
@@ -111,33 +99,24 @@ export function CampaignBanner({ onPurchase, loading }: CampaignBannerProps) {
               >
                 {copy.body}
               </p>
-              <div
+              <button
+                type="button"
+                onClick={handleCta}
+                disabled={loading}
                 style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "8px",
                   marginTop: "12px",
-                  alignItems: "center",
+                  border: "none",
+                  cursor: loading ? "wait" : "pointer",
+                  borderRadius: "8px",
+                  padding: "8px 14px",
+                  fontSize: "12.5px",
+                  fontWeight: 700,
+                  background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+                  color: "#fff",
                 }}
               >
-                <button
-                  type="button"
-                  onClick={handleCta}
-                  disabled={loading}
-                  style={{
-                    border: "none",
-                    cursor: loading ? "wait" : "pointer",
-                    borderRadius: "8px",
-                    padding: "8px 14px",
-                    fontSize: "12.5px",
-                    fontWeight: 700,
-                    background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-                    color: "#fff",
-                  }}
-                >
-                  {loading ? t.hero.ctaLoading : copy.cta}
-                </button>
-              </div>
+                {loading ? t.hero.ctaLoading : copy.cta}
+              </button>
             </div>
             <button
               type="button"

@@ -18,9 +18,8 @@ import phoneStep3 from "../../assets/secnum-4.webp";
 
 import { Button } from "../Button";
 import { ErrorAlert } from "../ErrorAlert";
-import { PRICE_DISPLAY } from "../../config/constants";
 import { useLanguage } from "../../contexts/LanguageContext";
-import { shouldShowFbLanding } from "../../lib/campaign";
+import { shouldShowConversionLanding } from "../../lib/campaign";
 
 const PHONE_SCREENS = [phoneHero, phoneStep1, phoneStep2, phoneStep3];
 
@@ -159,10 +158,10 @@ export function ScrollStory({
   const [activeScreen, setActiveScreen] = useState(0);
   const [showStickyBtn, setShowStickyBtn] = useState(false);
   const { t, isRTL } = useLanguage();
-  const fb = shouldShowFbLanding();
-  const hero = fb ? t.campaignHero : t.hero;
-  const steps = fb ? t.campaignSteps : t.steps;
-  const ctaLabel = hero.cta(PRICE_DISPLAY);
+  const conversion = shouldShowConversionLanding();
+  const hero = conversion ? t.campaignHero : t.hero;
+  const steps = conversion ? t.campaignSteps : t.steps;
+  const ctaLabel = hero.cta;
 
   // Build story panels from translations
   const moments: Moment[] = [

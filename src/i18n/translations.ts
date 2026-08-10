@@ -5,7 +5,8 @@ type HeroCopy = {
   headlineA: string;
   headlineB: string;
   sub: string;
-  cta: (price: string) => string;
+  /** Short CTA label — never mix LTR price strings into RTL labels */
+  cta: string;
   ctaLoading: string;
   finePrint: string;
 };
@@ -33,24 +34,18 @@ type TranslationsShape = {
     headlineA: string;
     headlineB: string;
     sub: string;
-    cta: (price: string) => string;
+    cta: string;
     ctaLoading: string;
   };
   campaignBottomCta: {
     headlineA: string;
     headlineB: string;
     sub: string;
-    cta: (price: string) => string;
+    cta: string;
     ctaLoading: string;
   };
   campaign: {
     welcomeBanner: {
-      title: string;
-      body: string;
-      cta: string;
-      dismiss: string;
-    };
-    offerBanner: {
       title: string;
       body: string;
       cta: string;
@@ -101,7 +96,7 @@ export const translations: Record<Language, TranslationsShape> = {
       headlineA: "A local Israeli number,",
       headlineB: "on your existing phone.",
       sub: "Call and message other Israeli numbers without a second SIM. Use it to register on WhatsApp or any app that needs an Israeli number. You can own multiple numbers.",
-      cta: (price) => `Get Your Number — ${price}`,
+      cta: "Get Your Number",
       ctaLoading: "Redirecting…",
       finePrint: "€3.99 one-time setup · €4.99/month · Up to 1,500 minutes",
     },
@@ -111,7 +106,7 @@ export const translations: Record<Language, TranslationsShape> = {
       headlineA: "Another Israeli number,",
       headlineB: "on the device you already have.",
       sub: "Works on iPhone, Android, or even an iPad — no extra SIM and no existing phone number required. Use it for WhatsApp, calls, and SMS on your current device.",
-      cta: (price) => `Get your secondary number — ${price}`,
+      cta: "Get your secondary number",
       ctaLoading: "Redirecting…",
       finePrint: "€3.99 setup once · then €4.99/month · cancel anytime · 1,500 minutes",
     },
@@ -184,7 +179,7 @@ export const translations: Record<Language, TranslationsShape> = {
       headlineA: "Your Israeli number.",
       headlineB: "Ready in minutes.",
       sub: "€3.99 one-time setup · €4.99/month · 1,500 minutes included",
-      cta: (price) => `Get Your Number — ${price}`,
+      cta: "Get Your Number",
       ctaLoading: "Redirecting…",
     },
 
@@ -192,7 +187,7 @@ export const translations: Record<Language, TranslationsShape> = {
       headlineA: "Your secondary number.",
       headlineB: "On this device.",
       sub: "€3.99 setup · €4.99/month · no primary number required · 1,500 minutes",
-      cta: (price) => `Get your secondary number — ${price}`,
+      cta: "Get your secondary number",
       ctaLoading: "Redirecting…",
     },
 
@@ -201,12 +196,6 @@ export const translations: Record<Language, TranslationsShape> = {
         title: "A second number on this device",
         body: "No primary number or extra SIM needed — including tablets. Secure checkout takes about a minute.",
         cta: "Continue to checkout",
-        dismiss: "Dismiss",
-      },
-      offerBanner: {
-        title: "30% off your first month",
-        body: "Facebook campaign offer — applied automatically at checkout. Setup fee still applies.",
-        cta: "Claim offer & checkout",
         dismiss: "Dismiss",
       },
       cancelled: "Checkout was cancelled — you can try again whenever you're ready.",
@@ -266,7 +255,7 @@ export const translations: Record<Language, TranslationsShape> = {
       headlineA: "מספר ישראלי מקומי,",
       headlineB: "על הטלפון הקיים שלך.",
       sub: "התקשר ושלח הודעות למספרים ישראליים אחרים ללא כרטיס SIM נוסף. השתמש בו לרישום בווטסאפ או כל אפליקציה שדורשת מספר ישראלי. ניתן להחזיק מספר מספרים.",
-      cta: (price) => `קבל את המספר שלך — ${price}`,
+      cta: "קבל את המספר שלך",
       ctaLoading: "מעביר…",
       finePrint: "הגדרה חד־פעמית €3.99 · €4.99 לחודש · עד 1,500 דקות",
     },
@@ -276,7 +265,7 @@ export const translations: Record<Language, TranslationsShape> = {
       headlineA: "מספר ישראלי שני,",
       headlineB: "על המכשיר שכבר אצלך.",
       sub: "מתאים לאייפון, אנדרואיד ואפילו אייפד — בלי SIM נוסף ובלי צורך במספר קיים. לווטסאפ, שיחות והודעות על המכשיר הנוכחי שלך.",
-      cta: (price) => `קבל מספר נוסף — ${price}`,
+      cta: "קבל מספר נוסף",
       ctaLoading: "מעביר…",
       finePrint: "הגדרה חד־פעמית €3.99 · אחר כך €4.99 לחודש · ביטול בכל רגע · 1,500 דקות",
     },
@@ -349,7 +338,7 @@ export const translations: Record<Language, TranslationsShape> = {
       headlineA: "המספר הישראלי שלך.",
       headlineB: "מוכן תוך דקות.",
       sub: "הגדרה חד־פעמית €3.99 · €4.99 לחודש · 1,500 דקות כלולות",
-      cta: (price) => `קבל את המספר שלך — ${price}`,
+      cta: "קבל את המספר שלך",
       ctaLoading: "מעביר…",
     },
 
@@ -357,7 +346,7 @@ export const translations: Record<Language, TranslationsShape> = {
       headlineA: "המספר הנוסף שלך.",
       headlineB: "על המכשיר הזה.",
       sub: "הגדרה €3.99 · €4.99 לחודש · בלי מספר ראשי · 1,500 דקות",
-      cta: (price) => `קבל מספר נוסף — ${price}`,
+      cta: "קבל מספר נוסף",
       ctaLoading: "מעביר…",
     },
 
@@ -366,12 +355,6 @@ export const translations: Record<Language, TranslationsShape> = {
         title: "מספר נוסף על המכשיר הזה",
         body: "בלי מספר ראשי ובלי SIM נוסף — כולל טאבלט. תשלום מאובטח תוך כדקה.",
         cta: "המשך לתשלום",
-        dismiss: "סגור",
-      },
-      offerBanner: {
-        title: "30% הנחה לחודש הראשון",
-        body: "הטבת קמפיין פייסבוק — מיושמת אוטומטית בקופה. דמי ההגדרה עדיין חלים.",
-        cta: "מימוש ההטבה ותשלום",
         dismiss: "סגור",
       },
       cancelled: "התשלום בוטל — אפשר לנסות שוב מתי שנוח לך.",

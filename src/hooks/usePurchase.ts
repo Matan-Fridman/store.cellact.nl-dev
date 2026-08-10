@@ -8,7 +8,6 @@ import {
   SUBSCRIPTION_PRICE,
   PRICE_CURRENCY,
 } from "../config/constants";
-import { getFbCouponId, shouldApplyFbCoupon } from "../lib/campaign";
 import { trackInitiateCheckout } from "../lib/analytics";
 import type { AsyncStatus } from "../types";
 
@@ -38,18 +37,11 @@ function buildFailureUrl(): string {
 export function usePurchase() {
   const [state, setState] = useState<PurchaseState>({ status: "idle", error: null });
 
-  /**
-   * Creates a Stripe Checkout session and redirects the browser to Stripe.
-   * On success Stripe redirects to /success?session_id=<uuid> — no polling needed.
-   * The backend emails an activation link containing a one-time claim token.
-   */
   const initiate = useCallback(async () => {
     setState({ status: "loading", error: null });
     trackInitiateCheckout();
 
     try {
-      const couponId = shouldApplyFbCoupon() ? getFbCouponId() : undefined;
-
       const { url } = await createCheckoutSession({
         packageId: PACKAGE_ID,
         packageName: PACKAGE_NAME,
@@ -59,7 +51,6 @@ export function usePurchase() {
         successUrl: buildSuccessUrl(),
         failureUrl: buildFailureUrl(),
         userId: generateUserId(),
-        couponId,
       });
 
       window.location.href = url;

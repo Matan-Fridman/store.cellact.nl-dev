@@ -6,9 +6,11 @@
 
 import {
   captureAttribution,
+  EXPERIMENT_ID,
   getAbVariant,
   getAttribution,
   isFacebookTraffic,
+  markExperimentExposed,
 } from "./campaign";
 import {
   PRICE_CURRENCY,
@@ -30,6 +32,7 @@ let pixelReady = false;
 
 export function initAnalytics(): void {
   captureAttribution();
+  getAbVariant();
   initMetaPixel();
 }
 
@@ -43,7 +46,6 @@ export function initMetaPixel(): void {
   const pixelId = getPixelId();
   if (!pixelId) return;
 
-  // Standard Meta Pixel bootstrap
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const f = window as any;
   if (f.fbq) {
@@ -87,14 +89,17 @@ function basePayload(): Record<string, unknown> {
   return {
     source: "secnumnl",
     isFacebook: isFacebookTraffic(),
-    abVariant: isFacebookTraffic() ? getAbVariant() : null,
+    experimentId: EXPERIMENT_ID,
+    abVariant: getAbVariant(),
     language: typeof navigator !== "undefined" ? navigator.language : undefined,
     uiLang:
       typeof document !== "undefined" ? document.documentElement.lang : undefined,
     screenWidth: typeof window !== "undefined" ? window.innerWidth : undefined,
     screenHeight: typeof window !== "undefined" ? window.innerHeight : undefined,
     userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-    referrer: attr.referrer || (typeof document !== "undefined" ? document.referrer || "direct" : "direct"),
+    referrer:
+      attr.referrer ||
+      (typeof document !== "undefined" ? document.referrer || "direct" : "direct"),
     utm_source: attr.utm_source,
     utm_medium: attr.utm_medium,
     utm_campaign: attr.utm_campaign,
@@ -128,7 +133,6 @@ export async function trackEvent(
 
 export function trackPageView(pathname: string): void {
   void trackEvent("page_view", { page: pathname });
-  // Pixel PageView already fired on init; fire again on SPA navigations
   if (pixelReady) {
     try {
       window.fbq?.("track", "PageView");
@@ -136,6 +140,11 @@ export function trackPageView(pathname: string): void {
       // ignore
     }
   }
+}
+
+export function trackExperimentExposure(): void {
+  if (!markExperimentExposed()) return;
+  void trackEvent("experiment_exposure");
 }
 
 export function trackViewContent(): void {
@@ -172,14 +181,6 @@ export function trackPurchase(sessionId?: string | null): void {
     value,
     num_items: 1,
   });
-}
-
-export function trackOfferImpression(): void {
-  void trackEvent("offer_impression", { abVariant: getAbVariant() });
-}
-
-export function trackOfferClick(): void {
-  void trackEvent("offer_click", { abVariant: getAbVariant() });
 }
 
 export function trackCheckoutCancel(): void {

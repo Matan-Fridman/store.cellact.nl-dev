@@ -1,12 +1,21 @@
 /**
- * Facebook / paid-campaign attribution, A/B assignment, and offer config.
- * Persists in sessionStorage so Stripe round-trips keep the same variant.
+ * Attribution + site-wide landing UX A/B + Facebook campaign chrome.
+ *
+ * Experiment: landing_ux_v1 (ALL visitors)
+ *   control     — classic “local Israeli number on your phone” landing
+ *   conversion  — secondary-number messaging, clearer price, fewer competing CTAs
+ *
+ * Facebook traffic (in addition to A/B):
+ *   Hebrew default, welcome strip aligned to the ad, hide App Store competition
  */
 
 const ATTR_KEY = "secnum_attr";
-const AB_KEY = "secnum_ab";
+const AB_KEY = "secnum_ab_landing_ux_v1";
+const EXPOSURE_KEY = "secnum_exp_exposed_landing_ux_v1";
+const FB_BANNER_KEY = "secnum_fb_banner_dismissed";
 
-export type AbVariant = "control" | "offer";
+export const EXPERIMENT_ID = "landing_ux_v1";
+export type AbVariant = "control" | "conversion";
 
 export interface Attribution {
   utm_source?: string;
@@ -33,11 +42,10 @@ function writeJson(key: string, value: unknown): void {
   try {
     sessionStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // ignore quota / private mode
+    // ignore
   }
 }
 
-/** Capture UTMs / fbclid once per session (first touch wins). */
 export function captureAttribution(): Attribution {
   if (typeof window === "undefined") {
     return { capturedAt: new Date().toISOString() };
@@ -95,7 +103,6 @@ export function isFacebookTraffic(): boolean {
   if (ref.includes("facebook.com") || ref.includes("fb.com") || ref.includes("instagram.com")) {
     return true;
   }
-  // Explicit campaign flag for testing / short links
   try {
     if (sessionStorage.getItem("secnum_force_fb") === "1") return true;
     if (new URLSearchParams(window.location.search).get("from") === "fb") return true;
@@ -105,15 +112,24 @@ export function isFacebookTraffic(): boolean {
   return false;
 }
 
-/** Sticky 50/50 A/B for Facebook visitors only. */
+/** Sticky 50/50 A/B for ALL visitors. Override with ?ab=control|conversion */
 export function getAbVariant(): AbVariant {
   if (typeof window === "undefined") return "control";
-  if (!isFacebookTraffic()) return "control";
+
+  try {
+    const forced = new URLSearchParams(window.location.search).get("ab");
+    if (forced === "control" || forced === "conversion") {
+      sessionStorage.setItem(AB_KEY, forced);
+      return forced;
+    }
+  } catch {
+    // ignore
+  }
 
   const stored = sessionStorage.getItem(AB_KEY);
-  if (stored === "control" || stored === "offer") return stored;
+  if (stored === "control" || stored === "conversion") return stored;
 
-  const assigned: AbVariant = Math.random() < 0.5 ? "control" : "offer";
+  const assigned: AbVariant = Math.random() < 0.5 ? "control" : "conversion";
   try {
     sessionStorage.setItem(AB_KEY, assigned);
   } catch {
@@ -122,22 +138,42 @@ export function getAbVariant(): AbVariant {
   return assigned;
 }
 
-/** Stripe coupon id for FB offer variant — only show 30% UI when set. */
-export function getFbCouponId(): string | undefined {
-  const id = import.meta.env.VITE_STRIPE_FB_COUPON_ID as string | undefined;
-  return id?.trim() || undefined;
+/**
+ * Landing copy: conversion arm for everyone in that variant.
+ * Facebook visitors always get the secondary-number landing so the page matches the ad.
+ */
+export function shouldShowConversionLanding(): boolean {
+  if (isFacebookTraffic()) return true;
+  return getAbVariant() === "conversion";
 }
 
-/** Offer A/B arm: soft banner (and coupon when configured). */
-export function shouldShowOfferUi(): boolean {
-  return isFacebookTraffic() && getAbVariant() === "offer";
-}
-
-/** True 30% discount path — only when Stripe coupon env is present. */
-export function shouldApplyFbCoupon(): boolean {
-  return shouldShowOfferUi() && Boolean(getFbCouponId());
-}
-
-export function shouldShowFbLanding(): boolean {
+/** Facebook-only chrome: welcome strip, quieter header badges. */
+export function shouldShowFacebookChrome(): boolean {
   return isFacebookTraffic();
+}
+
+export function isFbBannerDismissed(): boolean {
+  try {
+    return sessionStorage.getItem(FB_BANNER_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function dismissFbBanner(): void {
+  try {
+    sessionStorage.setItem(FB_BANNER_KEY, "1");
+  } catch {
+    // ignore
+  }
+}
+
+export function markExperimentExposed(): boolean {
+  try {
+    if (sessionStorage.getItem(EXPOSURE_KEY) === "1") return false;
+    sessionStorage.setItem(EXPOSURE_KEY, "1");
+    return true;
+  } catch {
+    return true;
+  }
 }

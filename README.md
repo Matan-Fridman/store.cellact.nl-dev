@@ -74,6 +74,26 @@ export default defineConfig([
 
 ---
 
+## Purchase language (en / he)
+
+Checkout language must survive the whole funnel — not just the browser.
+
+**Rule:** whatever language the customer used at purchase (`en` | `he`) is persisted on the order and reused for Stripe Checkout locale, success/cancel URLs, activation email, `/activate`, and the Arnacon `/claim` deep link.
+
+| Step | What carries `lang` |
+|------|---------------------|
+| Store checkout | `createCheckoutSession({ lang })` + `success_url` / `failure_url` include `?lang=` |
+| `payment-link-generator` | Writes `incomingOrders.lang`; sets Stripe `locale` |
+| `secnum-payment-worker` | Copies `lang` into `productOrders.metadata.lang` |
+| `secnum-*-executor` | Bilingual activation email; `claimTokens.lang`; activate URL `?lang=` |
+| `secnum-order-result` | Claim / Arnacon URL includes `?lang=` from the claim token |
+
+Do **not** rely on `localStorage` for email / phone / QR — that only works on the same browser.
+
+**Deploy order (required):** update GCP (`payment-link-generator`, payment worker, number/port executors, `secnum-order-result`) **before** or **with** the store release that sends `lang`. If the store sends `lang` and the generator schema is not updated yet, checkout returns 400.
+
+---
+
 ## Secnum services (backend)
 
 | Directory | Role |

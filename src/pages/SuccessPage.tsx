@@ -15,6 +15,13 @@ export function SuccessPage() {
   const purchaseTracked = useRef(false);
 
   const sessionId = searchParams.get("session_id");
+  const langParam = searchParams.get("lang");
+  const activateLang =
+    langParam === "he" || langParam === "en"
+      ? langParam
+      : document.documentElement.lang === "he"
+        ? "he"
+        : "en";
 
   useEffect(() => {
     if (!sessionId) {
@@ -39,7 +46,11 @@ export function SuccessPage() {
         const token = data?.claim_token as string | undefined;
         if (token) {
           unsub();
-          navigate(`/activate?token=${encodeURIComponent(token)}`, { replace: true });
+          const qs = new URLSearchParams({
+            token,
+            lang: activateLang,
+          });
+          navigate(`/activate?${qs.toString()}`, { replace: true });
         }
       },
       (err) => {
@@ -51,7 +62,7 @@ export function SuccessPage() {
 
     unsubRef.current = unsub;
     return () => unsub();
-  }, [sessionId, navigate]);
+  }, [sessionId, navigate, activateLang]);
 
   return (
     <Layout>

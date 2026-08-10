@@ -42,6 +42,11 @@ export interface CreateCheckoutParams {
   failureUrl: string;
   /** Required by the GCP function — pass a generated UUID for anonymous users */
   userId: string;
+  /**
+   * Purchase UI language. Persisted on the order and threaded into emails,
+   * activation links, and Arnacon claim URLs. Must be "en" | "he".
+   */
+  lang: "en" | "he";
   /** For port orders — the Firestore doc ID in portedNumbers collection */
   portDocId?: string;
   /**
@@ -65,6 +70,7 @@ export function createCheckoutSession(
     failure_url: params.failureUrl,
     userId: params.userId,
     serviceProvider: "secnum",
+    lang: params.lang === "he" ? "he" : "en",
   };
   if (params.portDocId) body.port_doc_id = params.portDocId;
   if (params.couponId) {

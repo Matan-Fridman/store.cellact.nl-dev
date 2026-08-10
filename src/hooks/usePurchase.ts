@@ -10,6 +10,7 @@ import {
 } from "../config/constants";
 import { trackInitiateCheckout } from "../lib/analytics";
 import { shouldShowConversionLanding } from "../lib/campaign";
+import { useLanguage } from "../contexts/LanguageContext";
 import type { AsyncStatus } from "../types";
 
 interface PurchaseState {
@@ -21,15 +22,24 @@ function generateUserId(): string {
   return crypto.randomUUID();
 }
 
-function buildSuccessUrl(): string {
-  return `${window.location.origin}/success`;
-}
-
-function buildFailureUrl(): string {
-  return `${window.location.origin}/?payment=cancelled`;
+/** Absolute store URL with purchase language (and optional extra query params). */
+function buildStoreUrl(
+  path: string,
+  lang: "en" | "he",
+  extra?: Record<string, string>,
+): string {
+  const url = new URL(path, window.location.origin);
+  url.searchParams.set("lang", lang);
+  if (extra) {
+    for (const [k, v] of Object.entries(extra)) {
+      url.searchParams.set(k, v);
+    }
+  }
+  return url.toString();
 }
 
 export function usePurchase() {
+  const { lang } = useLanguage();
   const [state, setState] = useState<PurchaseState>({ status: "idle", error: null });
 
   const initiate = useCallback(async () => {
@@ -37,6 +47,7 @@ export function usePurchase() {
     trackInitiateCheckout();
 
     const secondary = shouldShowConversionLanding();
+    const purchaseLang = lang === "he" ? "he" : "en";
 
     try {
       const { url } = await createCheckoutSession({
@@ -45,9 +56,10 @@ export function usePurchase() {
         transactionPrice: PRICE_DISPLAY_AMOUNT,
         subscriptionPrice: SUBSCRIPTION_PRICE,
         currency: PRICE_CURRENCY,
-        successUrl: buildSuccessUrl(),
-        failureUrl: buildFailureUrl(),
+        successUrl: buildStoreUrl("/success", purchaseLang),
+        failureUrl: buildStoreUrl("/", purchaseLang, { payment: "cancelled" }),
         userId: generateUserId(),
+        lang: purchaseLang,
       });
 
       window.location.href = url;
@@ -55,7 +67,7 @@ export function usePurchase() {
       const message = err instanceof Error ? err.message : "Could not start checkout";
       setState({ status: "error", error: message });
     }
-  }, []);
+  }, [lang]);
 
   const reset = useCallback(() => setState({ status: "idle", error: null }), []);
 

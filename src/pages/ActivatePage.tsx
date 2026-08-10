@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Layout } from "../components/Layout";
 import { redeemActivationToken } from "../services/api";
-import { buildQrUrl, formatIsraeliLocal } from "../utils/format";
+import { buildQrUrl, ensureClaimUrlDevParam, formatIsraeliLocal } from "../utils/format";
 import { useLanguage } from "../contexts/LanguageContext";
 
 type State =
@@ -14,11 +14,13 @@ type State =
 export function ActivatePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const calledRef = useRef(false);
   const [state, setState] = useState<State>({ phase: "loading" });
 
   const token = searchParams.get("token");
+  const purchaseLang = lang === "he" ? "he" : "en";
+  const isProd = !import.meta.env.DEV;
 
   useEffect(() => {
     if (!token) {
@@ -29,11 +31,20 @@ export function ActivatePage() {
     calledRef.current = true;
 
     redeemActivationToken(token)
-      .then(({ claimUrl, label }) => setState({ phase: "ready", claimUrl, label }))
+      .then(({ claimUrl, label }) =>
+        setState({
+          phase: "ready",
+          claimUrl: ensureClaimUrlDevParam(claimUrl, isProd, purchaseLang),
+          label,
+        }),
+      )
       .catch((err: Error) =>
-        setState({ phase: "error", message: err.message || "Invalid activation link." }),
+        setState({
+          phase: "error",
+          message: err.message || t.claim.invalidLinkTitle,
+        }),
       );
-  }, [token, navigate]);
+  }, [token, navigate, isProd, purchaseLang, t.claim.invalidLinkTitle]);
 
   return (
     <Layout>

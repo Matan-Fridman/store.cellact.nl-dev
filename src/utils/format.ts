@@ -51,23 +51,31 @@ export function buildArnaconClaimUrl(
   label: string,
   storeOrigin: string,
   prod?: boolean,
+  lang?: "en" | "he",
 ): string {
   const base = storeOrigin.replace(/\/$/, "");
-  const devParam = prod !== undefined ? `&dev=${prod ? "false" : "true"}` : "";
-  const claimPage = `${base}/claim?secret=${encodeURIComponent(userSecret)}&label=${encodeURIComponent(label)}${devParam}`;
+  const params = new URLSearchParams({
+    secret: userSecret,
+    label,
+  });
+  if (prod !== undefined) params.set("dev", prod ? "false" : "true");
+  if (lang === "he" || lang === "en") params.set("lang", lang);
+  const claimPage = `${base}/claim?${params.toString()}`;
   return `arnacon://install?url=${encodeURIComponent(claimPage)}&provider=Secnum`;
 }
 
 /**
- * Ensures the `dev` param inside an arnacon:// deep link matches the current
- * environment. Used when the server returns a pre-built claimUrl that may not
- * carry the correct dev flag for this client session.
+ * Ensures the `dev` (and optional `lang`) params inside an arnacon:// deep link
+ * match the current environment / purchase language.
  *
  * arnacon://install?url=<encoded /claim page>&provider=Secnum
  */
-export function ensureClaimUrlDevParam(claimUrl: string, prod: boolean): string {
+export function ensureClaimUrlDevParam(
+  claimUrl: string,
+  prod: boolean,
+  lang?: "en" | "he",
+): string {
   try {
-    // Extract the encoded inner URL from the arnacon:// deep link
     const qIndex = claimUrl.indexOf("?");
     if (qIndex === -1) return claimUrl;
 
@@ -76,11 +84,12 @@ export function ensureClaimUrlDevParam(claimUrl: string, prod: boolean): string 
     const encodedInner = params.get("url");
     if (!encodedInner) return claimUrl;
 
-    // Parse the inner claim-page URL and set/overwrite the dev param
     const inner = new URL(decodeURIComponent(encodedInner));
     inner.searchParams.set("dev", prod ? "false" : "true");
+    if (lang === "he" || lang === "en") {
+      inner.searchParams.set("lang", lang);
+    }
 
-    // Reconstruct the arnacon:// URL with the patched inner URL
     params.set("url", inner.toString());
     return claimUrl.slice(0, qIndex + 1) + params.toString();
   } catch {

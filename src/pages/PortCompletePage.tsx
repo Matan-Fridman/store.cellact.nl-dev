@@ -6,6 +6,7 @@ import { Layout } from "../components/Layout";
 import { ErrorAlert } from "../components/ErrorAlert";
 import { createCheckoutSession } from "../services/api";
 import { getDb } from "../lib/firebase";
+import { useLanguage } from "../contexts/LanguageContext";
 import {
   PORT_PACKAGE_ID,
   PORT_PACKAGE_NAME,
@@ -46,12 +47,17 @@ function generateUserId(): string {
   return crypto.randomUUID();
 }
 
-function buildSuccessUrl(): string {
-  return `${window.location.origin}/success`;
+function buildSuccessUrl(lang: "en" | "he"): string {
+  const url = new URL("/success", window.location.origin);
+  url.searchParams.set("lang", lang);
+  return url.toString();
 }
 
-function buildFailureUrl(portDocId: string): string {
-  return `${window.location.origin}/port/complete?id=${encodeURIComponent(portDocId)}`;
+function buildFailureUrl(portDocId: string, lang: "en" | "he"): string {
+  const url = new URL("/port/complete", window.location.origin);
+  url.searchParams.set("id", portDocId);
+  url.searchParams.set("lang", lang);
+  return url.toString();
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -399,7 +405,9 @@ function ReadyState({
 export function PortCompletePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { lang } = useLanguage();
   const portDocId = searchParams.get("id") ?? "";
+  const purchaseLang = lang === "he" ? "he" : "en";
 
   const [loadStatus, setLoadStatus] = useState<"loading" | "ready" | "error">("loading");
   const [portedDoc, setPortedDoc] = useState<PortedNumberDoc | null>(null);
@@ -456,9 +464,10 @@ export function PortCompletePage() {
         transactionPrice: PRICE_DISPLAY_AMOUNT,
         subscriptionPrice: SUBSCRIPTION_PRICE,
         currency: PRICE_CURRENCY,
-        successUrl: buildSuccessUrl(),
-        failureUrl: buildFailureUrl(portDocId),
+        successUrl: buildSuccessUrl(purchaseLang),
+        failureUrl: buildFailureUrl(portDocId, purchaseLang),
         userId: generateUserId(),
+        lang: purchaseLang,
         portDocId,
       });
       window.location.href = url;
@@ -467,7 +476,7 @@ export function PortCompletePage() {
       setPayError(msg);
       setPaying(false);
     }
-  }, [portedDoc, portDocId, paying]);
+  }, [portedDoc, portDocId, paying, purchaseLang]);
 
   return (
     <Layout>

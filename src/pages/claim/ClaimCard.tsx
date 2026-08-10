@@ -3,7 +3,7 @@ import { Button } from "../../components/Button";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { ClaimResult } from "./ClaimResult";
 import { useClaim } from "../../hooks/useClaim";
-import { formatPhone } from "../../utils/format";
+import { formatIsraeliLocal } from "../../utils/format";
 import { useLanguage } from "../../contexts/LanguageContext";
 import type { ClaimParams } from "../../types";
 
@@ -57,7 +57,7 @@ export function ClaimCard({ params }: ClaimCardProps) {
         </h1>
       </div>
 
-      {/* Number display */}
+      {/* Number display — force LTR so +972 / local digits don't reverse in Hebrew RTL */}
       <div
         style={{
           padding: "18px 20px",
@@ -82,14 +82,17 @@ export function ClaimCard({ params }: ClaimCardProps) {
           {t.claim.yourNumber}
         </span>
         <span
+          dir="ltr"
           style={{
             fontSize: "1.05rem",
             fontWeight: 700,
             color: "var(--color-text)",
             letterSpacing: "0.01em",
+            fontVariantNumeric: "tabular-nums",
+            unicodeBidi: "isolate",
           }}
         >
-          {formatPhone(params.label)}
+          {formatIsraeliLocal(params.label)}
         </span>
       </div>
 

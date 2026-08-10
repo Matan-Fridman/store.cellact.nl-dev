@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import type { ActivateResponse } from "../../types";
-import { formatPhone } from "../../utils/format";
+import { formatIsraeliLocal } from "../../utils/format";
 import { useLanguage } from "../../contexts/LanguageContext";
 
 interface ClaimResultProps {
@@ -59,7 +59,7 @@ export function ClaimResult({ data, label }: ClaimResultProps) {
         </p>
       </div>
 
-      {/* Number card */}
+      {/* Number card — LTR isolate so digits never reverse under Hebrew RTL */}
       <div
         style={{
           padding: "20px 22px",
@@ -81,14 +81,17 @@ export function ClaimResult({ data, label }: ClaimResultProps) {
           {t.claim.activeNumberLabel}
         </p>
         <p
+          dir="ltr"
           style={{
             fontSize: "1.4rem",
             fontWeight: 700,
             letterSpacing: "-0.01em",
             color: "var(--color-text)",
+            fontVariantNumeric: "tabular-nums",
+            unicodeBidi: "isolate",
           }}
         >
-          {formatPhone(label)}
+          {formatIsraeliLocal(label)}
         </p>
         {data.name && (
           <p

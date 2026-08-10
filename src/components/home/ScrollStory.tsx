@@ -19,7 +19,10 @@ import phoneStep3 from "../../assets/secnum-4.webp";
 import { Button } from "../Button";
 import { ErrorAlert } from "../ErrorAlert";
 import { useLanguage } from "../../contexts/LanguageContext";
-import { shouldShowConversionLanding } from "../../lib/campaign";
+import {
+  isFacebookTraffic,
+  shouldShowConversionLanding,
+} from "../../lib/campaign";
 
 const PHONE_SCREENS = [phoneHero, phoneStep1, phoneStep2, phoneStep3];
 
@@ -146,6 +149,8 @@ interface ScrollStoryProps {
   loading: boolean;
   error: string | null;
   onDismissError: () => void;
+  /** FB ad landings: hero-only — no multi-screen scroll theater */
+  compact?: boolean;
 }
 
 export function ScrollStory({
@@ -153,9 +158,11 @@ export function ScrollStory({
   loading,
   error,
   onDismissError,
+  compact = false,
 }: ScrollStoryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeScreen, setActiveScreen] = useState(0);
+  // FB compact: never use sticky CTA — it stacks on the offer card.
   const [showStickyBtn, setShowStickyBtn] = useState(false);
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches,
@@ -167,6 +174,7 @@ export function ScrollStory({
   const hero = conversion ? t.campaignHero : t.hero;
   const steps = conversion ? t.campaignSteps : t.steps;
   const ctaLabel = hero.cta;
+  const fbCompact = compact || isFacebookTraffic();
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -174,6 +182,16 @@ export function ScrollStory({
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
+
+  useEffect(() => {
+    if (fbCompact) {
+      document.documentElement.dataset.fbLand = "1";
+      setShowStickyBtn(false);
+      return () => {
+        delete document.documentElement.dataset.fbLand;
+      };
+    }
+  }, [fbCompact]);
 
   // Build story panels from translations
   const moments: Moment[] = [
@@ -185,14 +203,17 @@ export function ScrollStory({
       sub: hero.sub,
       isHero: true,
     },
-    ...steps.map((s) => ({
-      step: s.step,
-      eyebrow: null,
-      headlineA: s.headlineA,
-      headlineB: s.headlineB,
-      sub: s.sub,
-      isHero: false,
-    })),
+    // FB traffic: one decision screen. Extra panels are where impulse dies.
+    ...(fbCompact
+      ? []
+      : steps.map((s) => ({
+          step: s.step,
+          eyebrow: null,
+          headlineA: s.headlineA,
+          headlineB: s.headlineB,
+          sub: s.sub,
+          isHero: false,
+        }))),
   ];
 
   const { scrollYProgress } = useScroll({
@@ -204,6 +225,12 @@ export function ScrollStory({
   // Container ≈ 435vh: 4×100vh panels + 35vh extra + sticky overhead.
   // Thresholds below keep each screen centered on its story moment.
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    if (fbCompact) {
+      setActiveScreen(0);
+      setShowStickyBtn(false);
+      return;
+    }
+
     if (latest < 0.24)       setActiveScreen(0);
     else if (latest < 0.47)  setActiveScreen(1);
     else if (latest < 0.70)  setActiveScreen(2);
@@ -219,6 +246,10 @@ export function ScrollStory({
   // Desktop: stay opaque until the late exit fade.
   // Mobile: dim hard once the first step arrives so copy stays readable over the phone.
   const phoneOpacity = useTransform(scrollYProgress, (progress) => {
+    // Compact FB land has ~0 scroll range — progress often reads as 1 and
+    // used to fade the phone out completely. Keep it fully visible.
+    if (fbCompact) return 1;
+
     let opacity = 1;
     if (progress >= 0.92) opacity = 0;
     else if (progress > 0.7) opacity = 1 - (progress - 0.7) / 0.22;
@@ -273,11 +304,19 @@ export function ScrollStory({
         <div
           className={`scroll-story-phone-stage${isRTL ? " scroll-story-phone-stage--rtl" : ""}`}
         >
-          {/* Scroll-driven exit wrapper */}
-          <motion.div style={{ y: phoneY, opacity: phoneOpacity, scale: phoneScale }}>
+          {/* Scroll-driven exit wrapper — static on FB compact so phone stays visible */}
+          <motion.div
+            style={
+              fbCompact
+                ? { opacity: 1, y: 0, scale: 1 }
+                : { y: phoneY, opacity: phoneOpacity, scale: phoneScale }
+            }
+          >
             {/* Mobile: dim phone once past hero so step copy stays readable */}
             <motion.div
-              animate={{ opacity: isMobile && activeScreen >= 1 ? 0.18 : 1 }}
+              animate={{
+                opacity: !fbCompact && isMobile && activeScreen >= 1 ? 0.18 : 1,
+              }}
               transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] as const }}
             >
 
@@ -378,7 +417,7 @@ export function ScrollStory({
             finePrint={hero.finePrint}
           />
         ))}
-        <div style={{ height: "35vh" }} />
+        {!fbCompact && <div style={{ height: "35vh" }} />}
       </div>
 
       {/* ── Sticky purchase button ────────────────────────────────────────────── */}

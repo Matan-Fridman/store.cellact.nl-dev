@@ -48,6 +48,8 @@ type TranslationsShape = {
     welcomeBanner: {
       title: string;
       body: string;
+      priceNote: string;
+      euroNote: string;
       cta: string;
       dismiss: string;
     };
@@ -71,8 +73,14 @@ type TranslationsShape = {
     successFooter: string;
   };
   success: {
+    paymentConfirmed: string;
     loading: string;
     loadingDesc: string;
+    loadingHint: string;
+    emailTitle: string;
+    emailDesc: string;
+    emailHint: string;
+    emailSteps: [string, string, string][];
     scanTitle: string;
     scanTitleB: string;
     scanDesc: (appName: string) => string;
@@ -105,10 +113,11 @@ export const translations: Record<Language, TranslationsShape> = {
       eyebrow: "Secondary number — no primary needed",
       headlineA: "Another Israeli number,",
       headlineB: "on the device you already have.",
-      sub: "Works on iPhone, Android, or even an iPad — no extra SIM and no existing phone number required. Use it for WhatsApp, calls, and SMS on your current device.",
-      cta: "Get your secondary number",
+      sub: "No primary number, no extra SIM — even iPad. Pay here, activate in Arnacon on this device. For WhatsApp, calls, and SMS.",
+      cta: "Get number — €8.98 first month",
       ctaLoading: "Redirecting…",
-      finePrint: "€3.99 setup once · then €4.99/month · cancel anytime · 1,500 minutes",
+      finePrint:
+        "€3.99 setup + €4.99/mo = €8.98 first month · then €4.99/mo · cancel anytime · EUR (international Arnacon network)",
     },
 
     steps: [
@@ -137,13 +146,13 @@ export const translations: Record<Language, TranslationsShape> = {
         step: "01",
         headlineA: "Pay once,",
         headlineB: "get your number.",
-        sub: "Clear pricing: €3.99 setup + €4.99/month. No contract. Your secondary number is reserved as soon as you pay.",
+        sub: "First month €8.98 (€3.99 setup + €4.99). Then €4.99/mo. No contract. Number reserved when you pay.",
       },
       {
         step: "02",
         headlineA: "Activate in the",
         headlineB: "Arnacon app.",
-        sub: "After payment, open Arnacon on this device (or scan the QR). No physical SIM — your number lives in the app.",
+        sub: "Arnacon is the app that runs your number on this device — no physical SIM. Open it after payment (or scan the QR).",
       },
       {
         step: "03",
@@ -186,16 +195,19 @@ export const translations: Record<Language, TranslationsShape> = {
     campaignBottomCta: {
       headlineA: "Your secondary number.",
       headlineB: "On this device.",
-      sub: "€3.99 setup · €4.99/month · no primary number required · 1,500 minutes",
-      cta: "Get your secondary number",
+      sub: "€8.98 first month · then €4.99/mo · no primary number · charged in EUR",
+      cta: "Get secondary number",
       ctaLoading: "Redirecting…",
     },
 
     campaign: {
       welcomeBanner: {
-        title: "A second number on this device",
-        body: "No primary number or extra SIM needed — including tablets. Secure checkout takes about a minute.",
-        cta: "Continue to checkout",
+        title: "Thanks for coming from the ad",
+        body: "Secondary Israeli number on this device — no primary SIM needed.",
+        priceNote: "First month €8.98, then €4.99/mo · cancel anytime",
+        euroNote:
+          "Priced in euros because Secnum/Arnacon is built for international service. Israelis get special promotions as the Arnacon network adds new worldwide services.",
+        cta: "Pay & get your number",
         dismiss: "Dismiss",
       },
       cancelled: "Checkout was cancelled — you can try again whenever you're ready.",
@@ -227,9 +239,22 @@ export const translations: Record<Language, TranslationsShape> = {
     },
 
     success: {
+      paymentConfirmed: "Payment confirmed",
       loading: "Preparing your number…",
       loadingDesc:
-        "Payment received. We're reserving your Israeli number. This usually takes just a few seconds.",
+        "We're setting up your Israeli number now. This usually takes 1–2 minutes — you'll move to activation automatically.",
+      loadingHint:
+        "You can close this page — an activation link will also be sent to your email.",
+      emailTitle: "Check your email",
+      emailDesc:
+        "Your number is almost ready. You'll get an activation link by email — open it for your QR code and connect in Arnacon.",
+      emailHint:
+        "The email can take up to 10 minutes. Check spam if you don't see it.",
+      emailSteps: [
+        ["📬", "Check your inbox", "Look for an email from Secnum by Cellact."],
+        ["🔗", "Click the activation link", "It opens a page with your personal QR code."],
+        ["📱", "Scan or tap to connect", "Open Arnacon and your number will be active."],
+      ],
       scanTitle: "Scan to activate",
       scanTitleB: "your number.",
       scanDesc: (app) =>
@@ -237,7 +262,7 @@ export const translations: Record<Language, TranslationsShape> = {
       steps: ["Open Arnacon", "Tap Scan", "Done"],
       orDivider: "or",
       installOnDevice: "Activate on this device",
-      back: "← Back to store",
+      back: "← Back to home",
       errorTitle: "Something went wrong",
       errorBack: "Back to Store",
     },
@@ -264,10 +289,11 @@ export const translations: Record<Language, TranslationsShape> = {
       eyebrow: "מספר נוסף — בלי מספר ראשי",
       headlineA: "מספר ישראלי שני,",
       headlineB: "על המכשיר שכבר אצלך.",
-      sub: "מתאים לאייפון, אנדרואיד ואפילו אייפד — בלי SIM נוסף ובלי צורך במספר קיים. לווטסאפ, שיחות והודעות על המכשיר הנוכחי שלך.",
-      cta: "קבל מספר נוסף",
+      sub: "בלי מספר ראשי, בלי SIM — גם באייפד. משלמים כאן ומפעילים ב-Arnacon על המכשיר. לווטסאפ, שיחות והודעות.",
+      cta: "קבל מספר — €8.98 לחודש הראשון",
       ctaLoading: "מעביר…",
-      finePrint: "הגדרה חד־פעמית €3.99 · אחר כך €4.99 לחודש · ביטול בכל רגע · 1,500 דקות",
+      finePrint:
+        "€3.99 הגדרה + €4.99 לחודש = €8.98 לחודש הראשון · אחר כך €4.99 · ביטול בכל רגע · אירו (רשת Arnacon הבינלאומית)",
     },
 
     steps: [
@@ -296,13 +322,13 @@ export const translations: Record<Language, TranslationsShape> = {
         step: "01",
         headlineA: "משלמים פעם אחת,",
         headlineB: "מקבלים מספר.",
-        sub: "מחיר ברור: €3.99 הגדרה + €4.99 לחודש. בלי חוזה. המספר הנוסף נשמר ברגע התשלום.",
+        sub: "חודש ראשון €8.98 (€3.99 הגדרה + €4.99). אחר כך €4.99 לחודש. בלי חוזה. המספר נשמר ברגע התשלום.",
       },
       {
         step: "02",
         headlineA: "הפעלה באפליקציית",
         headlineB: "Arnacon.",
-        sub: "אחרי התשלום פותחים את Arnacon במכשיר הזה (או סורקים QR). בלי SIM פיזי — המספר חי באפליקציה.",
+        sub: "Arnacon היא האפליקציה שמריצה את המספר על המכשיר — בלי SIM פיזי. אחרי התשלום פותחים אותה (או סורקים QR).",
       },
       {
         step: "03",
@@ -345,16 +371,19 @@ export const translations: Record<Language, TranslationsShape> = {
     campaignBottomCta: {
       headlineA: "המספר הנוסף שלך.",
       headlineB: "על המכשיר הזה.",
-      sub: "הגדרה €3.99 · €4.99 לחודש · בלי מספר ראשי · 1,500 דקות",
+      sub: "€8.98 לחודש הראשון · אחר כך €4.99 לחודש · בלי מספר ראשי · חיוב באירו",
       cta: "קבל מספר נוסף",
       ctaLoading: "מעביר…",
     },
 
     campaign: {
       welcomeBanner: {
-        title: "מספר נוסף על המכשיר הזה",
-        body: "בלי מספר ראשי ובלי SIM נוסף — כולל טאבלט. תשלום מאובטח תוך כדקה.",
-        cta: "המשך לתשלום",
+        title: "תודה שלחצת מהמודעה",
+        body: "מספר ישראלי נוסף על המכשיר הזה — בלי מספר ראשי ובלי SIM.",
+        priceNote: "חודש ראשון €8.98, אחר כך €4.99 לחודש · ביטול בכל רגע",
+        euroNote:
+          "המחיר באירו כי Secnum/Arnacon בנויים לשירות בינלאומי. ישראלים מקבלים מבצעים מיוחדים כשרשת Arnacon מוסיפה שירותים חדשים בעולם.",
+        cta: "לתשלום — קבל מספר",
         dismiss: "סגור",
       },
       cancelled: "התשלום בוטל — אפשר לנסות שוב מתי שנוח לך.",
@@ -382,9 +411,22 @@ export const translations: Record<Language, TranslationsShape> = {
     },
 
     success: {
-      loading: "מכין את המספר שלך…",
+      paymentConfirmed: "התשלום אושר",
+      loading: "מכינים את המספר שלך…",
       loadingDesc:
-        "התשלום התקבל. אנו שומרים את המספר הישראלי שלך. בדרך כלל זה לוקח מספר שניות.",
+        "אנחנו מגדירים עכשיו את המספר הישראלי שלך. בדרך כלל זה לוקח 1–2 דקות — תועבר אוטומטית למסך ההפעלה.",
+      loadingHint:
+        "אפשר לסגור את העמוד — קישור להפעלה יישלח גם לאימייל שלך.",
+      emailTitle: "בדקו את האימייל",
+      emailDesc:
+        "המספר כמעט מוכן. תקבלו קישור להפעלה באימייל — פתחו אותו לקבלת קוד QR וחיבור ב-Arnacon.",
+      emailHint:
+        "האימייל יכול להגיע עד 10 דקות. בדקו גם בספאם אם לא מופיע.",
+      emailSteps: [
+        ["📬", "בדקו את תיבת הדואר", "חפשו אימייל מ-Secnum by Cellact."],
+        ["🔗", "לחצו על קישור ההפעלה", "ייפתח עמוד עם קוד QR אישי."],
+        ["📱", "סרקו או הקישו לחיבור", "פתחו את Arnacon והמספר יהיה פעיל."],
+      ],
       scanTitle: "סרוק להפעלת",
       scanTitleB: "המספר שלך.",
       scanDesc: (app) =>
@@ -392,7 +434,7 @@ export const translations: Record<Language, TranslationsShape> = {
       steps: ["פתח Arnacon", "הקש סריקה", "סיום"],
       orDivider: "או",
       installOnDevice: "הפעל ב-Arnacon במכשיר זה",
-      back: "→ חזרה לחנות",
+      back: "→ חזרה לדף הבית",
       errorTitle: "משהו השתבש",
       errorBack: "חזרה לחנות",
     },

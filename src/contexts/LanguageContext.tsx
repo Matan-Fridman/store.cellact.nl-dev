@@ -23,8 +23,14 @@ function resolveInitialLang(): Language {
   const VALID: Language[] = ["en", "he"];
   captureAttribution();
 
-  const urlParam = new URLSearchParams(window.location.search).get("lang") as Language | null;
+  const params = new URLSearchParams(window.location.search);
+  const urlParam = params.get("lang") as Language | null;
+  // Explicit ?lang= always wins (manual toggle also writes it).
   if (urlParam && VALID.includes(urlParam)) return urlParam;
+
+  // FB ad traffic: force Hebrew even if a prior EN visit left localStorage.
+  // Secondary-number campaign is Hebrew; English landing is a silent conversion killer.
+  if (isFacebookTraffic()) return "he";
 
   try {
     const stored = localStorage.getItem("secnum_lang") as Language | null;
@@ -32,9 +38,6 @@ function resolveInitialLang(): Language {
   } catch {
     // ignore
   }
-
-  // Facebook campaign traffic is overwhelmingly Hebrew — default HE when unset
-  if (isFacebookTraffic()) return "he";
 
   return "en";
 }

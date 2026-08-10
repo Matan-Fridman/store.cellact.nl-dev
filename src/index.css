@@ -264,11 +264,137 @@ body::after {
   will-change: transform;
 }
 
+/* FB welcome — centered modal over dimmed page */
+.fb-welcome-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(6, 8, 18, 0.82);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.fb-welcome-banner {
+  width: min(420px, 100%);
+  margin: 0;
+}
+
+.fb-welcome-banner-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 16px 16px;
+  border-radius: 18px;
+  background: #0f0e18;
+  border: 1px solid rgba(96, 165, 250, 0.45);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65);
+  text-align: center;
+}
+
+.fb-welcome-banner-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  padding-inline: 28px;
+}
+
+.fb-welcome-banner-title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.fb-welcome-banner-close {
+  position: absolute;
+  inset-inline-end: 0;
+  top: -2px;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  padding: 0;
+}
+
+.fb-welcome-banner-body {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.fb-welcome-banner-price {
+  margin: 4px 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #86efac;
+}
+
+.fb-welcome-banner-euro {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+  opacity: 0.9;
+}
+
+.fb-welcome-banner-cta {
+  margin-top: 8px;
+  border: none;
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 13px 16px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: #fff;
+  width: 100%;
+}
+
+.fb-welcome-banner-cta:disabled {
+  cursor: wait;
+  opacity: 0.75;
+}
+
 @media (max-width: 767px) {
+  .fb-welcome-banner-card {
+    padding: 16px 14px 14px;
+    gap: 7px;
+  }
+
+  .fb-welcome-banner-title {
+    font-size: 1rem;
+  }
+
+  .fb-welcome-banner-euro {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
   .scroll-story {
-    --story-phone-center-y: clamp(540px, 70svh, 690px);
-    --story-phone-width: clamp(260px, 72vw, 340px);
-    --story-phone-half-height: clamp(143px, 39.6vw, 187px);
+    --story-phone-center-y: clamp(500px, 66svh, 640px);
+    --story-phone-width: clamp(240px, 68vw, 320px);
+    --story-phone-half-height: clamp(132px, 37.4vw, 176px);
     --story-phone-gap: 12px;
   }
 
@@ -280,6 +406,16 @@ body::after {
 
   .site-header-brand {
     display: none;
+  }
+
+  /* FB ad landings: brand must stay visible — anonymous dark page kills trust */
+  html[data-fb-land="1"] .site-header-inner {
+    justify-content: space-between;
+  }
+
+  html[data-fb-land="1"] .site-header-brand {
+    display: block;
+    font-size: 1.05rem;
   }
 
   .site-header-controls {
@@ -304,7 +440,8 @@ body::after {
     position: relative;
     height: max(100svh, 780px);
     align-items: flex-start;
-    padding: clamp(92px, 12svh, 116px) 24px 28px;
+    padding: calc(72px + env(safe-area-inset-top, 0px)) 20px 28px;
+    overflow: visible;
   }
 
   .scroll-story-copy {
@@ -313,12 +450,15 @@ body::after {
   }
 
   .scroll-story-panel--hero .scroll-story-copy-inner {
-    transform: translateY(-10px);
+    transform: none;
   }
 
   .scroll-story-eyebrow {
-    margin-bottom: 14px;
+    margin-bottom: 10px;
     font-size: 10px;
+    line-height: 1.35;
+    white-space: normal;
+    letter-spacing: 0.08em;
   }
 
   .scroll-story-step {
@@ -327,16 +467,17 @@ body::after {
   }
 
   .scroll-story-headline {
-    max-width: 11ch;
-    font-size: clamp(2rem, 9.2vw, 2.65rem);
-    line-height: 1.02;
+    max-width: none;
+    font-size: clamp(1.7rem, 7.6vw, 2.35rem);
+    line-height: 1.12;
+    overflow-wrap: anywhere;
   }
 
   .scroll-story-subtext {
     max-width: min(100%, 22rem);
-    margin-top: 0.9rem;
-    font-size: 0.95rem;
-    line-height: 1.48;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    line-height: 1.45;
   }
 
   .scroll-story-phone-stage,
@@ -355,7 +496,7 @@ body::after {
   .scroll-story-panel--hero .scroll-story-cta {
     position: absolute;
     top: calc(var(--story-phone-center-y) + var(--story-phone-half-height) + var(--story-phone-gap));
-    inset-inline: 24px;
+    inset-inline: 20px;
     margin-top: 0;
     align-items: stretch;
   }
@@ -380,6 +521,45 @@ body::after {
   .scroll-story-sticky-cta-btn {
     width: 100% !important;
   }
+
+  /*
+   * FB compact land — MUST come after base mobile rules.
+   * Centered modal overlays; phone stays visible behind the dim layer.
+   */
+  html[data-fb-land="1"] .scroll-story {
+    --story-phone-center-y: clamp(380px, 54svh, 520px);
+    --story-phone-width: clamp(210px, 60vw, 290px);
+    --story-phone-half-height: clamp(116px, 33vw, 160px);
+    --story-phone-gap: 10px;
+  }
+
+  html[data-fb-land="1"] .scroll-story-panel {
+    height: 100svh;
+    min-height: 100svh;
+  }
+
+  html[data-fb-land="1"] .scroll-story-headline {
+    font-size: clamp(1.55rem, 6.8vw, 2.05rem);
+  }
+
+  html[data-fb-land="1"] .scroll-story-subtext {
+    margin-top: 0.55rem;
+    font-size: 0.84rem;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  html[data-fb-land="1"] .scroll-story-sticky-cta {
+    display: none !important;
+  }
+
+  /* Modal owns the buy path while open; hero CTA returns after dismiss */
+  html[data-fb-banner="1"] .scroll-story-panel--hero .scroll-story-cta {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -397,7 +577,7 @@ body::after {
   }
 
   .scroll-story-panel {
-    padding-top: 72px;
+    padding-top: calc(64px + env(safe-area-inset-top, 0px));
   }
 
   .scroll-story-eyebrow {

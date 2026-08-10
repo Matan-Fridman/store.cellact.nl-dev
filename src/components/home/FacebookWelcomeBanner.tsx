@@ -14,8 +14,8 @@ interface FacebookWelcomeBannerProps {
 }
 
 /**
- * Soft welcome strip for Facebook campaign traffic — not a discount popup.
- * Aligns the ad promise (secondary number / no primary) with a direct checkout CTA.
+ * Centered modal for Facebook ad traffic — price, euro/international context, CTA.
+ * Detected via fbclid / utm / referrer / ?from=fb (session-sticky). No separate route.
  */
 export function FacebookWelcomeBanner({
   onPurchase,
@@ -30,6 +30,22 @@ export function FacebookWelcomeBanner({
     setVisible(true);
     void trackEvent("fb_welcome_impression");
   }, [show]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!visible) {
+      delete root.dataset.fbBanner;
+      document.body.style.overflow = "";
+      return;
+    }
+
+    root.dataset.fbBanner = "1";
+    document.body.style.overflow = "hidden";
+    return () => {
+      delete root.dataset.fbBanner;
+      document.body.style.overflow = "";
+    };
+  }, [visible]);
 
   if (!show || !visible) return null;
 
@@ -49,95 +65,52 @@ export function FacebookWelcomeBanner({
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ y: -24, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -24, opacity: 0 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          role="region"
+          className="fb-welcome-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.22 }}
+          role="dialog"
+          aria-modal="true"
           aria-label={copy.title}
-          style={{
-            position: "fixed",
-            top: "64px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 60,
-            width: "min(560px, calc(100% - 24px))",
-            direction: isRTL ? "rtl" : "ltr",
-          }}
+          onClick={dismiss}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "12px",
-              padding: "14px 16px",
-              borderRadius: "14px",
-              background: "rgba(12,11,20,0.92)",
-              border: "1px solid rgba(96,165,250,0.35)",
-              boxShadow: "0 12px 40px rgba(0,0,0,0.45)",
-              backdropFilter: "blur(16px)",
-            }}
+          <motion.div
+            className="fb-welcome-banner"
+            initial={{ opacity: 0, scale: 0.94, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            style={{ direction: isRTL ? "rtl" : "ltr" }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  color: "var(--color-text)",
-                }}
-              >
-                {copy.title}
-              </p>
-              <p
-                style={{
-                  margin: "4px 0 0",
-                  fontSize: "12.5px",
-                  lineHeight: 1.45,
-                  color: "var(--color-text-muted)",
-                }}
-              >
-                {copy.body}
-              </p>
+            <div className="fb-welcome-banner-card">
+              <div className="fb-welcome-banner-top">
+                <p className="fb-welcome-banner-title">{copy.title}</p>
+                <button
+                  type="button"
+                  onClick={dismiss}
+                  aria-label={copy.dismiss}
+                  className="fb-welcome-banner-close"
+                >
+                  ×
+                </button>
+              </div>
+
+              <p className="fb-welcome-banner-body">{copy.body}</p>
+              <p className="fb-welcome-banner-price">{copy.priceNote}</p>
+              <p className="fb-welcome-banner-euro">{copy.euroNote}</p>
+
               <button
                 type="button"
                 onClick={handleCta}
                 disabled={loading}
-                style={{
-                  marginTop: "12px",
-                  border: "none",
-                  cursor: loading ? "wait" : "pointer",
-                  borderRadius: "8px",
-                  padding: "8px 14px",
-                  fontSize: "12.5px",
-                  fontWeight: 700,
-                  background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-                  color: "#fff",
-                }}
+                className="fb-welcome-banner-cta"
               >
-                {loading ? t.hero.ctaLoading : copy.cta}
+                {loading ? t.campaignHero.ctaLoading : copy.cta}
               </button>
             </div>
-            <button
-              type="button"
-              onClick={dismiss}
-              aria-label={copy.dismiss}
-              style={{
-                flexShrink: 0,
-                width: "28px",
-                height: "28px",
-                borderRadius: "8px",
-                border: "1px solid rgba(255,255,255,0.1)",
-                background: "transparent",
-                color: "var(--color-text-muted)",
-                cursor: "pointer",
-                fontSize: "16px",
-                lineHeight: 1,
-              }}
-            >
-              ×
-            </button>
-          </div>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

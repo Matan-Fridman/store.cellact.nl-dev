@@ -3,11 +3,13 @@ import { createCheckoutSession } from "../services/api";
 import {
   PACKAGE_ID,
   PACKAGE_NAME,
+  SECONDARY_PACKAGE_NAME,
   PRICE_DISPLAY_AMOUNT,
   SUBSCRIPTION_PRICE,
   PRICE_CURRENCY,
 } from "../config/constants";
 import { trackInitiateCheckout } from "../lib/analytics";
+import { shouldShowConversionLanding } from "../lib/campaign";
 import type { AsyncStatus } from "../types";
 
 interface PurchaseState {
@@ -34,10 +36,12 @@ export function usePurchase() {
     setState({ status: "loading", error: null });
     trackInitiateCheckout();
 
+    const secondary = shouldShowConversionLanding();
+
     try {
       const { url } = await createCheckoutSession({
         packageId: PACKAGE_ID,
-        packageName: PACKAGE_NAME,
+        packageName: secondary ? SECONDARY_PACKAGE_NAME : PACKAGE_NAME,
         transactionPrice: PRICE_DISPLAY_AMOUNT,
         subscriptionPrice: SUBSCRIPTION_PRICE,
         currency: PRICE_CURRENCY,

@@ -49,7 +49,7 @@ export function StorePage() {
         <div
           className="fixed left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-lg text-sm"
           style={{
-            top: facebookChrome ? "148px" : "80px",
+            top: "calc(72px + env(safe-area-inset-top, 0px))",
             background: "rgba(255,255,255,0.05)",
             border: "1px solid var(--color-border)",
             color: "var(--color-text-muted)",
@@ -67,11 +67,16 @@ export function StorePage() {
         loading={loading}
         error={error}
         onDismissError={reset}
+        compact={facebookChrome}
       />
 
-      <Marquee />
-
-      <BottomCta onPurchase={initiate} loading={loading} />
+      {/* FB: don't make them scroll a theater after an ad click */}
+      {!facebookChrome && (
+        <>
+          <Marquee />
+          <BottomCta onPurchase={initiate} loading={loading} />
+        </>
+      )}
     </Layout>
   );
 }

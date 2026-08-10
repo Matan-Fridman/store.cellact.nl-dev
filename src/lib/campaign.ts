@@ -91,25 +91,38 @@ export function getAttribution(): Attribution {
   return readJson<Attribution>(ATTR_KEY) ?? captureAttribution();
 }
 
+function markFacebookSession(): void {
+  try {
+    sessionStorage.setItem("secnum_force_fb", "1");
+  } catch {
+    // ignore
+  }
+}
+
 export function isFacebookTraffic(): boolean {
   const a = getAttribution();
   const source = (a.utm_source ?? "").toLowerCase();
   const medium = (a.utm_medium ?? "").toLowerCase();
   const ref = (a.referrer ?? "").toLowerCase();
 
-  if (a.fbclid) return true;
-  if (["facebook", "fb", "meta", "ig", "instagram"].includes(source)) return true;
-  if (medium === "paid_social" && (source.includes("fb") || source.includes("meta"))) return true;
-  if (ref.includes("facebook.com") || ref.includes("fb.com") || ref.includes("instagram.com")) {
-    return true;
+  let hit = false;
+  if (a.fbclid) hit = true;
+  else if (["facebook", "fb", "meta", "ig", "instagram"].includes(source)) hit = true;
+  else if (medium === "paid_social" && (source.includes("fb") || source.includes("meta"))) hit = true;
+  else if (ref.includes("facebook.com") || ref.includes("fb.com") || ref.includes("instagram.com")) {
+    hit = true;
+  } else {
+    try {
+      if (sessionStorage.getItem("secnum_force_fb") === "1") hit = true;
+      else if (new URLSearchParams(window.location.search).get("from") === "fb") hit = true;
+    } catch {
+      // ignore
+    }
   }
-  try {
-    if (sessionStorage.getItem("secnum_force_fb") === "1") return true;
-    if (new URLSearchParams(window.location.search).get("from") === "fb") return true;
-  } catch {
-    // ignore
-  }
-  return false;
+
+  // Stick for the session so Stripe return / deep links keep FB chrome.
+  if (hit) markFacebookSession();
+  return hit;
 }
 
 /** Sticky 50/50 A/B for ALL visitors. Override with ?ab=control|conversion */

@@ -27,6 +27,8 @@ export function getApiConfig() {
 /** Stripe / product metadata */
 export const PACKAGE_ID = "secnum_number";
 export const PACKAGE_NAME = "Israeli Mobile Number";
+/** Stripe line item for secondary-number / FB campaign checkouts */
+export const SECONDARY_PACKAGE_NAME = "Secondary Israeli Number";
 
 /** Port-a-number package */
 export const PORT_PACKAGE_ID = "secnum_port_number";

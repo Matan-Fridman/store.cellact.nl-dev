@@ -1,9 +1,9 @@
 # Build the Vite SPA and deploy to GitHub Pages.
-# Repo settings → Pages → Source: GitHub Actions
+# Repo settings → Pages → Source: GitHub Actions (NOT "Deploy from a branch")
 #
 # Required secrets (production store.cellact.nl):
 #   VITE_BASE_URL=https://europe-west1-arnacon-production-gcp.cloudfunctions.net
-#   VITE_FIREBASE_* (single project — Matan removed dual PROD_*)
+#   VITE_FIREBASE_*
 #   VITE_RECAPTCHA_SITE_KEY
 # Optional: VITE_META_PIXEL_ID
 #
@@ -21,9 +21,9 @@ permissions:
   pages: write
   id-token: write
   actions: write
+  deployments: write
 
-# Do NOT cancel in-progress runs. Cancelling after build but before/during
-# artifact handoff leaves deploy with "No artifacts named github-pages".
+# One Pages deploy at a time. Never cancel mid-upload (lost artifacts).
 concurrency:
   group: github-pages
   cancel-in-progress: false
@@ -62,6 +62,24 @@ jobs:
           VITE_RECAPTCHA_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_SITE_KEY }}
         run: npm run build
 
+      - name: Verify production build
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          test -d dist/assets
+          if grep -q '/src/main.tsx' dist/index.html; then
+            echo "Refusing to deploy: dist/index.html still points at /src/main.tsx"
+            cat dist/index.html
+            exit 1
+          fi
+          if ! grep -q '/assets/' dist/index.html; then
+            echo "Refusing to deploy: dist/index.html has no /assets/ bundle"
+            cat dist/index.html
+            exit 1
+          fi
+          echo "Build OK:"
+          head -30 dist/index.html
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -74,6 +92,38 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Pages API returns 400 if another deployment is still "in progress".
+      # Retry a few times instead of failing the release.
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Wait and retry deploy
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 60
+
+      - name: Deploy to GitHub Pages (retry 1)
+        id: deployment_retry1
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Wait and retry deploy again
+        if: steps.deployment.outcome == 'failure' && steps.deployment_retry1.outcome == 'failure'
+        run: sleep 90
+
+      - name: Deploy to GitHub Pages (retry 2)
+        id: deployment_retry2
+        if: steps.deployment.outcome == 'failure' && steps.deployment_retry1.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+
+      - name: Confirm deploy succeeded
+        if: >
+          steps.deployment.outcome != 'success' &&
+          steps.deployment_retry1.outcome != 'success' &&
+          steps.deployment_retry2.outcome != 'success'
+        run: |
+          echo "All Pages deploy attempts failed (likely a stuck in-progress deployment)."
+          echo "Cancel the stuck deployment in GitHub → Settings → Pages / Actions, then re-run this workflow."
+          exit 1

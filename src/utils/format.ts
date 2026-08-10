@@ -30,6 +30,17 @@ export function formatPhone(num: string): string {
   return num;
 }
 
+/** Display as Israeli local: 0557148414 (not +972…). */
+export function formatIsraeliLocal(num: string): string {
+  const digits = num.replace(/\D/g, "");
+  if (digits.startsWith("972") && digits.length >= 12) {
+    return `0${digits.slice(3)}`;
+  }
+  if (digits.startsWith("0")) return digits;
+  if (digits.length === 9) return `0${digits}`;
+  return num;
+}
+
 export function buildQrUrl(data: string, size = 200): string {
   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
 }

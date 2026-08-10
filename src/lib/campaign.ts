@@ -1,7 +1,7 @@
 /**
  * Attribution + site-wide landing UX A/B + Facebook campaign chrome.
  *
- * Experiment: landing_ux_v1 (ALL visitors)
+ * Experiment: landing_ux_v2 (ALL visitors)
  *   control     — classic “local Israeli number on your phone” landing
  *   conversion  — secondary-number messaging, clearer price, fewer competing CTAs
  *
@@ -10,11 +10,11 @@
  */
 
 const ATTR_KEY = "secnum_attr";
-const AB_KEY = "secnum_ab_landing_ux_v1";
-const EXPOSURE_KEY = "secnum_exp_exposed_landing_ux_v1";
+const AB_KEY = "secnum_ab_landing_ux_v2";
+const EXPOSURE_KEY = "secnum_exp_exposed_landing_ux_v2";
 const FB_BANNER_KEY = "secnum_fb_banner_dismissed";
 
-export const EXPERIMENT_ID = "landing_ux_v1";
+export const EXPERIMENT_ID = "landing_ux_v2";
 export type AbVariant = "control" | "conversion";
 
 export interface Attribution {

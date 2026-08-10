@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Layout } from "../components/Layout";
 import { redeemActivationToken } from "../services/api";
-import { buildQrUrl } from "../utils/format";
+import { buildQrUrl, formatIsraeliLocal } from "../utils/format";
 import { useLanguage } from "../contexts/LanguageContext";
 
 type State =
@@ -207,10 +207,19 @@ function QRState({
           }}
         >
           <span style={{ fontSize: "10px", fontWeight: 600, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            Your number
+            {t.claim.yourNumber}
           </span>
-          <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-text)", fontFamily: "monospace" }}>
-            +{label}
+          <span
+            dir="ltr"
+            style={{
+              fontSize: "16px",
+              fontWeight: 700,
+              color: "var(--color-text)",
+              fontFamily: "monospace",
+              unicodeBidi: "isolate",
+            }}
+          >
+            {formatIsraeliLocal(label)}
           </span>
         </div>
       )}

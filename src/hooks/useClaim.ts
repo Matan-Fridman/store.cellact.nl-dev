@@ -15,23 +15,75 @@ interface ClaimState {
 
 const STEP_INTERVAL_MS = 8000;
 
-/** Nullifier already spent / number already claimed on-chain. */
-export function isAlreadyActivatedError(raw: unknown): boolean {
-  const text = String(
-    raw instanceof Error
-      ? `${raw.name} ${raw.message}`
-      : typeof raw === "string"
-        ? raw
-        : JSON.stringify(raw ?? ""),
-  ).toLowerCase();
+function errorBlob(raw: unknown): string {
+  if (raw instanceof Error) {
+    // Include cause / nested fields when present — ethers puts the selector there.
+    const extra = [
+      (raw as Error & { data?: unknown }).data,
+      (raw as Error & { error?: unknown }).error,
+      (raw as Error & { reason?: unknown }).reason,
+    ]
+      .filter(Boolean)
+      .map((v) => {
+        try {
+          return typeof v === "string" ? v : JSON.stringify(v);
+        } catch {
+          return String(v);
+        }
+      })
+      .join(" ");
+    return `${raw.name} ${raw.message} ${extra}`.toLowerCase();
+  }
+  if (typeof raw === "string") return raw.toLowerCase();
+  try {
+    return JSON.stringify(raw ?? "").toLowerCase();
+  } catch {
+    return String(raw ?? "").toLowerCase();
+  }
+}
 
-  return (
+/**
+ * Nullifier already spent / number already claimed on-chain.
+ * Ethers often returns a giant CALL_EXCEPTION dump without a readable reason —
+ * on the claim page that dump almost always means "already activated".
+ */
+export function isAlreadyActivatedError(raw: unknown): boolean {
+  const text = errorBlob(raw);
+
+  if (
     text.includes("already_activated") ||
     text.includes("youareusingthesamenullifiertwice") ||
     text.includes("same nullifier") ||
     text.includes("nullifier twice") ||
-    text.includes("0x208b15e8")
-  );
+    text.includes("0x208b15e8") ||
+    text.includes("208b15e8")
+  ) {
+    return true;
+  }
+
+  // Raw provider dump from a failed validateProof / activate tx.
+  const looksLikeChainDump =
+    text.includes("call_exception") ||
+    text.includes("call revert exception") ||
+    text.includes("transactionindex") ||
+    (text.includes("gasused") && text.includes("contractaddress"));
+
+  return looksLikeChainDump;
+}
+
+/** Never show ethers / RPC dumps in the UI. */
+export function sanitizeClaimErrorMessage(message: string, kind: ClaimErrorKind): string | null {
+  if (kind === "already_activated") return null; // UI uses dedicated copy
+  const lower = message.toLowerCase();
+  if (
+    message.length > 180 ||
+    lower.includes("call_exception") ||
+    lower.includes("transactionindex") ||
+    lower.includes("0x")
+  ) {
+    return null; // ClaimCard will show a short fallback
+  }
+  return message;
 }
 
 export function useClaim() {

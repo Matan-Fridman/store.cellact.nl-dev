@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../../components/Button";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { ClaimResult } from "./ClaimResult";
-import { useClaim } from "../../hooks/useClaim";
+import { sanitizeClaimErrorMessage, useClaim } from "../../hooks/useClaim";
 import { formatIsraeliLocal } from "../../utils/format";
 import { useLanguage } from "../../contexts/LanguageContext";
 import type { ClaimParams } from "../../types";
@@ -25,6 +25,11 @@ export function ClaimCard({ params }: ClaimCardProps) {
 
   const activeStepIndex = Math.max(0, Math.min(step - 1, 2));
   const alreadyActivated = status === "error" && errorKind === "already_activated";
+  const safeGenericError =
+    status === "error" && !alreadyActivated
+      ? sanitizeClaimErrorMessage(error || "", "generic") ||
+        t.claim.alreadyActivatedSupport
+      : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
@@ -206,7 +211,7 @@ export function ClaimCard({ params }: ClaimCardProps) {
           </p>
         </div>
       ) : (
-        <ErrorAlert message={error} onDismiss={reset} />
+        <ErrorAlert message={safeGenericError} onDismiss={reset} />
       )}
 
       {/* CTA — hide retry when already activated (chain won't accept it again) */}

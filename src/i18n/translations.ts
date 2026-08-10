@@ -1,29 +1,62 @@
 export type Language = "en" | "he";
 
+type HeroCopy = {
+  eyebrow: string;
+  headlineA: string;
+  headlineB: string;
+  sub: string;
+  cta: (price: string) => string;
+  ctaLoading: string;
+  finePrint: string;
+};
+
 type TranslationsShape = {
   nav: { brand: string };
-  hero: {
-    eyebrow: string;
-    headlineA: string;
-    headlineB: string;
-    sub: string;
-    cta: (price: string) => string;
-    ctaLoading: string;
-    finePrint: string;
-  };
+  hero: HeroCopy;
+  /** Facebook / secondary-number campaign copy overrides hero when active */
+  campaignHero: HeroCopy;
   steps: Array<{
     step: string;
     headlineA: string;
     headlineB: string;
     sub: string;
   }>;
+  campaignSteps: Array<{
+    step: string;
+    headlineA: string;
+    headlineB: string;
+    sub: string;
+  }>;
   marquee: string[];
+  campaignMarquee: string[];
   bottomCta: {
     headlineA: string;
     headlineB: string;
     sub: string;
     cta: (price: string) => string;
     ctaLoading: string;
+  };
+  campaignBottomCta: {
+    headlineA: string;
+    headlineB: string;
+    sub: string;
+    cta: (price: string) => string;
+    ctaLoading: string;
+  };
+  campaign: {
+    welcomeBanner: {
+      title: string;
+      body: string;
+      cta: string;
+      dismiss: string;
+    };
+    offerBanner: {
+      title: string;
+      body: string;
+      cta: string;
+      dismiss: string;
+    };
+    cancelled: string;
   };
   claim: {
     brand: string;
@@ -73,6 +106,16 @@ export const translations: Record<Language, TranslationsShape> = {
       finePrint: "€3.99 one-time setup · €4.99/month · Up to 1,500 minutes",
     },
 
+    campaignHero: {
+      eyebrow: "Secondary number — no primary needed",
+      headlineA: "Another Israeli number,",
+      headlineB: "on the device you already have.",
+      sub: "Works on iPhone, Android, or even an iPad — no extra SIM and no existing phone number required. Use it for WhatsApp, calls, and SMS on your current device.",
+      cta: (price) => `Get your secondary number — ${price}`,
+      ctaLoading: "Redirecting…",
+      finePrint: "€3.99 setup once · then €4.99/month · cancel anytime · 1,500 minutes",
+    },
+
     steps: [
       {
         step: "01",
@@ -94,6 +137,27 @@ export const translations: Record<Language, TranslationsShape> = {
       },
     ],
 
+    campaignSteps: [
+      {
+        step: "01",
+        headlineA: "Pay once,",
+        headlineB: "get your number.",
+        sub: "Clear pricing: €3.99 setup + €4.99/month. No contract. Your secondary number is reserved as soon as you pay.",
+      },
+      {
+        step: "02",
+        headlineA: "Activate in the",
+        headlineB: "Arnacon app.",
+        sub: "After payment, open Arnacon on this device (or scan the QR). No physical SIM — your number lives in the app.",
+      },
+      {
+        step: "03",
+        headlineA: "WhatsApp, calls,",
+        headlineB: "and SMS — ready.",
+        sub: "Use it for WhatsApp or any app that needs an Israeli number. Up to 1,500 minutes/month and 50 SMS/day.",
+      },
+    ],
+
     marquee: [
       "Local Israeli Numbers",
       "No Extra SIM",
@@ -105,12 +169,47 @@ export const translations: Record<Language, TranslationsShape> = {
       "50 SMS / Day",
     ],
 
+    campaignMarquee: [
+      "No Primary Number Needed",
+      "No Extra SIM",
+      "Works on Phone & iPad",
+      "WhatsApp Ready",
+      "1,500 Minutes Included",
+      "Secondary Number",
+      "Instant Activation",
+      "Cancel Anytime",
+    ],
+
     bottomCta: {
       headlineA: "Your Israeli number.",
       headlineB: "Ready in minutes.",
       sub: "€3.99 one-time setup · €4.99/month · 1,500 minutes included",
       cta: (price) => `Get Your Number — ${price}`,
       ctaLoading: "Redirecting…",
+    },
+
+    campaignBottomCta: {
+      headlineA: "Your secondary number.",
+      headlineB: "On this device.",
+      sub: "€3.99 setup · €4.99/month · no primary number required · 1,500 minutes",
+      cta: (price) => `Get your secondary number — ${price}`,
+      ctaLoading: "Redirecting…",
+    },
+
+    campaign: {
+      welcomeBanner: {
+        title: "A second number on this device",
+        body: "No primary number or extra SIM needed — including tablets. Secure checkout takes about a minute.",
+        cta: "Continue to checkout",
+        dismiss: "Dismiss",
+      },
+      offerBanner: {
+        title: "30% off your first month",
+        body: "Facebook campaign offer — applied automatically at checkout. Setup fee still applies.",
+        cta: "Claim offer & checkout",
+        dismiss: "Dismiss",
+      },
+      cancelled: "Checkout was cancelled — you can try again whenever you're ready.",
     },
 
     claim: {
@@ -169,7 +268,17 @@ export const translations: Record<Language, TranslationsShape> = {
       sub: "התקשר ושלח הודעות למספרים ישראליים אחרים ללא כרטיס SIM נוסף. השתמש בו לרישום בווטסאפ או כל אפליקציה שדורשת מספר ישראלי. ניתן להחזיק מספר מספרים.",
       cta: (price) => `קבל את המספר שלך — ${price}`,
       ctaLoading: "מעביר…",
-      finePrint: "הגדרה חד פעמית 3.99 יורו (€) · 4.99 יורו (€) לחודש · עד 1,500 דקות",
+      finePrint: "הגדרה חד־פעמית €3.99 · €4.99 לחודש · עד 1,500 דקות",
+    },
+
+    campaignHero: {
+      eyebrow: "מספר נוסף — בלי מספר ראשי",
+      headlineA: "מספר ישראלי שני,",
+      headlineB: "על המכשיר שכבר אצלך.",
+      sub: "מתאים לאייפון, אנדרואיד ואפילו אייפד — בלי SIM נוסף ובלי צורך במספר קיים. לווטסאפ, שיחות והודעות על המכשיר הנוכחי שלך.",
+      cta: (price) => `קבל מספר נוסף — ${price}`,
+      ctaLoading: "מעביר…",
+      finePrint: "הגדרה חד־פעמית €3.99 · אחר כך €4.99 לחודש · ביטול בכל רגע · 1,500 דקות",
     },
 
     steps: [
@@ -177,7 +286,7 @@ export const translations: Record<Language, TranslationsShape> = {
         step: "01",
         headlineA: "רכוש את המספר שלך",
         headlineB: "תוך דקות.",
-        sub: "הגדרה חד פעמית של 3.99 יורו (€), לאחר מכן 4.99 יורו (€) לחודש. ללא חוזים. המספר שמור ברגע שאתה משלם.",
+        sub: "הגדרה חד־פעמית של €3.99, לאחר מכן €4.99 לחודש. ללא חוזים. המספר שמור ברגע שאתה משלם.",
       },
       {
         step: "02",
@@ -193,6 +302,27 @@ export const translations: Record<Language, TranslationsShape> = {
       },
     ],
 
+    campaignSteps: [
+      {
+        step: "01",
+        headlineA: "משלמים פעם אחת,",
+        headlineB: "מקבלים מספר.",
+        sub: "מחיר ברור: €3.99 הגדרה + €4.99 לחודש. בלי חוזה. המספר הנוסף נשמר ברגע התשלום.",
+      },
+      {
+        step: "02",
+        headlineA: "הפעלה באפליקציית",
+        headlineB: "Arnacon.",
+        sub: "אחרי התשלום פותחים את Arnacon במכשיר הזה (או סורקים QR). בלי SIM פיזי — המספר חי באפליקציה.",
+      },
+      {
+        step: "03",
+        headlineA: "ווטסאפ, שיחות",
+        headlineB: "והודעות — מוכנים.",
+        sub: "לווטסאפ או לכל אפליקציה שצריכה מספר ישראלי. עד 1,500 דקות בחודש ו-50 SMS ביום.",
+      },
+    ],
+
     marquee: [
       "מספרים ישראליים מקומיים",
       "ללא SIM נוסף",
@@ -204,12 +334,47 @@ export const translations: Record<Language, TranslationsShape> = {
       "50 SMS ליום",
     ],
 
+    campaignMarquee: [
+      "בלי מספר ראשי",
+      "בלי SIM נוסף",
+      "עובד בטלפון ובאייפד",
+      "מוכן לווטסאפ",
+      "1,500 דקות כלולות",
+      "מספר נוסף",
+      "הפעלה מיידית",
+      "ביטול בכל רגע",
+    ],
+
     bottomCta: {
       headlineA: "המספר הישראלי שלך.",
       headlineB: "מוכן תוך דקות.",
-      sub: "הגדרה חד פעמית 3.99 יורו (€) · 4.99 יורו (€) לחודש · 1,500 דקות כלולות",
+      sub: "הגדרה חד־פעמית €3.99 · €4.99 לחודש · 1,500 דקות כלולות",
       cta: (price) => `קבל את המספר שלך — ${price}`,
       ctaLoading: "מעביר…",
+    },
+
+    campaignBottomCta: {
+      headlineA: "המספר הנוסף שלך.",
+      headlineB: "על המכשיר הזה.",
+      sub: "הגדרה €3.99 · €4.99 לחודש · בלי מספר ראשי · 1,500 דקות",
+      cta: (price) => `קבל מספר נוסף — ${price}`,
+      ctaLoading: "מעביר…",
+    },
+
+    campaign: {
+      welcomeBanner: {
+        title: "מספר נוסף על המכשיר הזה",
+        body: "בלי מספר ראשי ובלי SIM נוסף — כולל טאבלט. תשלום מאובטח תוך כדקה.",
+        cta: "המשך לתשלום",
+        dismiss: "סגור",
+      },
+      offerBanner: {
+        title: "30% הנחה לחודש הראשון",
+        body: "הטבת קמפיין פייסבוק — מיושמת אוטומטית בקופה. דמי ההגדרה עדיין חלים.",
+        cta: "מימוש ההטבה ותשלום",
+        dismiss: "סגור",
+      },
+      cancelled: "התשלום בוטל — אפשר לנסות שוב מתי שנוח לך.",
     },
 
     claim: {

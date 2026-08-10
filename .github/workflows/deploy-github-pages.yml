@@ -1,0 +1,78 @@
+# Build the Vite SPA and deploy to GitHub Pages.
+# Repo settings → Pages → Source: GitHub Actions
+#
+# Add the same VITE_* values you used on Vercel as repository Secrets
+# (Settings → Secrets and variables → Actions), then push to main.
+
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        env:
+          # Custom domain / apex → leave base at "/"
+          VITE_BASE_PATH: /
+          VITE_META_PIXEL_ID: ${{ secrets.VITE_META_PIXEL_ID }}
+          VITE_STRIPE_FB_COUPON_ID: ${{ secrets.VITE_STRIPE_FB_COUPON_ID }}
+          VITE_DEV_BASE_URL: ${{ secrets.VITE_DEV_BASE_URL }}
+          VITE_PROD_BASE_URL: ${{ secrets.VITE_PROD_BASE_URL }}
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+          VITE_FIREBASE_PROD_API_KEY: ${{ secrets.VITE_FIREBASE_PROD_API_KEY }}
+          VITE_FIREBASE_PROD_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_PROD_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROD_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROD_PROJECT_ID }}
+          VITE_FIREBASE_PROD_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_PROD_STORAGE_BUCKET }}
+          VITE_FIREBASE_PROD_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_PROD_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_PROD_APP_ID: ${{ secrets.VITE_FIREBASE_PROD_APP_ID }}
+          VITE_FIREBASE_PROD_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_PROD_MEASUREMENT_ID }}
+          VITE_RECAPTCHA_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_SITE_KEY }}
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

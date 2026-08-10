@@ -158,6 +158,14 @@ body::after {
   overflow: hidden;
 }
 
+.scroll-story-sticky-cta {
+  position: fixed;
+  bottom: 32px;
+  inset-inline-end: 32px;
+  z-index: 100;
+  pointer-events: auto;
+}
+
 .scroll-story-panels {
   position: relative;
   z-index: 10;
@@ -358,6 +366,19 @@ body::after {
 
   .scroll-story-panel--hero .scroll-story-cta p {
     line-height: 1.45;
+  }
+
+  .scroll-story-sticky-cta {
+    left: 16px;
+    right: 16px;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    inset-inline-end: auto;
+    display: flex;
+    justify-content: stretch;
+  }
+
+  .scroll-story-sticky-cta-btn {
+    width: 100% !important;
   }
 }
 

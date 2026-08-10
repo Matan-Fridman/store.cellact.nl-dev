@@ -4,12 +4,14 @@ import { motion } from "framer-motion";
 import { doc, onSnapshot } from "firebase/firestore";
 import { Layout } from "../components/Layout";
 import { getDb } from "../lib/firebase";
+import { trackPurchase } from "../lib/analytics";
 
 export function SuccessPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [provisioning, setProvisioning] = useState(true);
   const unsubRef = useRef<(() => void) | null>(null);
+  const purchaseTracked = useRef(false);
 
   const sessionId = searchParams.get("session_id");
   const dev = searchParams.get("dev");
@@ -18,6 +20,11 @@ export function SuccessPage() {
     if (!sessionId) {
       navigate("/", { replace: true });
       return;
+    }
+
+    if (!purchaseTracked.current) {
+      purchaseTracked.current = true;
+      trackPurchase(sessionId);
     }
 
     // Watch incomingOrders/{session_id} for claim_token.

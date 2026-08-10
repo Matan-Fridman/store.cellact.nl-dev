@@ -4,9 +4,11 @@ import type { Language } from "../i18n/translations";
 
 interface LayoutProps {
   children: ReactNode;
+  /** Hide App Store / Play badges — they compete with buy CTA on FB landings */
+  hideAppStoreBadges?: boolean;
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, hideAppStoreBadges = false }: LayoutProps) {
   const [scrolled, setScrolled] = useState(false);
   const { lang, setLang, t } = useLanguage();
 
@@ -36,7 +38,7 @@ export function Layout({ children }: LayoutProps) {
           </a>
 
           <div className="site-header-controls" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <AppStoreBadges />
+            {!hideAppStoreBadges && <AppStoreBadges />}
             <LangToggle lang={lang} setLang={setLang} />
           </div>
         </div>

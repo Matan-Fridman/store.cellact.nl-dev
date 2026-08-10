@@ -41,3 +41,5 @@ test-numbers.json
 .env.yaml
 deploy.env
 deploy.state
+
+.history

@@ -7,44 +7,29 @@ import { SuccessPage } from "./pages/SuccessPage";
 import { ActivatePage } from "./pages/ActivatePage";
 import { PortPage } from "./pages/PortPage";
 import { PortCompletePage } from "./pages/PortCompletePage";
-
-const ANALYTICS_URL =
-  "https://europe-west1-arnacon-production-gcp.cloudfunctions.net/website-analytics";
+import { initAnalytics, trackPageView } from "./lib/analytics";
 
 function AnalyticsTracker() {
   const location = useLocation();
 
   useEffect(() => {
-    const trackVisit = async () => {
-      try {
-        await fetch(ANALYTICS_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            page: location.pathname,
-            referrer: document.referrer || "direct",
-            userAgent: navigator.userAgent,
-            language: navigator.language,
-            screenWidth: window.innerWidth,
-            screenHeight: window.innerHeight,
-            source: "secnumnl",
-          }),
-        });
-      } catch {
-        // Silent — analytics must never break the store UX
-      }
-    };
+    initAnalytics();
+  }, []);
 
-    void trackVisit();
+  useEffect(() => {
+    trackPageView(location.pathname);
   }, [location.pathname]);
 
   return null;
 }
 
 export default function App() {
+  // Vite BASE_URL is "/" with a custom domain, or "/repo/" on project Pages
+  const basename = import.meta.env.BASE_URL.replace(/\/$/, "") || undefined;
+
   return (
     <LanguageProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={basename}>
         <AnalyticsTracker />
         <Routes>
           <Route path="/" element={<StorePage />} />

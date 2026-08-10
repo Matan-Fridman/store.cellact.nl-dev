@@ -8,6 +8,8 @@ import {
   SUBSCRIPTION_PRICE,
   PRICE_CURRENCY,
 } from "../config/constants";
+import { getFbCouponId, shouldApplyFbCoupon } from "../lib/campaign";
+import { trackInitiateCheckout } from "../lib/analytics";
 import type { AsyncStatus } from "../types";
 
 interface PurchaseState {
@@ -26,7 +28,11 @@ function buildSuccessUrl(): string {
 
 function buildFailureUrl(): string {
   const prod = getUseProduction();
-  return `${window.location.origin}/?dev=${prod ? "false" : "true"}`;
+  const params = new URLSearchParams({
+    payment: "cancelled",
+    dev: prod ? "false" : "true",
+  });
+  return `${window.location.origin}/?${params.toString()}`;
 }
 
 export function usePurchase() {
@@ -39,8 +45,11 @@ export function usePurchase() {
    */
   const initiate = useCallback(async () => {
     setState({ status: "loading", error: null });
+    trackInitiateCheckout();
 
     try {
+      const couponId = shouldApplyFbCoupon() ? getFbCouponId() : undefined;
+
       const { url } = await createCheckoutSession({
         packageId: PACKAGE_ID,
         packageName: PACKAGE_NAME,
@@ -50,6 +59,7 @@ export function usePurchase() {
         successUrl: buildSuccessUrl(),
         failureUrl: buildFailureUrl(),
         userId: generateUserId(),
+        couponId,
       });
 
       window.location.href = url;

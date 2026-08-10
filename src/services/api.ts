@@ -44,6 +44,11 @@ export interface CreateCheckoutParams {
   userId: string;
   /** For port orders — the Firestore doc ID in portedNumbers collection */
   portDocId?: string;
+  /**
+   * Optional Stripe coupon id (FB campaign offer).
+   * Requires payment-link-generator to accept `couponId` / `coupon_id`.
+   */
+  couponId?: string;
 }
 
 export function createCheckoutSession(
@@ -62,6 +67,10 @@ export function createCheckoutSession(
     serviceProvider: "secnum",
   };
   if (params.portDocId) body.port_doc_id = params.portDocId;
+  if (params.couponId) {
+    body.couponId = params.couponId;
+    body.coupon_id = params.couponId;
+  }
   return post<CheckoutSessionResponse>(STRIPE_URL, body);
 }
 

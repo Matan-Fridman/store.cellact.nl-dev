@@ -20,6 +20,7 @@ import { Button } from "../Button";
 import { ErrorAlert } from "../ErrorAlert";
 import { PRICE_DISPLAY } from "../../config/constants";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { shouldShowFbLanding } from "../../lib/campaign";
 
 const PHONE_SCREENS = [phoneHero, phoneStep1, phoneStep2, phoneStep3];
 
@@ -43,6 +44,9 @@ interface MomentPanelProps {
   loading: boolean;
   error: string | null;
   onDismissError: () => void;
+  ctaLabel: string;
+  ctaLoading: string;
+  finePrint: string;
 }
 
 function MomentPanel({
@@ -52,10 +56,12 @@ function MomentPanel({
   loading,
   error,
   onDismissError,
+  ctaLabel,
+  ctaLoading,
+  finePrint,
 }: MomentPanelProps) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: false, margin: "-20% 0px -20% 0px" });
-  const { t } = useLanguage();
   // const navigate = useNavigate();
 
   return (
@@ -119,36 +125,12 @@ function MomentPanel({
                 fullWidth={false}
                 className="!px-7"
               >
-                {loading ? t.hero.ctaLoading : t.hero.cta(PRICE_DISPLAY)}
+                {loading ? ctaLoading : ctaLabel}
               </Button>
 
               <p style={{ fontSize: "12.5px", color: "var(--color-text-muted)" }}>
-                {t.hero.finePrint}
+                {finePrint}
               </p>
-
-              {/* Port link — temporarily disabled */}
-              {/* <button
-                type="button"
-                onClick={() => navigate("/port")}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                  color: "var(--color-text-muted)",
-                  letterSpacing: "0.01em",
-                  padding: 0,
-                  textAlign: "left",
-                  transition: "color 0.2s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-text)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
-              >
-                Already have an Israeli number?{" "}
-                <span style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>
-                  Port it to Arnacon →
-                </span>
-              </button> */}
 
               <ErrorAlert message={error} onDismiss={onDismissError} />
             </div>
@@ -177,18 +159,22 @@ export function ScrollStory({
   const [activeScreen, setActiveScreen] = useState(0);
   const [showStickyBtn, setShowStickyBtn] = useState(false);
   const { t, isRTL } = useLanguage();
+  const fb = shouldShowFbLanding();
+  const hero = fb ? t.campaignHero : t.hero;
+  const steps = fb ? t.campaignSteps : t.steps;
+  const ctaLabel = hero.cta(PRICE_DISPLAY);
 
   // Build story panels from translations
   const moments: Moment[] = [
     {
       step: null,
-      eyebrow: t.hero.eyebrow,
-      headlineA: t.hero.headlineA,
-      headlineB: t.hero.headlineB,
-      sub: t.hero.sub,
+      eyebrow: hero.eyebrow,
+      headlineA: hero.headlineA,
+      headlineB: hero.headlineB,
+      sub: hero.sub,
       isHero: true,
     },
-    ...t.steps.map((s) => ({
+    ...steps.map((s) => ({
       step: s.step,
       eyebrow: null,
       headlineA: s.headlineA,
@@ -353,6 +339,9 @@ export function ScrollStory({
             loading={loading}
             error={error}
             onDismissError={onDismissError}
+            ctaLabel={ctaLabel}
+            ctaLoading={hero.ctaLoading}
+            finePrint={hero.finePrint}
           />
         ))}
         <div style={{ height: "35vh" }} />
@@ -362,17 +351,11 @@ export function ScrollStory({
       <AnimatePresence>
         {showStickyBtn && (
           <motion.div
+            className="scroll-story-sticky-cta"
             initial={{ opacity: 0, y: 16, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.95 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] as const }}
-            style={{
-              position: "fixed",
-              bottom: "32px",
-              right: "32px",
-              zIndex: 100,
-              pointerEvents: "auto",
-            }}
           >
             {/* Subtle glow halo behind the button */}
             <div
@@ -391,9 +374,9 @@ export function ScrollStory({
               loading={loading}
               disabled={loading}
               fullWidth={false}
-              className="!px-5 !py-3 !text-sm relative"
+              className="!px-5 !py-3 !text-sm relative scroll-story-sticky-cta-btn"
             >
-              {loading ? t.hero.ctaLoading : t.hero.cta(PRICE_DISPLAY)}
+              {loading ? hero.ctaLoading : ctaLabel}
             </Button>
           </motion.div>
         )}

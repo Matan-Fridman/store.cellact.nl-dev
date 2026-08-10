@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { Button } from "../Button";
 import { PRICE_DISPLAY } from "../../config/constants";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { shouldShowFbLanding } from "../../lib/campaign";
 
 interface BottomCtaProps {
   onPurchase: () => void;
@@ -13,7 +14,8 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-15% 0px" });
   const { t, isRTL } = useLanguage();
-  // const navigate = useNavigate();
+  const fb = shouldShowFbLanding();
+  const copy = fb ? t.campaignBottomCta : t.bottomCta;
 
   return (
     <section
@@ -71,10 +73,10 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
             marginBottom: "1.25rem",
           }}
         >
-          {t.bottomCta.headlineA}
+          {copy.headlineA}
           <br />
           <span className="gradient-text" style={{ fontStyle: "normal" }}>
-            {t.bottomCta.headlineB}
+            {copy.headlineB}
           </span>
         </motion.h2>
 
@@ -91,7 +93,7 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
             marginRight: "auto",
           }}
         >
-          {t.bottomCta.sub}
+          {copy.sub}
         </motion.p>
 
         <motion.div
@@ -106,86 +108,63 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
             fullWidth={false}
             className="!px-8 !py-4 !text-base"
           >
-            {loading ? t.bottomCta.ctaLoading : t.bottomCta.cta(PRICE_DISPLAY)}
+            {loading ? copy.ctaLoading : copy.cta(PRICE_DISPLAY)}
           </Button>
 
-          {/* App store badges */}
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center", marginTop: "8px" }}>
-            <a
-              href="https://apps.apple.com/app/arnacon/id6504406464"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "10px 18px",
-                borderRadius: "12px",
-                background: "#000",
-                border: "1px solid rgba(255,255,255,0.12)",
-                textDecoration: "none",
-                transition: "border-color 0.2s, background 0.2s",
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,0.28)"; (e.currentTarget as HTMLAnchorElement).style.background = "#111"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,0.12)"; (e.currentTarget as HTMLAnchorElement).style.background = "#000"; }}
-            >
-              {/* Apple logo */}
-              <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" width="18" height="22" style={{ filter: "invert(1)" }} alt="Apple" />
-              <div style={{ textAlign: "left" }}>
-                <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.6)", letterSpacing: "0.05em", lineHeight: 1 }}>Download on the</div>
-                <div style={{ fontSize: "15px", fontWeight: 600, color: "#fff", lineHeight: 1.3, letterSpacing: "-0.01em" }}>App Store</div>
-              </div>
-            </a>
+          {/* App store badges — hidden on FB landings (compete with purchase) */}
+          {!fb && (
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center", marginTop: "8px" }}>
+              <a
+                href="https://apps.apple.com/app/arnacon/id6504406464"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "10px 18px",
+                  borderRadius: "12px",
+                  background: "#000",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  textDecoration: "none",
+                  transition: "border-color 0.2s, background 0.2s",
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,0.28)"; (e.currentTarget as HTMLAnchorElement).style.background = "#111"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,0.12)"; (e.currentTarget as HTMLAnchorElement).style.background = "#000"; }}
+              >
+                <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" width="18" height="22" style={{ filter: "invert(1)" }} alt="Apple" />
+                <div style={{ textAlign: "left" }}>
+                  <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.6)", letterSpacing: "0.05em", lineHeight: 1 }}>Download on the</div>
+                  <div style={{ fontSize: "15px", fontWeight: 600, color: "#fff", lineHeight: 1.3, letterSpacing: "-0.01em" }}>App Store</div>
+                </div>
+              </a>
 
-            <a
-              href="https://play.google.com/store/apps/details?id=com.arnacon.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "10px 18px",
-                borderRadius: "12px",
-                background: "#000",
-                border: "1px solid rgba(255,255,255,0.12)",
-                textDecoration: "none",
-                transition: "border-color 0.2s, background 0.2s",
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,0.28)"; (e.currentTarget as HTMLAnchorElement).style.background = "#111"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,0.12)"; (e.currentTarget as HTMLAnchorElement).style.background = "#000"; }}
-            >
-              {/* Google Play logo */}
-              <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/Google_Play_Arrow_logo.svg" width="20" height="20" alt="Google Play" />
-              <div style={{ textAlign: "left" }}>
-                <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.6)", letterSpacing: "0.05em", lineHeight: 1 }}>Get it on</div>
-                <div style={{ fontSize: "15px", fontWeight: 600, color: "#fff", lineHeight: 1.3, letterSpacing: "-0.01em" }}>Google Play</div>
-              </div>
-            </a>
-          </div>
-
-          {/* Port existing number link — temporarily disabled */}
-          {/* <button
-            type="button"
-            onClick={() => navigate("/port")}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontSize: "13.5px",
-              color: "var(--color-text-muted)",
-              letterSpacing: "0.01em",
-              transition: "color 0.2s",
-              padding: "2px 6px",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-text)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
-          >
-            Already have an Israeli number?{" "}
-            <span style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>
-              Port it to Arnacon →
-            </span>
-          </button> */}
+              <a
+                href="https://play.google.com/store/apps/details?id=com.arnacon.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "10px 18px",
+                  borderRadius: "12px",
+                  background: "#000",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  textDecoration: "none",
+                  transition: "border-color 0.2s, background 0.2s",
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,0.28)"; (e.currentTarget as HTMLAnchorElement).style.background = "#111"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,0.12)"; (e.currentTarget as HTMLAnchorElement).style.background = "#000"; }}
+              >
+                <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/Google_Play_Arrow_logo.svg" width="20" height="20" alt="Google Play" />
+                <div style={{ textAlign: "left" }}>
+                  <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.6)", letterSpacing: "0.05em", lineHeight: 1 }}>Get it on</div>
+                  <div style={{ fontSize: "15px", fontWeight: 600, color: "#fff", lineHeight: 1.3, letterSpacing: "-0.01em" }}>Google Play</div>
+                </div>
+              </a>
+            </div>
+          )}
         </motion.div>
       </div>
     </section>

@@ -1,4 +1,5 @@
 import { useLanguage } from "../../contexts/LanguageContext";
+import { shouldShowFbLanding } from "../../lib/campaign";
 
 /**
  * Continuously scrolling horizontal ticker.
@@ -6,7 +7,8 @@ import { useLanguage } from "../../contexts/LanguageContext";
  */
 export function Marquee() {
   const { t } = useLanguage();
-  const allItems = [...t.marquee, ...t.marquee, ...t.marquee];
+  const items = shouldShowFbLanding() ? t.campaignMarquee : t.marquee;
+  const allItems = [...items, ...items, ...items];
 
   return (
     <div

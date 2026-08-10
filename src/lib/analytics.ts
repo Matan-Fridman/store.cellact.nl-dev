@@ -6,8 +6,7 @@
 
 import {
   captureAttribution,
-  EXPERIMENT_ID,
-  getAbVariant,
+  getActiveExperiment,
   getAttribution,
   isFacebookTraffic,
   markExperimentExposed,
@@ -32,7 +31,7 @@ let pixelReady = false;
 
 export function initAnalytics(): void {
   captureAttribution();
-  getAbVariant();
+  getActiveExperiment();
   initMetaPixel();
 }
 
@@ -86,11 +85,12 @@ function metaTrack(event: string, params?: Record<string, unknown>): void {
 
 function basePayload(): Record<string, unknown> {
   const attr = getAttribution();
+  const { experimentId, abVariant } = getActiveExperiment();
   return {
     source: "secnumnl",
     isFacebook: isFacebookTraffic(),
-    experimentId: EXPERIMENT_ID,
-    abVariant: getAbVariant(),
+    experimentId,
+    abVariant,
     language: typeof navigator !== "undefined" ? navigator.language : undefined,
     uiLang:
       typeof document !== "undefined" ? document.documentElement.lang : undefined,

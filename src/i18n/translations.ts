@@ -46,10 +46,26 @@ type TranslationsShape = {
   };
   campaign: {
     welcomeBanner: {
+      brand: string;
       title: string;
       body: string;
       priceNote: string;
       euroNote: string;
+      couponBadge?: string;
+      couponCode?: string;
+      couponHint?: string;
+      cta: string;
+      dismiss: string;
+    };
+    welcomeBannerCoupon: {
+      brand: string;
+      title: string;
+      body: string;
+      priceNote: string;
+      euroNote: string;
+      couponBadge: string;
+      couponCode: string;
+      couponHint: string;
       cta: string;
       dismiss: string;
     };
@@ -202,13 +218,27 @@ export const translations: Record<Language, TranslationsShape> = {
 
     campaign: {
       welcomeBanner: {
-        title: "Thanks for coming from the ad",
-        body: "Secondary Israeli number on this device — no primary SIM needed.",
+        brand: "Secnum",
+        title: "Secondary Israeli number — on this device",
+        body: "No primary number. No extra SIM. Pay here, activate in Arnacon for WhatsApp, calls, and SMS.",
         priceNote: "First month €8.98, then €4.99/mo · cancel anytime",
         euroNote:
-          "Priced in euros because Secnum/Arnacon is built for international service. Israelis get special promotions as the Arnacon network adds new worldwide services.",
-        cta: "Pay & get your number",
-        dismiss: "Dismiss",
+          "Billed in euros (international network). Israeli cards are charged in ₪ at your bank’s rate.",
+        cta: "Continue to checkout",
+        dismiss: "Close",
+      },
+      welcomeBannerCoupon: {
+        brand: "Facebook offer",
+        title: "30% off a secondary Israeli number",
+        body: "Same number on this device — no primary SIM. Discount applies to your first 3 months.",
+        priceNote: "Use code SecNumAgain30 at checkout",
+        euroNote:
+          "Billed in euros. Israeli cards are charged in ₪ at your bank’s rate.",
+        couponBadge: "First 3 months",
+        couponCode: "SecNumAgain30",
+        couponHint: "Tap copy, then paste the code on the Stripe payment page.",
+        cta: "Checkout with 30% off",
+        dismiss: "Close",
       },
       cancelled: "Checkout was cancelled — you can try again whenever you're ready.",
     },
@@ -378,12 +408,26 @@ export const translations: Record<Language, TranslationsShape> = {
 
     campaign: {
       welcomeBanner: {
-        title: "תודה שלחצת מהמודעה",
-        body: "מספר ישראלי נוסף על המכשיר הזה — בלי מספר ראשי ובלי SIM.",
+        brand: "Secnum",
+        title: "מספר ישראלי נוסף — על המכשיר שלך",
+        body: "בלי מספר ראשי ובלי SIM. משלמים כאן ומפעילים ב־Arnacon — לווטסאפ, שיחות והודעות.",
         priceNote: "חודש ראשון €8.98, אחר כך €4.99 לחודש · ביטול בכל רגע",
         euroNote:
-          "המחיר באירו כי Secnum/Arnacon בנויים לשירות בינלאומי. ישראלים מקבלים מבצעים מיוחדים כשרשת Arnacon מוסיפה שירותים חדשים בעולם.",
-        cta: "לתשלום — קבל מספר",
+          "החיוב באירו (רשת בינלאומית). כרטיס ישראלי יחויב בשקלים לפי שער הבנק.",
+        cta: "המשך לתשלום",
+        dismiss: "סגור",
+      },
+      welcomeBannerCoupon: {
+        brand: "מבצע מפייסבוק",
+        title: "30% הנחה על מספר ישראלי נוסף",
+        body: "אותו מספר על המכשיר הזה — בלי מספר ראשי ובלי SIM. ההנחה ל־3 החודשים הראשונים.",
+        priceNote: "השתמשו בקוד SecNumAgain30 בתשלום",
+        euroNote:
+          "החיוב באירו. כרטיס ישראלי יחויב בשקלים לפי שער הבנק.",
+        couponBadge: "3 חודשים ראשונים",
+        couponCode: "SecNumAgain30",
+        couponHint: "העתיקו את הקוד והדביקו בעמוד התשלום של Stripe.",
+        cta: "לתשלום עם 30% הנחה",
         dismiss: "סגור",
       },
       cancelled: "התשלום בוטל — אפשר לנסות שוב מתי שנוח לך.",

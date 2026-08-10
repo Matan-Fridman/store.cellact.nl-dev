@@ -1,21 +1,30 @@
 /**
- * Attribution + site-wide landing UX A/B + Facebook campaign chrome.
+ * Attribution + landing UX A/B + Facebook offer A/B.
  *
- * Experiment: landing_ux_v2 (ALL visitors)
- *   control     — classic “local Israeli number on your phone” landing
- *   conversion  — secondary-number messaging, clearer price, fewer competing CTAs
+ * Landing experiment (non-FB): landing_ux_v2
+ *   control     — Original page (“local Israeli number on your phone”)
+ *   conversion  — Secondary-number page (no primary SIM / device you already have)
  *
- * Facebook traffic (in addition to A/B):
- *   Hebrew default, welcome strip aligned to the ad, hide App Store competition
+ * Facebook offer experiment (FB traffic only): fb_offer_v1
+ *   nocoupon  — Secondary-number offer, full price
+ *   coupon30  — Same + 30% for first 3 months (code SecNumAgain30)
+ *
+ * Facebook always uses the secondary-number landing + Hebrew default.
  */
 
 const ATTR_KEY = "secnum_attr";
 const AB_KEY = "secnum_ab_landing_ux_v2";
 const EXPOSURE_KEY = "secnum_exp_exposed_landing_ux_v2";
+const FB_AB_KEY = "secnum_fb_offer_v1";
+const FB_EXPOSURE_KEY = "secnum_fb_offer_exposed_v1";
 const FB_BANNER_KEY = "secnum_fb_banner_dismissed";
 
 export const EXPERIMENT_ID = "landing_ux_v2";
+export const FB_OFFER_EXPERIMENT_ID = "fb_offer_v1";
+export const FB_COUPON_CODE = "SecNumAgain30";
+
 export type AbVariant = "control" | "conversion";
+export type FbOfferVariant = "nocoupon" | "coupon30";
 
 export interface Attribution {
   utm_source?: string;
@@ -160,9 +169,83 @@ export function shouldShowConversionLanding(): boolean {
   return getAbVariant() === "conversion";
 }
 
-/** Facebook-only chrome: welcome strip, quieter header badges. */
+/** Explicit preview / QA params that must always reopen the FB modal. */
+function hasFbBannerForceParam(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const offer = params.get("fbOffer");
+    if (offer === "nocoupon" || offer === "coupon30") return true;
+    if (params.get("fbBanner") === "1") return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+export function clearFbBannerDismiss(): void {
+  try {
+    sessionStorage.removeItem(FB_BANNER_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Facebook-only chrome: offer modal, quieter header badges.
+ * Also honors ?fbOffer= / ?fbBanner=1 so QA works without a prior FB session.
+ */
 export function shouldShowFacebookChrome(): boolean {
-  return isFacebookTraffic();
+  if (isFacebookTraffic()) return true;
+  if (hasFbBannerForceParam()) {
+    markFacebookSession();
+    return true;
+  }
+  return false;
+}
+
+/** Sticky 50/50 FB offer A/B. Override with ?fbOffer=nocoupon|coupon30 */
+export function getFbOfferVariant(): FbOfferVariant {
+  if (typeof window === "undefined") return "nocoupon";
+
+  try {
+    const forced = new URLSearchParams(window.location.search).get("fbOffer");
+    if (forced === "nocoupon" || forced === "coupon30") {
+      sessionStorage.setItem(FB_AB_KEY, forced);
+      // Preview URLs must reopen the modal even if you closed it earlier this session.
+      clearFbBannerDismiss();
+      return forced;
+    }
+  } catch {
+    // ignore
+  }
+
+  const stored = sessionStorage.getItem(FB_AB_KEY);
+  if (stored === "nocoupon" || stored === "coupon30") return stored;
+
+  const assigned: FbOfferVariant = Math.random() < 0.5 ? "nocoupon" : "coupon30";
+  try {
+    sessionStorage.setItem(FB_AB_KEY, assigned);
+  } catch {
+    // ignore
+  }
+  return assigned;
+}
+
+export function getActiveExperiment(): {
+  experimentId: string;
+  abVariant: string;
+} {
+  if (isFacebookTraffic()) {
+    return {
+      experimentId: FB_OFFER_EXPERIMENT_ID,
+      abVariant: getFbOfferVariant(),
+    };
+  }
+  return {
+    experimentId: EXPERIMENT_ID,
+    abVariant: getAbVariant(),
+  };
 }
 
 export function isFbBannerDismissed(): boolean {
@@ -182,9 +265,10 @@ export function dismissFbBanner(): void {
 }
 
 export function markExperimentExposed(): boolean {
+  const key = isFacebookTraffic() ? FB_EXPOSURE_KEY : EXPOSURE_KEY;
   try {
-    if (sessionStorage.getItem(EXPOSURE_KEY) === "1") return false;
-    sessionStorage.setItem(EXPOSURE_KEY, "1");
+    if (sessionStorage.getItem(key) === "1") return false;
+    sessionStorage.setItem(key, "1");
     return true;
   } catch {
     return true;

@@ -35,7 +35,7 @@ export function FacebookWelcomeBanner({
   const isCoupon = variant === "coupon30";
 
   useEffect(() => {
-    if (!show) return;
+    if (!show || variant === "coupon67") return;
 
     // Hard reopen for QA / forced arms (covers HMR + earlier X-close in same tab).
     try {
@@ -75,7 +75,7 @@ export function FacebookWelcomeBanner({
     };
   }, [visible, variant]);
 
-  if (!show || !visible) return null;
+  if (!show || !visible || variant === "coupon67") return null;
 
   const copy = isCoupon ? t.campaign.welcomeBannerCoupon : t.campaign.welcomeBanner;
 

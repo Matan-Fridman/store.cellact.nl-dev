@@ -8,6 +8,7 @@
  * Facebook offer experiment (FB traffic only): fb_offer_v1
  *   nocoupon  — Secondary-number offer, full price
  *   coupon30  — Same + 30% for first 3 months (code SecNumAgain30)
+ *   coupon67  — Dedicated /67 page, 67% for first 3 months (code BEST67DEAL)
  *
  * Facebook always uses the secondary-number landing + Hebrew default.
  */
@@ -22,9 +23,14 @@ const FB_BANNER_KEY = "secnum_fb_banner_dismissed";
 export const EXPERIMENT_ID = "landing_ux_v2";
 export const FB_OFFER_EXPERIMENT_ID = "fb_offer_v1";
 export const FB_COUPON_CODE = "SecNumAgain30";
+export const FB_COUPON_CODE_67 = "BEST67DEAL";
 
 export type AbVariant = "control" | "conversion";
-export type FbOfferVariant = "nocoupon" | "coupon30";
+export type FbOfferVariant = "nocoupon" | "coupon30" | "coupon67";
+
+function isFbOfferVariant(value: string | null): value is FbOfferVariant {
+  return value === "nocoupon" || value === "coupon30" || value === "coupon67";
+}
 
 export interface Attribution {
   utm_source?: string;
@@ -175,7 +181,7 @@ function hasFbBannerForceParam(): boolean {
   try {
     const params = new URLSearchParams(window.location.search);
     const offer = params.get("fbOffer");
-    if (offer === "nocoupon" || offer === "coupon30") return true;
+    if (isFbOfferVariant(offer)) return true;
     if (params.get("fbBanner") === "1") return true;
     return false;
   } catch {
@@ -204,26 +210,38 @@ export function shouldShowFacebookChrome(): boolean {
   return false;
 }
 
-/** Sticky 50/50 FB offer A/B. Override with ?fbOffer=nocoupon|coupon30 */
+/** Sticky 3-way FB offer A/B. Override with ?fbOffer=nocoupon|coupon30|coupon67 */
 export function getFbOfferVariant(): FbOfferVariant {
   if (typeof window === "undefined") return "nocoupon";
 
   try {
     const forced = new URLSearchParams(window.location.search).get("fbOffer");
-    if (forced === "nocoupon" || forced === "coupon30") {
+    if (isFbOfferVariant(forced)) {
       sessionStorage.setItem(FB_AB_KEY, forced);
       // Preview URLs must reopen the modal even if you closed it earlier this session.
-      clearFbBannerDismiss();
+      if (forced !== "coupon67") clearFbBannerDismiss();
       return forced;
     }
   } catch {
     // ignore
   }
 
-  const stored = sessionStorage.getItem(FB_AB_KEY);
-  if (stored === "nocoupon" || stored === "coupon30") return stored;
+  try {
+    const path = window.location.pathname.replace(/\/+$/, "");
+    if (path.endsWith("/67")) {
+      sessionStorage.setItem(FB_AB_KEY, "coupon67");
+      return "coupon67";
+    }
+  } catch {
+    // ignore
+  }
 
-  const assigned: FbOfferVariant = Math.random() < 0.5 ? "nocoupon" : "coupon30";
+  const stored = sessionStorage.getItem(FB_AB_KEY);
+  if (isFbOfferVariant(stored)) return stored;
+
+  const roll = Math.random();
+  const assigned: FbOfferVariant =
+    roll < 1 / 3 ? "nocoupon" : roll < 2 / 3 ? "coupon30" : "coupon67";
   try {
     sessionStorage.setItem(FB_AB_KEY, assigned);
   } catch {
@@ -232,10 +250,43 @@ export function getFbOfferVariant(): FbOfferVariant {
   return assigned;
 }
 
+export function isSixSevenOffer(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const path = window.location.pathname.replace(/\/+$/, "");
+    if (path.endsWith("/67")) return true;
+    if (new URLSearchParams(window.location.search).get("fbOffer") === "coupon67") {
+      return true;
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    return sessionStorage.getItem(FB_AB_KEY) === "coupon67";
+  } catch {
+    return false;
+  }
+}
+
+export function forceCoupon67Offer(): void {
+  try {
+    sessionStorage.setItem(FB_AB_KEY, "coupon67");
+  } catch {
+    // ignore
+  }
+}
+
 export function getActiveExperiment(): {
   experimentId: string;
   abVariant: string;
 } {
+  if (isSixSevenOffer()) {
+    forceCoupon67Offer();
+    return {
+      experimentId: FB_OFFER_EXPERIMENT_ID,
+      abVariant: "coupon67",
+    };
+  }
   if (isFacebookTraffic()) {
     return {
       experimentId: FB_OFFER_EXPERIMENT_ID,

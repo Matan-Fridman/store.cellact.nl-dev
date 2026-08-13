@@ -688,3 +688,184 @@ body::after {
     font-size: 11px !important;
   }
 }
+
+/* Six-seven 67% offer page */
+.six-seven-page {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: calc(96px + env(safe-area-inset-top, 0px)) 24px 48px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.six-seven-charge {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2vw;
+  font-size: clamp(8rem, 28vw, 18rem);
+  font-weight: 800;
+  letter-spacing: -0.08em;
+  line-height: 0.8;
+  color: rgba(251, 191, 36, 0.07);
+  user-select: none;
+}
+
+.six-seven-charge em {
+  font-style: normal;
+  color: rgba(245, 158, 11, 0.09);
+}
+
+.six-seven-brand {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #fbbf24;
+}
+
+.six-seven-kicker {
+  margin: 10px 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #fde68a;
+}
+
+.six-seven-percent {
+  margin: 18px 0 0;
+  font-size: clamp(3.4rem, 12vw, 6.5rem);
+  font-weight: 800;
+  letter-spacing: -0.07em;
+  line-height: 0.9;
+  background: linear-gradient(135deg, #fde68a, #f59e0b 55%, #fff7ed);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.six-seven-headline {
+  margin: 18px 0 0;
+  max-width: 22ch;
+  font-size: clamp(1.45rem, 4vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  color: var(--color-text);
+}
+
+.six-seven-body,
+.six-seven-laugh,
+.six-seven-euro,
+.six-seven-hint,
+.six-seven-price {
+  margin: 12px 0 0;
+  max-width: 42ch;
+  line-height: 1.5;
+}
+
+.six-seven-body {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+}
+
+.six-seven-laugh {
+  font-size: 0.92rem;
+  color: #e7e5e4;
+  opacity: 0.88;
+}
+
+.six-seven-offer {
+  width: min(420px, 100%);
+  margin-top: 22px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+}
+
+.six-seven-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fde68a;
+}
+
+.six-seven-price {
+  margin-top: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fcd34d;
+}
+
+.six-seven-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px dashed rgba(253, 230, 138, 0.55);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fffbeb;
+  cursor: pointer;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.six-seven-code em {
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fbbf24;
+}
+
+.six-seven-hint,
+.six-seven-euro {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+}
+
+.six-seven-error {
+  margin-top: 14px;
+  border: 0;
+  background: none;
+  color: #fca5a5;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.six-seven-cta {
+  margin-top: 18px;
+  width: min(420px, 100%);
+  border: none;
+  cursor: pointer;
+  border-radius: 14px;
+  padding: 15px 16px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1c1410;
+  background: linear-gradient(135deg, #fde68a, #f59e0b);
+  box-shadow: 0 12px 32px rgba(245, 158, 11, 0.28);
+}
+
+.six-seven-cta:disabled {
+  cursor: wait;
+  opacity: 0.75;
+}

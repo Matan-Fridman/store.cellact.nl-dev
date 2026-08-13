@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { ScrollStory } from "../components/home/ScrollStory";
 import { Marquee } from "../components/ui/Marquee";
@@ -14,6 +14,7 @@ import {
   trackViewContent,
 } from "../lib/analytics";
 import {
+  getFbOfferVariant,
   isFacebookTraffic,
   shouldShowConversionLanding,
   shouldShowFacebookChrome,
@@ -21,6 +22,7 @@ import {
 
 export function StorePage() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const { status, error, initiate, reset } = usePurchase();
   const { t } = useLanguage();
 
@@ -28,18 +30,24 @@ export function StorePage() {
   const wasCancelled = searchParams.get("payment") === "cancelled";
   const conversionLanding = shouldShowConversionLanding();
   const facebookChrome = shouldShowFacebookChrome();
+  const sixSevenArm = facebookChrome && getFbOfferVariant() === "coupon67";
 
   useEffect(() => {
+    if (sixSevenArm) return;
     trackExperimentExposure();
     trackViewContent();
     if (isFacebookTraffic()) {
       void trackEvent("fb_landing");
     }
-  }, []);
+  }, [sixSevenArm]);
 
   useEffect(() => {
     if (wasCancelled) trackCheckoutCancel();
   }, [wasCancelled]);
+
+  if (sixSevenArm) {
+    return <Navigate to={{ pathname: "/67", search: location.search }} replace />;
+  }
 
   return (
     <Layout hideAppStoreBadges={conversionLanding || facebookChrome}>

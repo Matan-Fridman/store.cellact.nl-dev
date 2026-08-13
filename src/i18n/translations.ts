@@ -69,6 +69,20 @@ type TranslationsShape = {
       cta: string;
       dismiss: string;
     };
+    sixSevenPage: {
+      brand: string;
+      kicker: string;
+      headline: string;
+      body: string;
+      laugh: string;
+      percent: string;
+      priceNote: string;
+      euroNote: string;
+      couponBadge: string;
+      couponCode: string;
+      couponHint: string;
+      cta: string;
+    };
     cancelled: string;
   };
   claim: {
@@ -242,6 +256,21 @@ export const translations: Record<Language, TranslationsShape> = {
         couponHint: "Tap copy, then paste the code on the Stripe payment page.",
         cta: "Checkout with 30% off",
         dismiss: "Close",
+      },
+      sixSevenPage: {
+        brand: "Secnum",
+        kicker: "Six seven.",
+        headline: "67% off a secondary Israeli number",
+        body: "Same business number on the phone you already carry. No extra SIM. First three months at sixty-seven percent off, then the normal €4.99/mo.",
+        laugh: "The internet turned 6-7 into a joke. This is the grown-up version: a real rate, billed in euros, cancelled whenever you want.",
+        percent: "67%",
+        priceNote: "Use code BEST67DEAL at checkout",
+        euroNote:
+          "Billed in euros. Israeli cards are charged in ₪ at your bank’s rate.",
+        couponBadge: "First 3 months",
+        couponCode: "BEST67DEAL",
+        couponHint: "Tap copy, then paste the code on the Stripe payment page.",
+        cta: "Continue to checkout",
       },
       cancelled: "Checkout was cancelled — you can try again whenever you're ready.",
     },
@@ -437,6 +466,21 @@ export const translations: Record<Language, TranslationsShape> = {
         couponHint: "העתיקו את הקוד והדביקו בעמוד התשלום של Stripe.",
         cta: "לתשלום עם 30% הנחה",
         dismiss: "סגור",
+      },
+      sixSevenPage: {
+        brand: "Secnum",
+        kicker: "Six seven.",
+        headline: "67% הנחה על מספר ישראלי נוסף",
+        body: "אותו מספר עסקי על המכשיר שכבר אצלך. בלי SIM נוסף. שלושת החודשים הראשונים ב־67% הנחה, אחר כך €4.99 לחודש.",
+        laugh: "הרשת הפכה את 6-7 לבדיחה. כאן זה תעריף אמיתי: חיוב באירו, ביטול בכל רגע.",
+        percent: "67%",
+        priceNote: "השתמשו בקוד BEST67DEAL בתשלום",
+        euroNote:
+          "החיוב באירו. כרטיס ישראלי יחויב בשקלים לפי שער הבנק.",
+        couponBadge: "3 חודשים ראשונים",
+        couponCode: "BEST67DEAL",
+        couponHint: "העתיקו את הקוד והדביקו בעמוד התשלום של Stripe.",
+        cta: "המשך לתשלום",
       },
       cancelled: "התשלום בוטל — אפשר לנסות שוב מתי שנוח לך.",
     },

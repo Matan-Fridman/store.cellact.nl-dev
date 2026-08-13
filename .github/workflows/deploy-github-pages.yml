@@ -68,7 +68,7 @@ jobs:
           test -f dist/index.html
           test -f dist/404.html
           test -d dist/assets
-          for r in activate claim success port port/complete; do
+          for r in activate claim success port port/complete 67; do
             test -f "dist/$r/index.html"
           done
           if grep -q '/src/main.tsx' dist/index.html; then

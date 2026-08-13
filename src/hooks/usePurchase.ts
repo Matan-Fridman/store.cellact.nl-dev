@@ -38,9 +38,10 @@ function buildStoreUrl(
   return url.toString();
 }
 
-export function usePurchase() {
+export function usePurchase(options?: { cancelPath?: string }) {
   const { lang } = useLanguage();
   const [state, setState] = useState<PurchaseState>({ status: "idle", error: null });
+  const cancelPath = options?.cancelPath || "/";
 
   const initiate = useCallback(async () => {
     setState({ status: "loading", error: null });
@@ -57,7 +58,7 @@ export function usePurchase() {
         subscriptionPrice: SUBSCRIPTION_PRICE,
         currency: PRICE_CURRENCY,
         successUrl: buildStoreUrl("/success", purchaseLang),
-        failureUrl: buildStoreUrl("/", purchaseLang, { payment: "cancelled" }),
+        failureUrl: buildStoreUrl(cancelPath, purchaseLang, { payment: "cancelled" }),
         userId: generateUserId(),
         lang: purchaseLang,
       });
@@ -67,7 +68,7 @@ export function usePurchase() {
       const message = err instanceof Error ? err.message : "Could not start checkout";
       setState({ status: "error", error: message });
     }
-  }, [lang]);
+  }, [lang, cancelPath]);
 
   const reset = useCallback(() => setState({ status: "idle", error: null }), []);
 

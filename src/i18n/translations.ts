@@ -147,7 +147,7 @@ export const translations: Record<Language, TranslationsShape> = {
       headlineA: "Another Israeli number,",
       headlineB: "on the device you already have.",
       sub: "No primary number, no extra SIM — even iPad. Pay here, activate in Arnacon on this device. For WhatsApp, calls, and SMS.",
-      cta: "Get number — €8.98 first month",
+      cta: "Buy now",
       ctaLoading: "Redirecting…",
       finePrint:
         "€3.99 setup + €4.99/mo = €8.98 first month · then €4.99/mo · cancel anytime · EUR (international Arnacon network)",
@@ -357,7 +357,7 @@ export const translations: Record<Language, TranslationsShape> = {
       headlineA: "מספר ישראלי שני,",
       headlineB: "על המכשיר שכבר אצלך.",
       sub: "בלי מספר ראשי, בלי SIM — גם באייפד. משלמים כאן ומפעילים ב-Arnacon על המכשיר. לווטסאפ, שיחות והודעות.",
-      cta: "קבל מספר — €8.98 לחודש הראשון",
+      cta: "קנה עכשיו",
       ctaLoading: "מעביר…",
       finePrint:
         "€3.99 הגדרה + €4.99 לחודש = €8.98 לחודש הראשון · אחר כך €4.99 · ביטול בכל רגע · אירו (רשת Arnacon הבינלאומית)",

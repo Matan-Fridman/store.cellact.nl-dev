@@ -167,8 +167,8 @@ function QRState({
           marginBottom: "12px",
         }}
       >
-        <span style={{ fontSize: "12px", color: "#34d399" }}>✓</span>
-        <span style={{ fontSize: "11.5px", fontWeight: 600, letterSpacing: "0.05em", color: "#34d399" }}>
+        <span style={{ fontSize: "12px", color: "#059669" }}>✓</span>
+        <span style={{ fontSize: "11.5px", fontWeight: 600, letterSpacing: "0.05em", color: "#059669" }}>
           Ready to activate
         </span>
       </motion.div>

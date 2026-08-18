@@ -28,7 +28,7 @@ export function GradientGlow({
         height: size,
         borderRadius: "50%",
         background:
-          "radial-gradient(circle, #C45BFF 0%, #8E2DE2 35%, #FF58B0 65%, transparent 100%)",
+          "radial-gradient(circle, #8fd4ff 0%, #4aa3f5 40%, transparent 100%)",
         opacity,
         filter: `blur(${blurPx}px)`,
       }}

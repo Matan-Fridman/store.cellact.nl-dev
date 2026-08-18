@@ -40,3 +40,10 @@ export const SUBSCRIPTION_PRICE   = "4.99";  // monthly subscription
 export const PRICE_CURRENCY = "eur";
 /** Display-only monthly price (short). Full setup+monthly lives in translated finePrint. */
 export const PRICE_DISPLAY = "€4.99/mo";
+
+/** Cellact / Arnacon support — https://www.cellact.com/contact-us/ */
+export const SUPPORT_TEL = "+972557005555";
+export const SUPPORT_TEL_DISPLAY = "+972 55 700 55 55";
+/** Local Israeli display — do not run this through RTL */
+export const SUPPORT_TEL_DISPLAY_IL = "055-700-5555";
+export const SUPPORT_EMAIL = "support@arnacon.com";

@@ -230,8 +230,8 @@ function ReadyState({
       {/* Plan card */}
       <div
         style={{
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: "var(--color-bg-raised)",
+          border: "1px solid var(--color-border)",
           borderRadius: "16px",
           padding: "24px",
           marginBottom: "24px",
@@ -320,7 +320,7 @@ function ReadyState({
             inset: "-6px",
             borderRadius: "18px",
             background:
-              "linear-gradient(135deg, rgba(142,45,226,0.25) 0%, rgba(196,91,255,0.2) 50%, rgba(255,88,176,0.15) 100%)",
+              "linear-gradient(135deg, rgba(143,212,255,0.45) 0%, rgba(74,163,245,0.28) 50%, transparent 100%)",
             filter: "blur(10px)",
             opacity: paying ? 0.3 : 1,
             transition: "opacity 0.3s",
@@ -336,10 +336,10 @@ function ReadyState({
             fontSize: "16px",
             fontWeight: 700,
             letterSpacing: "-0.01em",
-            color: "#0e0e10",
+            color: "var(--color-accent-ink)",
             background: paying
-              ? "rgba(230,230,230,0.5)"
-              : "linear-gradient(135deg, #f0f0f0 0%, #ffffff 100%)",
+              ? "rgba(143, 212, 255, 0.45)"
+              : "var(--color-accent)",
             border: "none",
             borderRadius: "12px",
             cursor: paying ? "not-allowed" : "pointer",
@@ -358,7 +358,7 @@ function ReadyState({
                   height: "16px",
                   borderRadius: "50%",
                   border: "2px solid rgba(0,0,0,0.2)",
-                  borderTopColor: "#0e0e10",
+                  borderTopColor: "var(--color-accent-ink)",
                   animation: "spin 0.8s linear infinite",
                 }}
               />

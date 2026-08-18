@@ -140,7 +140,6 @@ export function FacebookWelcomeBanner({
               {isCoupon && (
                 <div className="fb-welcome-banner-offer">
                   <span className="fb-welcome-banner-badge">{copy.couponBadge}</span>
-                  <p className="fb-welcome-banner-price">{copy.priceNote}</p>
                   <button
                     type="button"
                     className="fb-welcome-banner-code"
@@ -150,15 +149,10 @@ export function FacebookWelcomeBanner({
                     <span>{copy.couponCode || FB_COUPON_CODE}</span>
                     <em>{copied ? (isRTL ? "הועתק" : "Copied") : isRTL ? "העתק" : "Copy"}</em>
                   </button>
-                  <p className="fb-welcome-banner-coupon-hint">{copy.couponHint}</p>
                 </div>
               )}
 
-              {!isCoupon && (
-                <p className="fb-welcome-banner-price">{copy.priceNote}</p>
-              )}
-
-              <p className="fb-welcome-banner-euro">{copy.euroNote}</p>
+              <p className="fb-welcome-banner-price">{copy.priceNote}</p>
 
               <button
                 type="button"
@@ -167,6 +161,14 @@ export function FacebookWelcomeBanner({
                 className="fb-welcome-banner-cta"
               >
                 {loading ? t.campaignHero.ctaLoading : copy.cta}
+              </button>
+
+              <button
+                type="button"
+                className="fb-welcome-banner-more"
+                onClick={dismiss}
+              >
+                {copy.learnMore}
               </button>
             </div>
           </motion.div>

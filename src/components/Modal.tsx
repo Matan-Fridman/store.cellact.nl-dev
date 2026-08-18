@@ -40,7 +40,7 @@ export function Modal({ open, onClose, children }: ModalProps) {
         <button
           onClick={onClose}
           className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:opacity-80"
-          style={{ color: "var(--color-text-muted)", background: "rgba(255,255,255,0.06)" }}
+          style={{ color: "var(--color-text-muted)", background: "#f0f6fb" }}
           aria-label="Close"
         >
           &times;

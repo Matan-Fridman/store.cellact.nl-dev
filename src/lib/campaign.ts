@@ -114,30 +114,50 @@ function markFacebookSession(): void {
   }
 }
 
+/** This navigation’s query string — not a leftover tab session. */
+export function hasFacebookLandingParams(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("fbclid")) return true;
+    if (params.get("from") === "fb") return true;
+    if (params.get("fbBanner") === "1") return true;
+    if (isFbOfferVariant(params.get("fbOffer"))) return true;
+    const source = (params.get("utm_source") ?? "").toLowerCase();
+    if (["facebook", "fb", "meta", "ig", "instagram"].includes(source)) return true;
+    const medium = (params.get("utm_medium") ?? "").toLowerCase();
+    if (medium === "paid_social" && (source.includes("fb") || source.includes("meta"))) {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export function isFacebookTraffic(): boolean {
+  if (hasFacebookLandingParams()) {
+    markFacebookSession();
+    return true;
+  }
+
   const a = getAttribution();
   const source = (a.utm_source ?? "").toLowerCase();
   const medium = (a.utm_medium ?? "").toLowerCase();
   const ref = (a.referrer ?? "").toLowerCase();
 
-  let hit = false;
-  if (a.fbclid) hit = true;
-  else if (["facebook", "fb", "meta", "ig", "instagram"].includes(source)) hit = true;
-  else if (medium === "paid_social" && (source.includes("fb") || source.includes("meta"))) hit = true;
-  else if (ref.includes("facebook.com") || ref.includes("fb.com") || ref.includes("instagram.com")) {
-    hit = true;
-  } else {
-    try {
-      if (sessionStorage.getItem("secnum_force_fb") === "1") hit = true;
-      else if (new URLSearchParams(window.location.search).get("from") === "fb") hit = true;
-    } catch {
-      // ignore
-    }
+  if (a.fbclid) return true;
+  if (["facebook", "fb", "meta", "ig", "instagram"].includes(source)) return true;
+  if (medium === "paid_social" && (source.includes("fb") || source.includes("meta"))) return true;
+  if (ref.includes("facebook.com") || ref.includes("fb.com") || ref.includes("instagram.com")) {
+    return true;
   }
-
-  // Stick for the session so Stripe return / deep links keep FB chrome.
-  if (hit) markFacebookSession();
-  return hit;
+  try {
+    if (sessionStorage.getItem("secnum_force_fb") === "1") return true;
+  } catch {
+    // ignore
+  }
+  return false;
 }
 
 /** Sticky 50/50 A/B for ALL visitors. Override with ?ab=control|conversion */
@@ -175,20 +195,6 @@ export function shouldShowConversionLanding(): boolean {
   return getAbVariant() === "conversion";
 }
 
-/** Explicit preview / QA params that must always reopen the FB modal. */
-function hasFbBannerForceParam(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const offer = params.get("fbOffer");
-    if (isFbOfferVariant(offer)) return true;
-    if (params.get("fbBanner") === "1") return true;
-    return false;
-  } catch {
-    return false;
-  }
-}
-
 export function clearFbBannerDismiss(): void {
   try {
     sessionStorage.removeItem(FB_BANNER_KEY);
@@ -202,12 +208,9 @@ export function clearFbBannerDismiss(): void {
  * Also honors ?fbOffer= / ?fbBanner=1 so QA works without a prior FB session.
  */
 export function shouldShowFacebookChrome(): boolean {
-  if (isFacebookTraffic()) return true;
-  if (hasFbBannerForceParam()) {
-    markFacebookSession();
-    return true;
-  }
-  return false;
+  if (!hasFacebookLandingParams()) return false;
+  markFacebookSession();
+  return true;
 }
 
 /** Sticky 3-way FB offer A/B. Override with ?fbOffer=nocoupon|coupon30|coupon67 */

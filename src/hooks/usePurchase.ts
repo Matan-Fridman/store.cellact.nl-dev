@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createCheckoutSession } from "../services/api";
 import {
   PACKAGE_ID,
@@ -42,6 +42,16 @@ export function usePurchase(options?: { cancelPath?: string }) {
   const { lang } = useLanguage();
   const [state, setState] = useState<PurchaseState>({ status: "idle", error: null });
   const cancelPath = options?.cancelPath || "/";
+
+  useEffect(() => {
+    const onPageShow = () => {
+      setState((prev) =>
+        prev.status === "loading" ? { status: "idle", error: null } : prev,
+      );
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   const initiate = useCallback(async () => {
     setState({ status: "loading", error: null });

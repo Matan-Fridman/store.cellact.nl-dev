@@ -24,9 +24,9 @@ export function StepProgress({ steps, currentStep }: StepProgressProps) {
                   ? "rgba(16,185,129,0.15)"
                   : isActive
                   ? "rgba(142,45,226,0.2)"
-                  : "rgba(255,255,255,0.05)",
+                  : "var(--color-bg-raised)",
                 color: isDone
-                  ? "#34d399"
+                  ? "#059669"
                   : isActive
                   ? "#C45BFF"
                   : "var(--color-text-muted)",

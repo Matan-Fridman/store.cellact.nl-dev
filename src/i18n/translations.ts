@@ -56,6 +56,7 @@ type TranslationsShape = {
       couponHint?: string;
       cta: string;
       dismiss: string;
+      learnMore: string;
     };
     welcomeBannerCoupon: {
       brand: string;
@@ -68,6 +69,7 @@ type TranslationsShape = {
       couponHint: string;
       cta: string;
       dismiss: string;
+      learnMore: string;
     };
     sixSevenPage: {
       brand: string;
@@ -84,6 +86,46 @@ type TranslationsShape = {
       cta: string;
     };
     cancelled: string;
+  };
+  landing: {
+    trust: string[];
+    usesKicker: string;
+    usesTitle: string;
+    whyBody: string;
+    uses: Array<{ title: string; body: string }>;
+    planKicker: string;
+    planTitle: string;
+    planPrice: string;
+    planSetup: string;
+    minutesValue: string;
+    minutesLabel: string;
+    smsValue: string;
+    smsLabel: string;
+    allowanceKicker: string;
+    planItems: string[];
+    planCta: string;
+    couponKicker: string;
+    couponTitle: string;
+    couponBody: string;
+    couponPaste: string;
+    couponCopy: string;
+    couponCopied: string;
+    flagKicker: string;
+    flagOffer: string;
+    flagHint: string;
+    couponSupport: string;
+    couponCall: string;
+    couponEmail: string;
+    supportKicker: string;
+    supportHours: string;
+    coupons: Array<{ badge: string; code: string; note: string }>;
+    howKicker: string;
+    howTitle: string;
+    faqKicker: string;
+    faqTitle: string;
+    faqSub: string;
+    faq: Array<{ q: string; a: string }>;
+    stickyTag: string;
   };
   claim: {
     brand: string;
@@ -133,24 +175,23 @@ export const translations: Record<Language, TranslationsShape> = {
     },
 
     hero: {
-      eyebrow: "Israeli Mobile Numbers",
-      headlineA: "A local Israeli number,",
-      headlineB: "on your existing phone.",
-      sub: "Call and message other Israeli numbers without a second SIM. Use it to register on WhatsApp or any app that needs an Israeli number. You can own multiple numbers.",
-      cta: "Get Your Number",
+      eyebrow: "Israeli mobile number · 972",
+      headlineA: "An Israeli mobile number",
+      headlineB: "in an app on your phone.",
+      sub: "You keep your current SIM and number. The new 972 number sits in the Arnacon app — you call and send SMS from there. No second SIM, no new phone.",
+      cta: "Get your Israeli number",
       ctaLoading: "Redirecting…",
-      finePrint: "€3.99 one-time setup · €4.99/month · Up to 1,500 minutes",
+      finePrint: "€3.99 setup · €4.99/month",
     },
 
     campaignHero: {
-      eyebrow: "Secondary number — no primary needed",
-      headlineA: "Another Israeli number,",
-      headlineB: "on the device you already have.",
-      sub: "No primary number, no extra SIM — even iPad. Pay here, activate in Arnacon on this device. For WhatsApp, calls, and SMS.",
+      eyebrow: "Secondary Israeli mobile number",
+      headlineA: "Another Israeli mobile number",
+      headlineB: "in an app on this phone.",
+      sub: "Keep your current SIM. The extra 972 number lives in the Arnacon app on this device. Call and SMS from the app — no extra SIM.",
       cta: "Buy now",
       ctaLoading: "Redirecting…",
-      finePrint:
-        "€3.99 setup + €4.99/mo = €8.98 first month · then €4.99/mo · cancel anytime · EUR (international Arnacon network)",
+      finePrint: "€3.99 setup + €4.99/mo · billed in EUR · cancel anytime",
     },
 
     steps: [
@@ -179,7 +220,7 @@ export const translations: Record<Language, TranslationsShape> = {
         step: "01",
         headlineA: "Pay once,",
         headlineB: "get your number.",
-        sub: "First month €8.98 (€3.99 setup + €4.99). Then €4.99/mo. No contract. Number reserved when you pay.",
+        sub: "€3.99 setup, then €4.99/mo. No contract. Number reserved when you pay.",
       },
       {
         step: "02",
@@ -199,11 +240,11 @@ export const translations: Record<Language, TranslationsShape> = {
       "Local Israeli Numbers",
       "No Extra SIM",
       "WhatsApp Ready",
-      "1,500 Minutes Included",
+      "1,500 Minutes / Month",
+      "50 SMS / Day",
       "Multiple Numbers",
       "Instant Activation",
       "No Contracts",
-      "50 SMS / Day",
     ],
 
     campaignMarquee: [
@@ -211,24 +252,24 @@ export const translations: Record<Language, TranslationsShape> = {
       "No Extra SIM",
       "Works on Phone & iPad",
       "WhatsApp Ready",
-      "1,500 Minutes Included",
+      "1,500 Minutes / Month",
+      "50 SMS / Day",
       "Secondary Number",
       "Instant Activation",
-      "Cancel Anytime",
     ],
 
     bottomCta: {
-      headlineA: "Your Israeli number.",
+      headlineA: "Your Israeli mobile number.",
       headlineB: "Ready in minutes.",
-      sub: "€3.99 one-time setup · €4.99/month · 1,500 minutes included",
-      cta: "Get Your Number",
+      sub: "€3.99 setup · €4.99/month · 1,500 minutes/month · 50 SMS/day",
+      cta: "Get your Israeli number",
       ctaLoading: "Redirecting…",
     },
 
     campaignBottomCta: {
-      headlineA: "Your secondary number.",
+      headlineA: "Your Israeli mobile number.",
       headlineB: "On this device.",
-      sub: "€8.98 first month · then €4.99/mo · no primary number · charged in EUR",
+      sub: "€3.99 setup + €4.99/mo · 1,500 minutes/month · 50 SMS/day",
       cta: "Get secondary number",
       ctaLoading: "Redirecting…",
     },
@@ -237,18 +278,19 @@ export const translations: Record<Language, TranslationsShape> = {
       welcomeBanner: {
         brand: "Secnum",
         title: "Secondary Israeli number — on this device",
-        body: "No primary number. No extra SIM. Pay here, activate in Arnacon for WhatsApp, calls, and SMS.",
-        priceNote: "First month €8.98, then €4.99/mo · cancel anytime",
+        body: "No extra SIM. Pay here, activate in Arnacon.",
+        priceNote: "€3.99 setup · €4.99/month · cancel anytime",
         euroNote:
           "Billed in euros (international network). Israeli cards are charged in ₪ at your bank’s rate.",
         cta: "Continue to checkout",
         dismiss: "Close",
+        learnMore: "Want to know more? Scroll down.",
       },
       welcomeBannerCoupon: {
         brand: "Facebook offer",
         title: "30% off a secondary Israeli number",
-        body: "Same number on this device — no primary SIM. Discount applies to your first 3 months.",
-        priceNote: "Use code SecNumAgain30 at checkout",
+        body: "Same number on this device. Discount is the first 3 months.",
+        priceNote: "€3.99 setup · €4.99/month",
         euroNote:
           "Billed in euros. Israeli cards are charged in ₪ at your bank’s rate.",
         couponBadge: "First 3 months",
@@ -256,6 +298,7 @@ export const translations: Record<Language, TranslationsShape> = {
         couponHint: "Tap copy, then paste the code on the Stripe payment page.",
         cta: "Checkout with 30% off",
         dismiss: "Close",
+        learnMore: "Want to know more? Scroll down.",
       },
       sixSevenPage: {
         brand: "Secnum",
@@ -273,6 +316,103 @@ export const translations: Record<Language, TranslationsShape> = {
         cta: "Continue to checkout",
       },
       cancelled: "Checkout was cancelled — you can try again whenever you're ready.",
+    },
+
+    landing: {
+      trust: [
+        "Israeli 972 mobile number",
+        "No extra SIM",
+        "Cancel anytime",
+      ],
+      usesKicker: "Why this is useful",
+      usesTitle: "Second line. Same phone.",
+      whyBody:
+        "A real Israeli mobile number on the phone you already have. Second WhatsApp, work off your private line, a temporary number when you sell a car, or a 972 number to take abroad.",
+      uses: [
+        {
+          title: "Going abroad",
+          body: "Take an Israeli mobile number with you. Call and SMS Israeli numbers from abroad, on the phone you already carry.",
+        },
+        {
+          title: "Work vs private",
+          body: "Clients on one line, life on the other. Stop mixing business into your personal number.",
+        },
+        {
+          title: "Selling a car",
+          body: "A temporary number on the listing. Sale done — cancel. Your private number stays private.",
+        },
+        {
+          title: "WhatsApp",
+          body: "Use the Israeli number to register WhatsApp or any app that asks for one — including a second WhatsApp. No second SIM.",
+        },
+      ],
+      planKicker: "What you get",
+      planTitle: "One Israeli mobile number",
+      planPrice: "€4.99 / month",
+      planSetup: "€3.99 one-time setup",
+      minutesValue: "1,500",
+      minutesLabel: "outgoing minutes / month",
+      smsValue: "50",
+      smsLabel: "outgoing SMS / day",
+      allowanceKicker: "Included",
+      planItems: [
+        "1,500 outgoing minutes / month",
+        "50 outgoing SMS / day",
+        "Real Israeli (972) mobile number",
+        "WhatsApp and any app that needs an Israeli number",
+        "Activate in Arnacon — no extra SIM",
+        "Cancel anytime",
+      ],
+      planCta: "Get your Israeli number",
+      couponKicker: "Coupon",
+      couponTitle: "30% off the first 3 months",
+      couponBody: "Copy the code. Paste it on the Stripe page.",
+      couponPaste: "Copy here, paste at checkout",
+      couponCopy: "Copy",
+      couponCopied: "Copied",
+      flagKicker: "Launch",
+      flagOffer: "First 1,000 people · 30% off",
+      flagHint: "Tap to copy",
+      couponSupport: "Questions? Call support.",
+      couponCall: "Call support",
+      couponEmail: "Email support",
+      supportKicker: "Support",
+      supportHours: "Sun–Thu, 08:00–18:00 Israel time",
+      coupons: [
+        {
+          badge: "30% off · first 3 months",
+          code: "SecNumAgain30",
+          note: "Paste SecNumAgain30 on the Stripe page.",
+        },
+      ],
+      howKicker: "How it works",
+      howTitle: "Pay. Activate. Call.",
+      faqKicker: "FAQ",
+      faqTitle: "Straight answers",
+      faqSub: "If this page does not answer it — call support.",
+      faq: [
+        {
+          q: "What number do I get?",
+          a: "A real Israeli mobile number (972). It runs on the phone you already have, in the Arnacon app. No extra SIM.",
+        },
+        {
+          q: "What is included?",
+          a: "Up to 1,500 outgoing minutes per month, and 50 outgoing SMS per day. Setup is €3.99 once, then €4.99 per month.",
+        },
+        {
+          q: "Can I use WhatsApp?",
+          a: "You can use the Israeli mobile number to register WhatsApp or any app that asks for an Israeli number — including a second WhatsApp.",
+        },
+        {
+          q: "How do coupons work?",
+          a: "Copy the code on this page. At Stripe checkout, paste it in the promo field. The discount is for the first 3 months.",
+        },
+        {
+          q: "Who do I call if I am stuck?",
+          a: "Cellact support: +972 55 700 55 55 (Sun–Thu 08:00–18:00 Israel time), or support@arnacon.com.",
+        },
+      ],
+      stickyTag: "1,500 min / month + 50 SMS / day",
     },
 
     claim: {
@@ -343,122 +483,122 @@ export const translations: Record<Language, TranslationsShape> = {
     },
 
     hero: {
-      eyebrow: "מספרי סלולר ישראליים",
-      headlineA: "מספר ישראלי מקומי,",
-      headlineB: "על הטלפון הקיים שלך.",
-      sub: "התקשר ושלח הודעות למספרים ישראליים אחרים ללא כרטיס SIM נוסף. השתמש בו לרישום בווטסאפ או כל אפליקציה שדורשת מספר ישראלי. ניתן להחזיק מספר מספרים.",
-      cta: "קבל את המספר שלך",
-      ctaLoading: "מעביר…",
-      finePrint: "הגדרה חד־פעמית €3.99 · €4.99 לחודש · עד 1,500 דקות",
+      eyebrow: "מספר נייד ישראלי · 972",
+      headlineA: "מספר נייד ישראלי",
+      headlineB: "באפליקציה בטלפון שלך.",
+      sub: "נשארים עם הסים והמספר שיש לכם. המספר החדש יושב באפליקציית Arnacon — משם מתקשרים ושולחים סמס. בלי סים שני ובלי טלפון חדש.",
+      cta: "רכשו מספר ישראלי",
+      ctaLoading: "מעבירים לתשלום…",
+      finePrint: "דמי הקמה €3.99 · €4.99 לחודש",
     },
 
     campaignHero: {
-      eyebrow: "מספר נוסף — בלי מספר ראשי",
-      headlineA: "מספר ישראלי שני,",
-      headlineB: "על המכשיר שכבר אצלך.",
-      sub: "בלי מספר ראשי, בלי SIM — גם באייפד. משלמים כאן ומפעילים ב-Arnacon על המכשיר. לווטסאפ, שיחות והודעות.",
-      cta: "קנה עכשיו",
-      ctaLoading: "מעביר…",
-      finePrint:
-        "€3.99 הגדרה + €4.99 לחודש = €8.98 לחודש הראשון · אחר כך €4.99 · ביטול בכל רגע · אירו (רשת Arnacon הבינלאומית)",
+      eyebrow: "מספר ישראלי נוסף",
+      headlineA: "עוד מספר נייד ישראלי",
+      headlineB: "באפליקציה בטלפון הזה.",
+      sub: "נשארים עם הסים שיש. המספר הנוסף יושב באפליקציית Arnacon על המכשיר — שיחות וסמס מהאפליקציה, בלי סים נוסף.",
+      cta: "לרכישה",
+      ctaLoading: "מעבירים לתשלום…",
+      finePrint: "דמי הקמה €3.99 + €4.99 לחודש · ביטול בכל רגע",
     },
 
     steps: [
       {
         step: "01",
-        headlineA: "רכוש את המספר שלך",
+        headlineA: "רוכשים מספר",
         headlineB: "תוך דקות.",
-        sub: "הגדרה חד־פעמית של €3.99, לאחר מכן €4.99 לחודש. ללא חוזים. המספר שמור ברגע שאתה משלם.",
+        sub: "דמי הקמה €3.99, ואז €4.99 לחודש. בלי חוזה. המספר נשמר ברגע התשלום.",
       },
       {
         step: "02",
-        headlineA: "סרוק את קוד ה-QR",
-        headlineB: "עם Arnacon.",
-        sub: "פתח את אפליקציית Arnacon, סרוק את קוד ה-QR, והמספר שלך מופעל מיידית.",
+        headlineA: "סורקים QR",
+        headlineB: "ב־Arnacon.",
+        sub: "פותחים את האפליקציה, סורקים את הקוד, והמספר מופעל.",
       },
       {
         step: "03",
-        headlineA: "התקשר ושלח הודעות",
-        headlineB: "למספרים ישראליים.",
-        sub: "עד 1,500 דקות יוצאות בחודש ו-50 SMS יוצאים ביום. השתמש במספר בווטסאפ או בכל אפליקציה שדורשת מספר ישראלי.",
+        headlineA: "מתקשרים ושולחים",
+        headlineB: "הודעות בישראל.",
+        sub: "עד 1,500 דקות יוצאות בחודש, ו־50 הודעות סמס ביום. אפשר גם וואטסאפ.",
       },
     ],
 
     campaignSteps: [
       {
         step: "01",
-        headlineA: "משלמים פעם אחת,",
+        headlineA: "משלמים,",
         headlineB: "מקבלים מספר.",
-        sub: "חודש ראשון €8.98 (€3.99 הגדרה + €4.99). אחר כך €4.99 לחודש. בלי חוזה. המספר נשמר ברגע התשלום.",
+        sub: "דמי הקמה €3.99, ואז €4.99 לחודש. בלי חוזה.",
       },
       {
         step: "02",
-        headlineA: "הפעלה באפליקציית",
-        headlineB: "Arnacon.",
-        sub: "Arnacon היא האפליקציה שמריצה את המספר על המכשיר — בלי SIM פיזי. אחרי התשלום פותחים אותה (או סורקים QR).",
+        headlineA: "מפעילים",
+        headlineB: "ב־Arnacon.",
+        sub: "האפליקציה מריצה את המספר על המכשיר — בלי סים. אחרי התשלום פותחים אותה.",
       },
       {
         step: "03",
-        headlineA: "ווטסאפ, שיחות",
-        headlineB: "והודעות — מוכנים.",
-        sub: "לווטסאפ או לכל אפליקציה שצריכה מספר ישראלי. עד 1,500 דקות בחודש ו-50 SMS ביום.",
+        headlineA: "שיחות, סמס",
+        headlineB: "ווואטסאפ.",
+        sub: "עד 1,500 דקות בחודש ו־50 הודעות סמס ביום. לכל אפליקציה שצריכה מספר ישראלי.",
       },
     ],
 
     marquee: [
-      "מספרים ישראליים מקומיים",
-      "ללא SIM נוסף",
-      "מוכן לווטסאפ",
-      "1,500 דקות כלולות",
-      "מספרים מרובים",
+      "מספר נייד ישראלי",
+      "בלי סים נוסף",
+      "מוכן לוואטסאפ",
+      "1,500 דקות בחודש",
+      "50 הודעות סמס ליום",
+      "כמה מספרים",
       "הפעלה מיידית",
-      "ללא חוזים",
-      "50 SMS ליום",
+      "בלי חוזה",
     ],
 
     campaignMarquee: [
-      "בלי מספר ראשי",
-      "בלי SIM נוסף",
-      "עובד בטלפון ובאייפד",
-      "מוכן לווטסאפ",
-      "1,500 דקות כלולות",
+      "בלי קו ראשי",
+      "בלי סים נוסף",
+      "טלפון ואייפד",
+      "מוכן לוואטסאפ",
+      "1,500 דקות בחודש",
+      "50 הודעות סמס ליום",
       "מספר נוסף",
       "הפעלה מיידית",
-      "ביטול בכל רגע",
     ],
 
     bottomCta: {
-      headlineA: "המספר הישראלי שלך.",
+      headlineA: "המספר הישראלי שלכם.",
       headlineB: "מוכן תוך דקות.",
-      sub: "הגדרה חד־פעמית €3.99 · €4.99 לחודש · 1,500 דקות כלולות",
-      cta: "קבל את המספר שלך",
-      ctaLoading: "מעביר…",
+      sub: "דמי הקמה €3.99 · €4.99 לחודש · 1,500 דקות בחודש · 50 הודעות סמס ליום",
+      cta: "רכשו מספר ישראלי",
+      ctaLoading: "מעבירים לתשלום…",
     },
 
     campaignBottomCta: {
-      headlineA: "המספר הנוסף שלך.",
+      headlineA: "המספר הישראלי שלכם.",
       headlineB: "על המכשיר הזה.",
-      sub: "€8.98 לחודש הראשון · אחר כך €4.99 לחודש · בלי מספר ראשי · חיוב באירו",
-      cta: "קבל מספר נוסף",
-      ctaLoading: "מעביר…",
+      sub: "דמי הקמה €3.99 + €4.99 לחודש · 1,500 דקות בחודש · 50 הודעות סמס ליום",
+      cta: "רכשו מספר נוסף",
+      ctaLoading: "מעבירים לתשלום…",
     },
 
     campaign: {
       welcomeBanner: {
         brand: "Secnum",
-        title: "מספר ישראלי נוסף — על המכשיר שלך",
-        body: "בלי מספר ראשי ובלי SIM. משלמים כאן ומפעילים ב־Arnacon — לווטסאפ, שיחות והודעות.",
-        priceNote: "חודש ראשון €8.98, אחר כך €4.99 לחודש · ביטול בכל רגע",
+        title: "מספר ישראלי נוסף — על המכשיר שלכם",
+        body: "בלי סים נוסף. משלמים כאן, מפעילים ב־Arnacon.",
+        priceNote: "דמי הקמה €3.99 · €4.99 לחודש · ביטול בכל רגע",
         euroNote:
           "החיוב באירו (רשת בינלאומית). כרטיס ישראלי יחויב בשקלים לפי שער הבנק.",
         cta: "המשך לתשלום",
         dismiss: "סגור",
+        learnMore: "רוצים לדעת עוד? גללו למטה.",
       },
       welcomeBannerCoupon: {
         brand: "מבצע מפייסבוק",
         title: "30% הנחה על מספר ישראלי נוסף",
-        body: "אותו מספר על המכשיר הזה — בלי מספר ראשי ובלי SIM. ההנחה ל־3 החודשים הראשונים.",
-        priceNote: "השתמשו בקוד SecNumAgain30 בתשלום",
+        body: "אותו מספר על המכשיר. ההנחה לשלושת החודשים הראשונים.",
+        priceNote: "דמי הקמה €3.99 · €4.99 לחודש",
         euroNote:
           "החיוב באירו. כרטיס ישראלי יחויב בשקלים לפי שער הבנק.",
         couponBadge: "3 חודשים ראשונים",
@@ -466,12 +606,13 @@ export const translations: Record<Language, TranslationsShape> = {
         couponHint: "העתיקו את הקוד והדביקו בעמוד התשלום של Stripe.",
         cta: "לתשלום עם 30% הנחה",
         dismiss: "סגור",
+        learnMore: "רוצים לדעת עוד? גללו למטה.",
       },
       sixSevenPage: {
         brand: "Secnum",
         kicker: "Six seven.",
         headline: "67% הנחה על מספר ישראלי נוסף",
-        body: "אותו מספר עסקי על המכשיר שכבר אצלך. בלי SIM נוסף. שלושת החודשים הראשונים ב־67% הנחה, אחר כך €4.99 לחודש.",
+        body: "מספר עסקי על המכשיר שכבר יש לכם. בלי סים נוסף. שלושת החודשים הראשונים ב־67% הנחה, אחר כך €4.99 לחודש.",
         laugh: "הרשת הפכה את 6-7 לבדיחה. כאן זה תעריף אמיתי: חיוב באירו, ביטול בכל רגע.",
         percent: "67%",
         priceNote: "השתמשו בקוד BEST67DEAL בתשלום",
@@ -482,7 +623,104 @@ export const translations: Record<Language, TranslationsShape> = {
         couponHint: "העתיקו את הקוד והדביקו בעמוד התשלום של Stripe.",
         cta: "המשך לתשלום",
       },
-      cancelled: "התשלום בוטל — אפשר לנסות שוב מתי שנוח לך.",
+      cancelled: "התשלום בוטל — אפשר לנסות שוב מתי שנוח.",
+    },
+
+    landing: {
+      trust: [
+        "מספר ישראלי 972",
+        "בלי סים נוסף",
+        "ביטול בכל רגע",
+      ],
+      usesKicker: "למה זה טוב",
+      usesTitle: "קו שני. אותו טלפון.",
+      whyBody:
+        "מספר נייד ישראלי אמיתי, על הטלפון שלך. וואטסאפ שני, הפרדה בין עסקי לפרטי, מספר זמני כשמוכרים רכב, או מספר לצאת איתו לחול.",
+      uses: [
+        {
+          title: "יוצאים לחול",
+          body: "מספר ישראלי שנוסע איתכם. שיחות וסמס לישראל מחו״ל, על הטלפון שכבר יש.",
+        },
+        {
+          title: "עסקי ופרטי",
+          body: "לקוחות על קו אחד, חיים על קו אחר. בלי לערבב.",
+        },
+        {
+          title: "מוכרים רכב",
+          body: "מספר זמני למודעה. נגמרה המכירה — מבטלים. המספר הפרטי לא עולה ליד2.",
+        },
+        {
+          title: "וואטסאפ",
+          body: "נרשמים לוואטסאפ או לכל אפליקציה שדורשת מספר ישראלי — גם חשבון שני. בלי סים נוסף.",
+        },
+      ],
+      planKicker: "מה מקבלים",
+      planTitle: "מספר נייד ישראלי אחד",
+      planPrice: "€4.99 לחודש",
+      planSetup: "דמי הקמה חד־פעמיים €3.99",
+      minutesValue: "1,500",
+      minutesLabel: "דקות יוצאות בחודש",
+      smsValue: "50",
+      smsLabel: "הודעות סמס ביום",
+      allowanceKicker: "כלול בתוכנית",
+      planItems: [
+        "1,500 דקות יוצאות בחודש",
+        "50 הודעות סמס ביום",
+        "מספר נייד ישראלי אמיתי (972)",
+        "וואטסאפ וכל אפליקציה שצריכה מספר ישראלי",
+        "הפעלה ב־Arnacon, בלי סים נוסף",
+        "ביטול בכל רגע",
+      ],
+      planCta: "רכשו מספר ישראלי",
+      couponKicker: "קופון",
+      couponTitle: "30% הנחה לשלושת החודשים הראשונים",
+      couponBody: "מעתיקים את הקוד. מדביקים בעמוד של Stripe.",
+      couponPaste: "מעתיקים מכאן, מדביקים בתשלום",
+      couponCopy: "העתקה",
+      couponCopied: "הועתק",
+      flagKicker: "השקה",
+      flagOffer: "לאלף הראשונים · 30% הנחה",
+      flagHint: "העתיקו את הקוד",
+      couponSupport: "יש שאלות? חייגו לתמיכה.",
+      couponCall: "חייגו לתמיכה",
+      couponEmail: "כתבו למייל",
+      supportKicker: "תמיכה",
+      supportHours: "א׳–ה׳, 08:00–18:00",
+      coupons: [
+        {
+          badge: "30% הנחה · 3 חודשים ראשונים",
+          code: "SecNumAgain30",
+          note: "מדביקים את הקוד בעמוד של Stripe.",
+        },
+      ],
+      howKicker: "איך זה עובד",
+      howTitle: "משלמים. מפעילים. מתקשרים.",
+      faqKicker: "שאלות נפוצות",
+      faqTitle: "בקצרה",
+      faqSub: "לא מצאתם תשובה? חייגו לתמיכה.",
+      faq: [
+        {
+          q: "איזה מספר מקבלים?",
+          a: "מספר נייד ישראלי אמיתי (972). רץ על הטלפון שלכם, באפליקציית Arnacon. בלי סים נוסף.",
+        },
+        {
+          q: "מה כלול?",
+          a: "עד 1,500 דקות יוצאות בחודש, ו־50 הודעות סמס ביום. דמי הקמה €3.99, אחר כך €4.99 לחודש.",
+        },
+        {
+          q: "אפשר וואטסאפ?",
+          a: "אפשר להשתמש במספר לרישום לוואטסאפ או לכל אפליקציה שדורשת מספר ישראלי — גם לחשבון שני.",
+        },
+        {
+          q: "איך משתמשים בקופון?",
+          a: "מעתיקים את הקוד כאן. ב־Stripe מדביקים בשדה המבצע. ההנחה לשלושת החודשים הראשונים.",
+        },
+        {
+          q: "למי מתקשרים אם נתקעים?",
+          a: "תמיכת Cellact: 055-700-5555 (א׳–ה׳ 08:00–18:00), או support@arnacon.com.",
+        },
+      ],
+      stickyTag: "1,500 דקות בחודש + 50 הודעות סמס ליום",
     },
 
     claim: {

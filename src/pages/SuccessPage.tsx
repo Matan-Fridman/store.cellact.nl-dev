@@ -142,13 +142,13 @@ function ConfirmedState({
           marginBottom: "28px",
         }}
       >
-        <span style={{ fontSize: "12px", color: "#34d399" }}>✓</span>
+        <span style={{ fontSize: "12px", color: "#059669" }}>✓</span>
         <span
           style={{
             fontSize: "11.5px",
             fontWeight: 600,
             letterSpacing: "0.05em",
-            color: "#34d399",
+          color: "#059669",
           }}
         >
           {copy.paymentConfirmed}
@@ -225,7 +225,7 @@ function ConfirmedState({
                   width: "42%",
                   borderRadius: "99px",
                   background:
-                    "linear-gradient(90deg, transparent, #34d399 25%, #6ee7b7 50%, #34d399 75%, transparent)",
+                    "linear-gradient(90deg, transparent, #059669 25%, #34d399 50%, #059669 75%, transparent)",
                   animation: "secnum-bar-slide 1.35s ease-in-out infinite",
                 }}
               />

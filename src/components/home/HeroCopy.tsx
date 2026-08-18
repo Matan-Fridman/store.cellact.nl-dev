@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { Button } from "../Button";
-import { PRICE_DISPLAY } from "../../config/constants";
 import { ErrorAlert } from "../ErrorAlert";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { shouldShowFacebookChrome } from "../../lib/campaign";
 
 interface HeroCopyProps {
   onPurchase: () => void;
@@ -17,107 +18,58 @@ const item = (delay: number) => ({
 });
 
 export function HeroCopy({ onPurchase, loading, error, onDismissError }: HeroCopyProps) {
-  // const navigate = useNavigate();
-  return (
-    <div className="flex flex-col gap-7">
+  const { t } = useLanguage();
+  const copy = shouldShowFacebookChrome() ? t.campaignHero : t.hero;
+  const landing = t.landing;
 
-      {/* Eyebrow */}
-      <motion.p
-        {...item(0.08)}
-        style={{
-          fontSize: "11px",
-          fontWeight: 600,
-          letterSpacing: "0.13em",
-          textTransform: "uppercase",
-          color: "var(--color-text-muted)",
-        }}
-      >
-        Israeli Mobile Numbers
+  return (
+    <div className="landing-hero-copy">
+      <motion.p {...item(0.08)} className="landing-kicker">
+        {copy.eyebrow}
       </motion.p>
 
-      {/* Headline */}
-      <motion.h1
-        {...item(0.18)}
-        style={{
-          fontSize: "clamp(2.6rem, 4.2vw, 4.4rem)",
-          fontWeight: 900,
-          lineHeight: 1.04,
-          letterSpacing: "-0.035em",
-          color: "var(--color-text)",
-        }}
-      >
-        A secondary number,{" "}
-        <span className="gradient-text">on your existing phone.</span>
+      <motion.h1 {...item(0.18)} className="landing-hero-title">
+        {copy.headlineA}
+        <br />
+        <span className="gradient-text">{copy.headlineB}</span>
       </motion.h1>
 
-      {/* Subtext — one sentence, nothing more */}
-      <motion.p
-        {...item(0.3)}
-        style={{
-          fontSize: "1.0625rem",
-          lineHeight: 1.65,
-          color: "var(--color-text-muted)",
-          maxWidth: "38ch",
-        }}
-      >
-        Receive calls and SMS on a real Israeli number from anywhere
-        in the world. Activate in minutes — no extra SIM required.
+      <motion.p {...item(0.3)} className="landing-hero-sub">
+        {copy.sub}
       </motion.p>
 
-      {/* CTA */}
-      <motion.div {...item(0.42)} className="flex flex-col gap-3.5">
-        {/* Gradient ring frames the button per brand rules */}
-        <div
-          style={{
-            display: "inline-flex",
-            borderRadius: "12px",
-            padding: "1px",
-            background: "linear-gradient(135deg, #8E2DE2, #FF58B0)",
-            width: "fit-content",
-          }}
-        >
-          <Button
-            onClick={onPurchase}
-            loading={loading}
-            disabled={loading}
-            className="!w-auto !rounded-[11px] !px-7"
-          >
-            {loading ? "Redirecting…" : `Get Your Number — ${PRICE_DISPLAY}`}
-          </Button>
-        </div>
-
-        {/* Inline proof */}
-        <p style={{ fontSize: "12.5px", color: "var(--color-text-muted)", letterSpacing: "0.01em" }}>
-          €3.99 one-time setup &nbsp;·&nbsp; then €4.99/month &nbsp;·&nbsp; No extra SIM
-        </p>
-
-        {/* Port link — temporarily disabled */}
-        {/* <button
-          type="button"
-          onClick={() => navigate("/port")}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            fontSize: "13px",
-            color: "var(--color-text-muted)",
-            letterSpacing: "0.01em",
-            padding: 0,
-            textAlign: "left",
-            transition: "color 0.2s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-text)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
-        >
-          Already have an Israeli number?{" "}
-          <span style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>
-            Port it to Arnacon →
+      <motion.div {...item(0.36)} className="landing-allowance-wrap">
+        <p className="landing-allowance-kicker">{landing.allowanceKicker}</p>
+        <div className="landing-allowance" aria-label={landing.stickyTag}>
+          <div className="landing-allowance-item">
+            <strong className="ltr-num" dir="ltr">{landing.minutesValue}</strong>
+            <span>{landing.minutesLabel}</span>
+          </div>
+          <span className="landing-allowance-and" aria-hidden="true">
+            +
           </span>
-        </button> */}
+          <div className="landing-allowance-item">
+            <strong className="ltr-num" dir="ltr">{landing.smsValue}</strong>
+            <span>{landing.smsLabel}</span>
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div {...item(0.42)} className="landing-hero-cta">
+        <Button
+          onClick={onPurchase}
+          loading={loading}
+          disabled={loading}
+          fullWidth={false}
+          className="landing-buy landing-hero-buy"
+        >
+          {loading ? copy.ctaLoading : copy.cta}
+        </Button>
+
+        <p className="landing-fineprint">{copy.finePrint}</p>
 
         <ErrorAlert message={error} onDismiss={onDismissError} />
       </motion.div>
-
     </div>
   );
 }

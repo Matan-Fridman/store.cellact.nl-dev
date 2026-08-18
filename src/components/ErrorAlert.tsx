@@ -10,9 +10,9 @@ export function ErrorAlert({ message, onDismiss }: ErrorAlertProps) {
     <div
       className="mt-4 rounded-xl px-4 py-3 text-sm"
       style={{
-        background: "rgba(239,68,68,0.12)",
-        border: "1px solid rgba(239,68,68,0.3)",
-        color: "#f87171",
+        background: "rgba(185,28,28,0.08)",
+        border: "1px solid rgba(185,28,28,0.22)",
+        color: "#b91c1c",
       }}
     >
       <div className="flex items-start justify-between gap-3">

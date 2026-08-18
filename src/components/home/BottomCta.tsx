@@ -2,26 +2,28 @@ import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Button } from "../Button";
 import { useLanguage } from "../../contexts/LanguageContext";
-import { shouldShowConversionLanding } from "../../lib/campaign";
+import { shouldShowFacebookChrome } from "../../lib/campaign";
 
 interface BottomCtaProps {
   onPurchase: () => void;
   loading: boolean;
+  hideAppStoreBadges?: boolean;
 }
 
-export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
+export function BottomCta({ onPurchase, loading, hideAppStoreBadges = false }: BottomCtaProps) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-15% 0px" });
   const { t, isRTL } = useLanguage();
-  const fb = shouldShowConversionLanding();
+  const fb = shouldShowFacebookChrome();
   const copy = fb ? t.campaignBottomCta : t.bottomCta;
+  const hideBadges = hideAppStoreBadges || fb;
 
   return (
     <section
+      className="landing-bottom-cta"
       style={{
         position: "relative",
         overflow: "hidden",
-        padding: "160px 24px 180px",
         textAlign: "center",
       }}
     >
@@ -110,8 +112,8 @@ export function BottomCta({ onPurchase, loading }: BottomCtaProps) {
             {loading ? copy.ctaLoading : copy.cta}
           </Button>
 
-          {/* App store badges — hidden on FB landings (compete with purchase) */}
-          {!fb && (
+          {/* App store badges — hidden on conversion landings (compete with purchase) */}
+          {!hideBadges && (
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center", marginTop: "8px" }}>
               <a
                 href="https://apps.apple.com/app/arnacon/id6504406464"

@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { translations, type Language } from "../i18n/translations";
-import { captureAttribution, isFacebookTraffic } from "../lib/campaign";
+import { captureAttribution, hasFacebookLandingParams } from "../lib/campaign";
 
 type TranslationsShape = (typeof translations)["en"];
 
@@ -29,12 +29,17 @@ function resolveInitialLang(): Language {
   if (urlParam && VALID.includes(urlParam)) return urlParam;
 
   // FB ad traffic: force Hebrew even if a prior EN visit left localStorage.
-  // Secondary-number campaign is Hebrew; English landing is a silent conversion killer.
-  if (isFacebookTraffic()) return "he";
+  if (hasFacebookLandingParams()) return "he";
 
   try {
     const stored = localStorage.getItem("secnum_lang") as Language | null;
     if (stored && VALID.includes(stored)) return stored;
+  } catch {
+    // ignore
+  }
+
+  try {
+    if (navigator.language.toLowerCase().startsWith("he")) return "he";
   } catch {
     // ignore
   }

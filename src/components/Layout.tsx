@@ -6,9 +6,18 @@ interface LayoutProps {
   children: ReactNode;
   /** Hide App Store / Play badges — they compete with buy CTA on FB landings */
   hideAppStoreBadges?: boolean;
+  onBuy?: () => void;
+  buyLabel?: string;
+  buyLoading?: boolean;
 }
 
-export function Layout({ children, hideAppStoreBadges = false }: LayoutProps) {
+export function Layout({
+  children,
+  hideAppStoreBadges = false,
+  onBuy,
+  buyLabel,
+  buyLoading = false,
+}: LayoutProps) {
   const [scrolled, setScrolled] = useState(false);
   const { lang, setLang, t } = useLanguage();
 
@@ -25,12 +34,7 @@ export function Layout({ children, hideAppStoreBadges = false }: LayoutProps) {
       data-hide-store-badges={hideAppStoreBadges ? "1" : undefined}
     >
       <header
-        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-        style={{
-          background: scrolled ? "rgba(12,11,20,0.85)" : "transparent",
-          backdropFilter: scrolled ? "blur(16px)" : "none",
-          borderBottom: scrolled ? "1px solid var(--color-border)" : "1px solid transparent",
-        }}
+        className={`site-header fixed top-0 left-0 right-0 z-50 transition-all duration-300${scrolled ? " is-scrolled" : ""}`}
       >
         <div className="site-header-inner mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <a
@@ -43,6 +47,16 @@ export function Layout({ children, hideAppStoreBadges = false }: LayoutProps) {
 
           <div className="site-header-controls" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             {!hideAppStoreBadges && <AppStoreBadges />}
+            {onBuy && buyLabel && (
+              <button
+                type="button"
+                className="landing-header-buy"
+                onClick={onBuy}
+                disabled={buyLoading}
+              >
+                {buyLabel}
+              </button>
+            )}
             <LangToggle lang={lang} setLang={setLang} />
           </div>
         </div>
@@ -60,8 +74,6 @@ function AppStoreBadges() {
     gap: "7px",
     padding: "5px 12px",
     borderRadius: "8px",
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(255,255,255,0.1)",
     textDecoration: "none",
     transition: "border-color 0.2s, background 0.2s",
     cursor: "pointer",
@@ -75,10 +87,8 @@ function AppStoreBadges() {
         target="_blank"
         rel="noopener noreferrer"
         style={badgeStyle}
-        onMouseEnter={(e) => { const el = e.currentTarget; el.style.background = "rgba(255,255,255,0.1)"; el.style.borderColor = "rgba(255,255,255,0.22)"; }}
-        onMouseLeave={(e) => { const el = e.currentTarget; el.style.background = "rgba(255,255,255,0.05)"; el.style.borderColor = "rgba(255,255,255,0.1)"; }}
       >
-        <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" width="13" height="16" style={{ filter: "invert(1)" }} alt="Apple" />
+        <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" width="13" height="16" alt="Apple" />
         <span style={{ fontSize: "11.5px", fontWeight: 600, color: "var(--color-text)", letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>
           App Store
         </span>
@@ -90,8 +100,6 @@ function AppStoreBadges() {
         target="_blank"
         rel="noopener noreferrer"
         style={badgeStyle}
-        onMouseEnter={(e) => { const el = e.currentTarget; el.style.background = "rgba(255,255,255,0.1)"; el.style.borderColor = "rgba(255,255,255,0.22)"; }}
-        onMouseLeave={(e) => { const el = e.currentTarget; el.style.background = "rgba(255,255,255,0.05)"; el.style.borderColor = "rgba(255,255,255,0.1)"; }}
       >
         <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/Google_Play_Arrow_logo.svg" width="14" height="14" alt="Google Play" />
         <span style={{ fontSize: "11.5px", fontWeight: 600, color: "var(--color-text)", letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>
@@ -118,14 +126,13 @@ function LangToggle({
         gap: "2px",
         padding: "3px",
         borderRadius: "8px",
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid var(--color-border)",
       }}
     >
-      {(["en", "he"] as const).map((l) => (
+      {(lang === "he" ? (["he", "en"] as Language[]) : (["en", "he"] as Language[])).map((l) => (
         <button
           key={l}
           onClick={() => setLang(l)}
+          className={lang === l ? "is-active" : undefined}
           style={{
             padding: "4px 11px",
             borderRadius: "5px",
@@ -136,7 +143,7 @@ function LangToggle({
             border: "none",
             cursor: "pointer",
             transition: "all 0.15s ease",
-            background: lang === l ? "rgba(255,255,255,0.1)" : "transparent",
+            background: "transparent",
             color:
               lang === l ? "var(--color-text)" : "var(--color-text-muted)",
           }}

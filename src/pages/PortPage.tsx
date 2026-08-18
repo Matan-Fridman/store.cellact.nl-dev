@@ -176,7 +176,7 @@ function StepTrack({ currentStep }: { currentStep: number }) {
                     ? "rgba(59,130,246,0.2)"
                     : active
                     ? "rgba(59,130,246,0.15)"
-                    : "rgba(255,255,255,0.04)",
+                    : "var(--color-bg-raised)",
                   border: done
                     ? "1px solid rgba(96,165,250,0.5)"
                     : active
@@ -244,7 +244,7 @@ function QRLoginStep({ hook }: { hook: ReturnType<typeof usePortSession> }) {
         style={{
           padding: "36px 32px",
           borderRadius: "24px",
-          background: "rgba(255,255,255,0.025)",
+          background: "var(--color-bg-raised)",
           border: "1px solid var(--color-border)",
           backdropFilter: "blur(8px)",
           display: "flex",
@@ -423,7 +423,7 @@ function NumberEntryStep({ hook }: { hook: ReturnType<typeof usePortSession> }) 
         style={{
           padding: "36px 32px",
           borderRadius: "24px",
-          background: "rgba(255,255,255,0.025)",
+          background: "var(--color-bg-raised)",
           border: "1px solid var(--color-border)",
           backdropFilter: "blur(8px)",
           display: "flex",
@@ -443,7 +443,7 @@ function NumberEntryStep({ hook }: { hook: ReturnType<typeof usePortSession> }) 
             border: "1px solid rgba(52,211,153,0.18)",
           }}
         >
-          <span style={{ fontSize: "13px", color: "#34d399" }}>✓</span>
+          <span style={{ fontSize: "13px", color: "#059669" }}>✓</span>
           <span style={{ fontSize: "12.5px", color: "var(--color-text-muted)" }}>
             Wallet verified:
           </span>
@@ -451,7 +451,7 @@ function NumberEntryStep({ hook }: { hook: ReturnType<typeof usePortSession> }) 
             style={{
               fontSize: "12.5px",
               fontWeight: 600,
-              color: "#34d399",
+              color: "#059669",
               fontFamily: "ui-monospace, monospace",
             }}
           >
@@ -539,7 +539,7 @@ function NumberEntryStep({ hook }: { hook: ReturnType<typeof usePortSession> }) 
                     ? "rgba(96,165,250,0.4)"
                     : "var(--color-border)"
                 }`,
-                background: "rgba(255,255,255,0.04)",
+                background: "var(--color-bg-raised)",
                 color: "var(--color-text)",
                 fontSize: "1rem",
                 fontWeight: 500,
@@ -602,7 +602,7 @@ function NumberEntryStep({ hook }: { hook: ReturnType<typeof usePortSession> }) 
                   ? "rgba(96,165,250,0.4)"
                   : "var(--color-border)"
               }`,
-              background: "rgba(255,255,255,0.04)",
+              background: "var(--color-bg-raised)",
               color: "var(--color-text)",
               fontSize: "1rem",
               fontWeight: 500,
@@ -649,7 +649,7 @@ function NumberEntryStep({ hook }: { hook: ReturnType<typeof usePortSession> }) 
           style={{
             borderRadius: "14px",
             padding: "1px",
-            background: "linear-gradient(135deg, #8E2DE2, #FF58B0)",
+            background: "linear-gradient(135deg, #8fd4ff, #4aa3f5)",
           }}
         >
           <Button
@@ -696,7 +696,7 @@ function SubmittedStep({ hook }: { hook: ReturnType<typeof usePortSession> }) {
     },
     {
       n: "3",
-      color: "#34d399",
+      color: "#059669",
       bg: "rgba(16,185,129,0.08)",
       border: "rgba(52,211,153,0.2)",
       title: "Pay & receive in Arnacon",
@@ -710,7 +710,7 @@ function SubmittedStep({ hook }: { hook: ReturnType<typeof usePortSession> }) {
         style={{
           padding: "36px 32px",
           borderRadius: "24px",
-          background: "rgba(255,255,255,0.025)",
+          background: "var(--color-bg-raised)",
           border: "1px solid var(--color-border)",
           backdropFilter: "blur(8px)",
           display: "flex",
@@ -801,7 +801,7 @@ function SubmittedStep({ hook }: { hook: ReturnType<typeof usePortSession> }) {
                   width: "24px",
                   height: "24px",
                   borderRadius: "50%",
-                  background: "rgba(255,255,255,0.06)",
+                  background: "#f0f6fb",
                   border: `1px solid ${border}`,
                   display: "flex",
                   alignItems: "center",
@@ -860,7 +860,7 @@ function ErrorStep({ hook }: { hook: ReturnType<typeof usePortSession> }) {
         style={{
           padding: "40px 32px",
           borderRadius: "24px",
-          background: "rgba(255,255,255,0.025)",
+          background: "var(--color-bg-raised)",
           border: "1px solid var(--color-border)",
           backdropFilter: "blur(8px)",
           display: "flex",
@@ -910,7 +910,7 @@ function QRSkeleton() {
         width: "222px",
         height: "222px",
         borderRadius: "18px",
-        background: "rgba(255,255,255,0.04)",
+        background: "var(--color-bg-raised)",
         border: "1px solid var(--color-border)",
         display: "flex",
         alignItems: "center",

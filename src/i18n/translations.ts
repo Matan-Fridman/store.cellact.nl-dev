@@ -199,6 +199,21 @@ type TranslationsShape = {
     amoy: string;
     sepolia: string;
     usdc: string;
+    manageTitle: string;
+    manageLead: string;
+    manageConnected: (short: string) => string;
+    noOrders: string;
+    statusReady: string;
+    statusProvisioning: string;
+    cellactNow: (amount: string, symbol: string) => string;
+    youCanWithdraw: (amount: string, symbol: string) => string;
+    nothingBackYet: string;
+    ifCancel: (date: string, you: string, they: string, symbol: string) => string;
+    cancelScheduled: (date: string) => string;
+    cancelCta: string;
+    withdrawCta: string;
+    claimCta: string;
+    waitWallet: string;
   };
   recover: {
     entry: string;
@@ -542,6 +557,22 @@ export const translations: Record<Language, TranslationsShape> = {
       amoy: "Polygon Amoy",
       sepolia: "Sepolia",
       usdc: "USDC",
+      manageTitle: "Your crypto orders",
+      manageLead: "Connect the wallet that paid. Amounts are read from escrow.",
+      manageConnected: (short) => `Connected ${short}`,
+      noOrders: "No prepaid orders on this wallet.",
+      statusReady: "Number ready",
+      statusProvisioning: "Provisioning",
+      cellactNow: (amount, symbol) => `Cellact can take ${amount} ${symbol} now`,
+      youCanWithdraw: (amount, symbol) => `You can withdraw ${amount} ${symbol}`,
+      nothingBackYet: "Unused funds unlock after the current period ends.",
+      ifCancel: (date, you, they, symbol) =>
+        `Cancel: service until ${date}. Then you withdraw ${you} ${symbol}. Cellact keeps ${they} ${symbol}.`,
+      cancelScheduled: (date) => `Cancel takes effect ${date}`,
+      cancelCta: "Cancel at period end",
+      withdrawCta: "Withdraw unused",
+      claimCta: "Sign and show QR",
+      waitWallet: "Confirm in your wallet",
     },
 
     recover: {
@@ -912,6 +943,22 @@ export const translations: Record<Language, TranslationsShape> = {
       amoy: "Polygon Amoy",
       sepolia: "Sepolia",
       usdc: "USDC",
+      manageTitle: "ההזמנות בקריפטו",
+      manageLead: "חברו את הארנק ששילם. הסכומים נקראים מהחוזה.",
+      manageConnected: (short) => `מחובר ${short}`,
+      noOrders: "אין הזמנות ממולאות מראש בארנק הזה.",
+      statusReady: "המספר מוכן",
+      statusProvisioning: "בהקצאה",
+      cellactNow: (amount, symbol) => `Cellact יכולה לקחת ${amount} ${symbol} עכשיו`,
+      youCanWithdraw: (amount, symbol) => `אפשר למשוך ${amount} ${symbol}`,
+      nothingBackYet: "היתרה נפתחת בסוף התקופה הנוכחית.",
+      ifCancel: (date, you, they, symbol) =>
+        `ביטול: השירות עד ${date}. אחר כך תמשכו ${you} ${symbol}. Cellact תשאיר ${they} ${symbol}.`,
+      cancelScheduled: (date) => `הביטול נכנס לתוקף ${date}`,
+      cancelCta: "ביטול בסוף התקופה",
+      withdrawCta: "משיכת יתרה",
+      claimCta: "חתימה והצגת QR",
+      waitWallet: "אשרו בארנק",
     },
 
     recover: {

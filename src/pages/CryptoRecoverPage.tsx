@@ -1,10 +1,23 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { ethers } from "ethers";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
+import { useLanguage } from "../contexts/LanguageContext";
 import { claimCryptoActivation, listCryptoOrders, type CryptoOrderStatus } from "../services/api";
-import { pickEthereum } from "../hooks/useCryptoPurchase";
+import {
+  CRYPTO_ESCROW,
+  CRYPTO_CHAINS,
+  formatEscrowAmount,
+  isCryptoChainId,
+  listOnchainOrderIds,
+  orderIdBytes32,
+  pickEthereum,
+  readEscrowSettlement,
+  sendEscrowPayerTx,
+  type CryptoChainId,
+  type EscrowSettlement,
+} from "../hooks/useCryptoPurchase";
 
 const CLAIM_TYPES = {
   ClaimActivation: [
@@ -14,21 +27,173 @@ const CLAIM_TYPES = {
   ],
 };
 
-function needsProvisionPoll(orders: CryptoOrderStatus[]) {
+const CHAINS: CryptoChainId[] = [80002, 11155111];
+
+type ManagedOrder = {
+  orderId: string;
+  idBytes32: string;
+  chainId: CryptoChainId;
+  escrow: string;
+  paid: boolean;
+  provisioned: boolean;
+  canClaim: boolean;
+  status: string;
+  settlement: EscrowSettlement | null;
+};
+
+type ActionKind = "cancel" | "withdraw" | "claim";
+
+function isUuidOrder(orderId: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
+}
+
+function bytes32Of(orderId: string): string {
+  if (orderId.startsWith("0x") && orderId.length === 66) return orderId.toLowerCase();
+  return orderIdBytes32(orderId);
+}
+
+function asChainId(value: number): CryptoChainId | null {
+  return isCryptoChainId(value) ? value : null;
+}
+
+function shortAddress(address: string): string {
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
+
+function formatWhen(ts: number, lang: "en" | "he"): string {
+  return new Date(ts * 1000).toLocaleDateString(lang === "he" ? "he-IL" : "en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function needsProvisionPoll(orders: ManagedOrder[]) {
   return orders.some((order) => order.paid && !order.provisioned);
+}
+
+async function settlementFor(
+  chainId: CryptoChainId,
+  escrow: string,
+  idBytes32: string,
+): Promise<EscrowSettlement | null> {
+  try {
+    return await readEscrowSettlement(chainId, escrow, idBytes32);
+  } catch {
+    return null;
+  }
+}
+
+async function loadManaged(address: string): Promise<ManagedOrder[]> {
+  const listed = await listCryptoOrders(address).catch(() => ({ orders: [] as CryptoOrderStatus[] }));
+  const byId = new Map<string, ManagedOrder>();
+
+  await Promise.all(
+    listed.orders.map(async (order) => {
+      const chainId = asChainId(Number(order.chainId));
+      if (!chainId) return;
+      const escrow = order.escrow || CRYPTO_ESCROW[chainId];
+      const idBytes32 = bytes32Of(order.orderId);
+      const settlement = await settlementFor(chainId, escrow, idBytes32);
+      byId.set(`${chainId}:${idBytes32.toLowerCase()}`, {
+        orderId: order.orderId,
+        idBytes32,
+        chainId,
+        escrow,
+        paid: order.paid,
+        provisioned: order.provisioned,
+        canClaim: order.provisioned && isUuidOrder(order.orderId),
+        status: order.status,
+        settlement,
+      });
+    }),
+  );
+
+  await Promise.all(
+    CHAINS.map(async (chainId) => {
+      const escrow = CRYPTO_ESCROW[chainId];
+      const ids = await listOnchainOrderIds(chainId, escrow, address).catch(() => [] as string[]);
+      await Promise.all(
+        ids.map(async (idBytes32) => {
+          const key = `${chainId}:${idBytes32.toLowerCase()}`;
+          if (byId.has(key)) return;
+          const settlement = await settlementFor(chainId, escrow, idBytes32);
+          if (!settlement) return;
+          byId.set(key, {
+            orderId: idBytes32,
+            idBytes32,
+            chainId,
+            escrow,
+            paid: true,
+            provisioned: false,
+            canClaim: false,
+            status: "onchain",
+            settlement,
+          });
+        }),
+      );
+    }),
+  );
+
+  return [...byId.values()];
 }
 
 export function CryptoRecoverPage() {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<CryptoOrderStatus[]>([]);
+  const { t, lang } = useLanguage();
+  const copy = t.crypto;
+  const [orders, setOrders] = useState<ManagedOrder[]>([]);
   const [payer, setPayer] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [loadingList, setLoadingList] = useState(false);
+  const [action, setAction] = useState<{ orderId: string; kind: ActionKind } | null>(null);
   const payerRef = useRef<string | null>(null);
 
   useEffect(() => {
     payerRef.current = payer;
   }, [payer]);
+
+  const refresh = useCallback(async (address: string) => {
+    setLoadingList(true);
+    try {
+      const next = await loadManaged(address);
+      if (payerRef.current?.toLowerCase() === address.toLowerCase()) {
+        setOrders(next);
+      }
+    } finally {
+      setLoadingList(false);
+    }
+  }, []);
+
+  const connect = useCallback(async (request = true) => {
+    setConnecting(true);
+    setError(null);
+    try {
+      const injected = await pickEthereum();
+      const accounts = await injected.request({
+        method: request ? "eth_requestAccounts" : "eth_accounts",
+      });
+      const address = Array.isArray(accounts) && typeof accounts[0] === "string" ? accounts[0] : null;
+      if (!address) {
+        if (!request) return;
+        throw new Error("No wallet account");
+      }
+      payerRef.current = address;
+      setPayer(address);
+      await refresh(address);
+    } catch (err) {
+      if (request) {
+        setError(err instanceof Error ? err.message : "Connect failed");
+      }
+    } finally {
+      setConnecting(false);
+    }
+  }, [refresh]);
+
+  useEffect(() => {
+    void connect(false);
+  }, [connect]);
 
   useEffect(() => {
     if (!payer || !needsProvisionPoll(orders)) return;
@@ -39,7 +204,21 @@ export function CryptoRecoverPage() {
         if (!address) return;
         try {
           const result = await listCryptoOrders(address);
-          if (!cancelled) setOrders(result.orders);
+          if (cancelled) return;
+          setOrders((current) =>
+            current.map((order) => {
+              const match = result.orders.find((item) => item.orderId === order.orderId);
+              if (!match) return order;
+              return {
+                ...order,
+                paid: match.paid,
+                provisioned: match.provisioned,
+                canClaim: match.provisioned && isUuidOrder(order.orderId),
+                status: match.status,
+                escrow: match.escrow || order.escrow,
+              };
+            }),
+          );
         } catch {
           // Keep the last snapshot; the next tick retries.
         }
@@ -51,44 +230,44 @@ export function CryptoRecoverPage() {
     };
   }, [payer, orders]);
 
-  async function connect() {
-    setBusy(true);
+  async function runPayerTx(order: ManagedOrder, method: "cancel" | "withdrawUnused") {
+    setAction({ orderId: order.orderId, kind: method === "cancel" ? "cancel" : "withdraw" });
     setError(null);
     try {
-      const injected = await pickEthereum();
-      const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
-      await web3.send("eth_requestAccounts", []);
-      const address = await web3.getSigner().getAddress();
-      const result = await listCryptoOrders(address);
-      setPayer(address);
-      setOrders(result.orders);
+      await sendEscrowPayerTx(order.chainId, order.escrow, order.idBytes32, method);
+      if (method === "cancel" && payerRef.current) {
+        await listCryptoOrders(payerRef.current).catch(() => undefined);
+      }
+      const settlement = await settlementFor(order.chainId, order.escrow, order.idBytes32);
+      setOrders((current) =>
+        current.map((item) => (item.orderId === order.orderId ? { ...item, settlement } : item)),
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Connect failed");
+      setError(err instanceof Error ? err.message : "Transaction failed");
     } finally {
-      setBusy(false);
+      setAction(null);
     }
   }
 
-  async function claim(order: CryptoOrderStatus) {
-    setBusy(true);
+  async function claim(order: ManagedOrder) {
+    setAction({ orderId: order.orderId, kind: "claim" });
     setError(null);
     try {
       if (!order.escrow) throw new Error("Missing escrow for this order.");
       const injected = await pickEthereum();
       const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
       const signer = web3.getSigner();
-      const payer = await signer.getAddress();
+      const signerPayer = await signer.getAddress();
       const issuedAt = Math.floor(Date.now() / 1000);
-      const orderIdBytes32 = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(order.orderId));
       const signature = await signer._signTypedData(
         {
           name: "SecnumCryptoClaim",
           version: "1",
-          chainId: Number(order.chainId),
+          chainId: order.chainId,
           verifyingContract: order.escrow,
         },
         CLAIM_TYPES,
-        { payer, orderId: orderIdBytes32, issuedAt },
+        { payer: signerPayer, orderId: order.idBytes32, issuedAt },
       );
       const { token } = await claimCryptoActivation({
         orderId: order.orderId,
@@ -99,36 +278,149 @@ export function CryptoRecoverPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Claim failed");
     } finally {
-      setBusy(false);
+      setAction(null);
     }
   }
 
+  const connected = Boolean(payer);
+  const busy = connecting || Boolean(action);
+
   return (
-    <Layout>
-      <section className="mx-auto max-w-lg px-6 py-16">
-        <h1 className="text-2xl font-semibold mb-3">Reconnect wallet</h1>
-        <p className="text-sm mb-6">
-          Connect the same account you paid with. If the payment succeeded, sign to get the Arnacon QR.
-        </p>
-        {error && <p className="text-sm text-red-700 mb-4">{error}</p>}
-        <Button onClick={() => void connect()} loading={busy} disabled={busy}>
-          Connect wallet
-        </Button>
-        <ul className="mt-6 space-y-3">
-          {orders.map((order) => (
-            <li key={order.orderId} className="border rounded-xl p-4 text-sm">
-              <div>{order.orderId}</div>
-              <div>
-                {order.provisioned ? "Ready" : order.paid ? "Provisioning" : order.status}
-              </div>
-              {order.provisioned && (
-                <Button className="mt-3" onClick={() => void claim(order)} disabled={busy}>
-                  Sign and show QR
-                </Button>
+    <Layout hideAppStoreBadges>
+      <section className="crypto-checkout">
+        <div className="crypto-checkout-frame">
+          <p className="crypto-checkout-back">
+            <Link to="/crypto">{copy.back}</Link>
+          </p>
+          <p className="crypto-checkout-kicker">{copy.kicker}</p>
+          <h1>{copy.manageTitle}</h1>
+          <p className="crypto-checkout-lead">{copy.manageLead}</p>
+
+          <div className="crypto-checkout-wallet">
+            <span
+              className={`crypto-checkout-wallet-dot${connected ? " is-on" : ""}`}
+              aria-hidden="true"
+            />
+            <p className="crypto-checkout-wallet-copy">
+              {connected && payer ? (
+                <strong>{copy.manageConnected(shortAddress(payer))}</strong>
+              ) : (
+                copy.walletOff
               )}
-            </li>
-          ))}
-        </ul>
+            </p>
+          </div>
+
+          {error && (
+            <p className="crypto-checkout-error" role="alert">
+              {error}
+            </p>
+          )}
+
+          {!connected && (
+            <Button onClick={() => void connect(true)} loading={connecting} disabled={connecting}>
+              {connecting ? copy.connecting : copy.connect}
+            </Button>
+          )}
+
+          {connected && loadingList && orders.length === 0 && (
+            <p className="crypto-checkout-amount">{copy.quoteLoading}</p>
+          )}
+
+          {connected && !loadingList && orders.length === 0 && (
+            <p className="crypto-checkout-amount">{copy.noOrders}</p>
+          )}
+
+          {orders.length > 0 && (
+            <ul className="crypto-checkout-orders">
+              {orders.map((order) => {
+                const settlement = order.settlement;
+                const symbol = settlement?.symbol || CRYPTO_CHAINS[order.chainId].nativeCurrency.symbol;
+                const acting = action?.orderId === order.orderId;
+                const statusLabel = order.provisioned
+                  ? copy.statusReady
+                  : order.paid
+                    ? copy.statusProvisioning
+                    : order.status;
+                return (
+                  <li key={`${order.chainId}:${order.idBytes32}`} className="crypto-checkout-order">
+                    <p className="crypto-checkout-order-id">{order.orderId}</p>
+                    <p className="crypto-checkout-order-status">
+                      {order.chainId === 80002 ? copy.amoy : copy.sepolia}
+                      {" · "}
+                      {statusLabel}
+                    </p>
+                    {settlement && (
+                      <ul className="crypto-checkout-order-split">
+                        {settlement.providerWithdrawable > 0n && (
+                          <li>
+                            {copy.cellactNow(
+                              formatEscrowAmount(settlement.providerWithdrawable, symbol),
+                              symbol,
+                            )}
+                          </li>
+                        )}
+                        {settlement.canWithdrawUnused ? (
+                          <li>
+                            {copy.youCanWithdraw(
+                              formatEscrowAmount(settlement.payerUnusedNow, symbol),
+                              symbol,
+                            )}
+                          </li>
+                        ) : (
+                          <li>{copy.nothingBackYet}</li>
+                        )}
+                        {settlement.canCancel && (
+                          <li>
+                            {copy.ifCancel(
+                              formatWhen(settlement.ifCancelEffectiveAt, lang),
+                              formatEscrowAmount(settlement.payerUnusedIfCancel, symbol),
+                              formatEscrowAmount(settlement.providerKeepsIfCancel, symbol),
+                              symbol,
+                            )}
+                          </li>
+                        )}
+                        {settlement.cancelAlreadySet && !settlement.cancelIsEffective && (
+                          <li>{copy.cancelScheduled(formatWhen(settlement.cancelEffectiveAt, lang))}</li>
+                        )}
+                      </ul>
+                    )}
+                    <div className="crypto-checkout-order-actions">
+                      {settlement?.canCancel && (
+                        <Button
+                          variant="secondary"
+                          onClick={() => void runPayerTx(order, "cancel")}
+                          loading={acting && action?.kind === "cancel"}
+                          disabled={busy}
+                        >
+                          {acting && action?.kind === "cancel" ? copy.waitWallet : copy.cancelCta}
+                        </Button>
+                      )}
+                      {settlement && (
+                        <Button
+                          variant="secondary"
+                          onClick={() => void runPayerTx(order, "withdrawUnused")}
+                          loading={acting && action?.kind === "withdraw"}
+                          disabled={busy || !settlement.canWithdrawUnused}
+                        >
+                          {acting && action?.kind === "withdraw" ? copy.waitWallet : copy.withdrawCta}
+                        </Button>
+                      )}
+                      {order.canClaim && (
+                        <Button
+                          onClick={() => void claim(order)}
+                          loading={acting && action?.kind === "claim"}
+                          disabled={busy}
+                        >
+                          {acting && action?.kind === "claim" ? copy.waitWallet : copy.claimCta}
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </section>
     </Layout>
   );

@@ -113,6 +113,28 @@ function waitPath(orderId: string, chainId: CryptoChainId, lang: "en" | "he"): s
   return `${base}crypto/wait?${params.toString()}`;
 }
 
+export const CRYPTO_ESCROW: Record<CryptoChainId, string> = {
+  80002: "0xD2D3846dDB09233a8EfAbF864b1C003c8d301C45",
+  11155111: "0xD2D3846dDB09233a8EfAbF864b1C003c8d301C45",
+};
+
+const ESCROW_ACCOUNT_ABI = [
+  "function subscriptions(bytes32 orderId) view returns (address payer, address provider, address token, uint256 serviceId, uint64 start, uint64 cancelEffective, uint32 periodSeconds, uint8 termPeriods, uint256 setupAmount, uint256 setupWithdrawn, uint256 periodsWithdrawn, bool exists)",
+  "function getPeriodAmounts(bytes32 orderId) view returns (uint256[])",
+  "function ordersOf(address payer) view returns (bytes32[])",
+  "function cancel(bytes32 orderId)",
+  "function withdrawUnused(bytes32 orderId)",
+];
+
+export function isCryptoChainId(value: number): value is CryptoChainId {
+  return value === 80002 || value === 11155111;
+}
+
+const USDC_BY_CHAIN: Record<CryptoChainId, string> = {
+  11155111: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+  80002: "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
+};
+
 export function formatLockAmount(amount: string, symbol: string): string {
   const decimals = symbol === "USDC" ? 6 : 18;
   const raw = ethers.utils.formatUnits(amount, decimals);
@@ -120,6 +142,182 @@ export function formatLockAmount(amount: string, symbol: string): string {
   if (!Number.isFinite(value)) return raw;
   if (symbol === "USDC") return value.toFixed(2);
   return value.toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+export function formatEscrowAmount(amount: bigint, symbol: string): string {
+  return formatLockAmount(amount.toString(), symbol);
+}
+
+export function orderIdBytes32(orderId: string): string {
+  return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(orderId));
+}
+
+function toBig(value: ethers.BigNumberish): bigint {
+  return BigInt(ethers.BigNumber.from(value).toString());
+}
+
+function sumPeriods(periods: bigint[], from: bigint, toExclusive: bigint): bigint {
+  let total = 0n;
+  const start = Number(from);
+  const end = Number(toExclusive);
+  for (let i = start; i < end && i < periods.length; i += 1) {
+    total += periods[i];
+  }
+  return total;
+}
+
+function elapsedPeriods(params: {
+  start: bigint;
+  cancelEffective: bigint;
+  periodSeconds: bigint;
+  termPeriods: bigint;
+  now: bigint;
+}): bigint {
+  let t = params.now;
+  if (params.cancelEffective !== 0n && t > params.cancelEffective) t = params.cancelEffective;
+  if (t <= params.start) return 0n;
+  let n = (t - params.start) / params.periodSeconds;
+  if (n > params.termPeriods) n = params.termPeriods;
+  return n;
+}
+
+function vestedPeriods(params: {
+  start: bigint;
+  cancelEffective: bigint;
+  periodSeconds: bigint;
+  termPeriods: bigint;
+  now: bigint;
+}): bigint {
+  const elapsed = elapsedPeriods(params);
+  if (params.cancelEffective === 0n) return elapsed;
+  if (params.now < params.cancelEffective) return elapsed;
+  let vested = elapsed;
+  if (vested < params.termPeriods) {
+    const cancelElapsed = (params.cancelEffective - params.start) / params.periodSeconds;
+    if (cancelElapsed > vested) vested = cancelElapsed;
+    if (vested > params.termPeriods) vested = params.termPeriods;
+  }
+  return vested;
+}
+
+function previewCancelEffective(params: {
+  start: bigint;
+  periodSeconds: bigint;
+  termPeriods: bigint;
+  now: bigint;
+}): bigint {
+  const elapsed = elapsedPeriods({
+    ...params,
+    cancelEffective: 0n,
+  });
+  if (elapsed >= params.termPeriods) return params.now;
+  const sinceStart = params.now - params.start;
+  if (sinceStart > 0n && sinceStart % params.periodSeconds === 0n) return params.now;
+  return params.start + (elapsed + 1n) * params.periodSeconds;
+}
+
+export type EscrowSettlement = {
+  symbol: string;
+  cancelAlreadySet: boolean;
+  cancelIsEffective: boolean;
+  canCancel: boolean;
+  canWithdrawUnused: boolean;
+  cancelEffectiveAt: number;
+  ifCancelEffectiveAt: number;
+  providerWithdrawable: bigint;
+  providerKeepsIfCancel: bigint;
+  payerUnusedNow: bigint;
+  payerUnusedIfCancel: bigint;
+};
+
+function tokenMeta(chainId: CryptoChainId, token: string): { symbol: string } {
+  if (token === ethers.constants.AddressZero) {
+    return { symbol: chainId === 11155111 ? "ETH" : "POL" };
+  }
+  if (token.toLowerCase() === USDC_BY_CHAIN[chainId].toLowerCase()) {
+    return { symbol: "USDC" };
+  }
+  return { symbol: "TOKEN" };
+}
+
+export async function readEscrowSettlement(
+  chainId: CryptoChainId,
+  escrow: string,
+  idBytes32: string,
+): Promise<EscrowSettlement | null> {
+  const provider = new ethers.providers.JsonRpcProvider(CRYPTO_CHAINS[chainId].rpcUrls[0]);
+  const contract = new ethers.Contract(escrow, ESCROW_ACCOUNT_ABI, provider);
+  const [sub, periodsRaw, block] = await Promise.all([
+    contract.subscriptions(idBytes32),
+    contract.getPeriodAmounts(idBytes32),
+    provider.getBlock("latest"),
+  ]);
+  if (!sub.exists) return null;
+  if (!block) throw new Error("RPC returned no block");
+  const now = toBig(block.timestamp);
+  const start = toBig(sub.start);
+  const cancelEffective = toBig(sub.cancelEffective);
+  const periodSeconds = toBig(sub.periodSeconds);
+  const termPeriods = toBig(sub.termPeriods);
+  const setupAmount = toBig(sub.setupAmount);
+  const setupWithdrawn = toBig(sub.setupWithdrawn);
+  const periodsWithdrawn = toBig(sub.periodsWithdrawn);
+  const periods = (periodsRaw as ethers.BigNumber[]).map((value) => toBig(value));
+  const clock = { start, cancelEffective, periodSeconds, termPeriods, now };
+  const vestedNow = vestedPeriods(clock);
+  const ifCancelAt =
+    cancelEffective === 0n
+      ? previewCancelEffective({ start, periodSeconds, termPeriods, now })
+      : cancelEffective;
+  const vestedIfCancel = vestedPeriods({
+    ...clock,
+    cancelEffective: ifCancelAt,
+    now: ifCancelAt > now ? ifCancelAt : now,
+  });
+  const withdrawableSetup = setupWithdrawn === 0n ? setupAmount : 0n;
+  const unusedNow =
+    cancelEffective !== 0n && now >= cancelEffective
+      ? sumPeriods(periods, vestedNow, BigInt(periods.length))
+      : 0n;
+  const meta = tokenMeta(chainId, String(sub.token));
+  return {
+    symbol: meta.symbol,
+    cancelAlreadySet: cancelEffective !== 0n,
+    cancelIsEffective: cancelEffective !== 0n && now >= cancelEffective,
+    canCancel: cancelEffective === 0n,
+    canWithdrawUnused: unusedNow > 0n,
+    cancelEffectiveAt: Number(cancelEffective),
+    ifCancelEffectiveAt: Number(ifCancelAt),
+    providerWithdrawable: withdrawableSetup + sumPeriods(periods, periodsWithdrawn, vestedNow),
+    providerKeepsIfCancel: setupAmount + sumPeriods(periods, 0n, vestedIfCancel),
+    payerUnusedNow: unusedNow,
+    payerUnusedIfCancel: sumPeriods(periods, vestedIfCancel, BigInt(periods.length)),
+  };
+}
+
+export async function sendEscrowPayerTx(
+  chainId: CryptoChainId,
+  escrow: string,
+  idBytes32: string,
+  method: "cancel" | "withdrawUnused",
+): Promise<void> {
+  const injected = await pickEthereum();
+  await ensureChain(injected, chainId);
+  const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
+  const contract = new ethers.Contract(escrow, ESCROW_ACCOUNT_ABI, web3.getSigner());
+  const tx = (await contract[method](idBytes32)) as { wait: () => Promise<unknown> };
+  await tx.wait();
+}
+
+export async function listOnchainOrderIds(
+  chainId: CryptoChainId,
+  escrow: string,
+  payer: string,
+): Promise<string[]> {
+  const provider = new ethers.providers.JsonRpcProvider(CRYPTO_CHAINS[chainId].rpcUrls[0]);
+  const contract = new ethers.Contract(escrow, ESCROW_ACCOUNT_ABI, provider);
+  const ids = (await contract.ordersOf(payer)) as string[];
+  return ids.map((id) => String(id));
 }
 
 function shortenAddress(address: string): string {

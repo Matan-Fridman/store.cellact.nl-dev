@@ -39,14 +39,14 @@ export const CRYPTO_CHAINS: Record<
     chainId: "0x13882",
     chainName: "Polygon Amoy",
     nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 },
-    rpcUrls: ["https://rpc-amoy.polygon.technology"],
+    rpcUrls: ["https://polygon-amoy.gateway.tenderly.co", "https://rpc-amoy.polygon.technology"],
     blockExplorerUrls: ["https://amoy.polygonscan.com"],
   },
   11155111: {
     chainId: "0xaa36a7",
     chainName: "Sepolia",
     nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
-    rpcUrls: ["https://rpc.sepolia.org"],
+    rpcUrls: ["https://sepolia.gateway.tenderly.co", "https://rpc.sepolia.org"],
     blockExplorerUrls: ["https://sepolia.etherscan.io"],
   },
 };
@@ -240,29 +240,30 @@ function tokenMeta(chainId: CryptoChainId, token: string): { symbol: string } {
   return { symbol: "TOKEN" };
 }
 
-export async function readEscrowSettlement(
+export function settlementFromOnchain(
   chainId: CryptoChainId,
-  escrow: string,
-  idBytes32: string,
-): Promise<EscrowSettlement | null> {
-  const provider = new ethers.providers.JsonRpcProvider(CRYPTO_CHAINS[chainId].rpcUrls[0]);
-  const contract = new ethers.Contract(escrow, ESCROW_ACCOUNT_ABI, provider);
-  const [sub, periodsRaw, block] = await Promise.all([
-    contract.subscriptions(idBytes32),
-    contract.getPeriodAmounts(idBytes32),
-    provider.getBlock("latest"),
-  ]);
-  if (!sub.exists) return null;
-  if (!block) throw new Error("RPC returned no block");
-  const now = toBig(block.timestamp);
-  const start = toBig(sub.start);
-  const cancelEffective = toBig(sub.cancelEffective);
-  const periodSeconds = toBig(sub.periodSeconds);
-  const termPeriods = toBig(sub.termPeriods);
-  const setupAmount = toBig(sub.setupAmount);
-  const setupWithdrawn = toBig(sub.setupWithdrawn);
-  const periodsWithdrawn = toBig(sub.periodsWithdrawn);
-  const periods = (periodsRaw as ethers.BigNumber[]).map((value) => toBig(value));
+  snap: {
+    token: string;
+    start: ethers.BigNumberish;
+    cancelEffective: ethers.BigNumberish;
+    periodSeconds: ethers.BigNumberish;
+    termPeriods: ethers.BigNumberish;
+    setupAmount: ethers.BigNumberish;
+    setupWithdrawn: ethers.BigNumberish;
+    periodsWithdrawn: ethers.BigNumberish;
+    periodAmounts: ethers.BigNumberish[];
+    now: ethers.BigNumberish;
+  },
+): EscrowSettlement {
+  const now = toBig(snap.now);
+  const start = toBig(snap.start);
+  const cancelEffective = toBig(snap.cancelEffective);
+  const periodSeconds = toBig(snap.periodSeconds);
+  const termPeriods = toBig(snap.termPeriods);
+  const setupAmount = toBig(snap.setupAmount);
+  const setupWithdrawn = toBig(snap.setupWithdrawn);
+  const periodsWithdrawn = toBig(snap.periodsWithdrawn);
+  const periods = snap.periodAmounts.map((value) => toBig(value));
   const clock = { start, cancelEffective, periodSeconds, termPeriods, now };
   const vestedNow = vestedPeriods(clock);
   const ifCancelAt =
@@ -274,12 +275,11 @@ export async function readEscrowSettlement(
     cancelEffective: ifCancelAt,
     now: ifCancelAt > now ? ifCancelAt : now,
   });
-  const withdrawableSetup = setupWithdrawn === 0n ? setupAmount : 0n;
   const unusedNow =
     cancelEffective !== 0n && now >= cancelEffective
       ? sumPeriods(periods, vestedNow, BigInt(periods.length))
       : 0n;
-  const meta = tokenMeta(chainId, String(sub.token));
+  const meta = tokenMeta(chainId, String(snap.token));
   return {
     symbol: meta.symbol,
     cancelAlreadySet: cancelEffective !== 0n,
@@ -288,11 +288,41 @@ export async function readEscrowSettlement(
     canWithdrawUnused: unusedNow > 0n,
     cancelEffectiveAt: Number(cancelEffective),
     ifCancelEffectiveAt: Number(ifCancelAt),
-    providerWithdrawable: withdrawableSetup + sumPeriods(periods, periodsWithdrawn, vestedNow),
+    providerWithdrawable:
+      (setupWithdrawn === 0n ? setupAmount : 0n) + sumPeriods(periods, periodsWithdrawn, vestedNow),
     providerKeepsIfCancel: setupAmount + sumPeriods(periods, 0n, vestedIfCancel),
     payerUnusedNow: unusedNow,
     payerUnusedIfCancel: sumPeriods(periods, vestedIfCancel, BigInt(periods.length)),
   };
+}
+
+export async function readEscrowSettlement(
+  chainId: CryptoChainId,
+  escrow: string,
+  idBytes32: string,
+  runner?: ethers.providers.Provider,
+): Promise<EscrowSettlement | null> {
+  const provider = runner ?? new ethers.providers.JsonRpcProvider(CRYPTO_CHAINS[chainId].rpcUrls[0]);
+  const contract = new ethers.Contract(escrow, ESCROW_ACCOUNT_ABI, provider);
+  const [sub, periodsRaw, block] = await Promise.all([
+    contract.subscriptions(idBytes32),
+    contract.getPeriodAmounts(idBytes32),
+    provider.getBlock("latest"),
+  ]);
+  if (!sub.exists) return null;
+  if (!block) throw new Error("RPC returned no block");
+  return settlementFromOnchain(chainId, {
+    token: String(sub.token),
+    start: sub.start,
+    cancelEffective: sub.cancelEffective,
+    periodSeconds: sub.periodSeconds,
+    termPeriods: sub.termPeriods,
+    setupAmount: sub.setupAmount,
+    setupWithdrawn: sub.setupWithdrawn,
+    periodsWithdrawn: sub.periodsWithdrawn,
+    periodAmounts: periodsRaw as ethers.BigNumber[],
+    now: block.timestamp,
+  });
 }
 
 export async function sendEscrowPayerTx(

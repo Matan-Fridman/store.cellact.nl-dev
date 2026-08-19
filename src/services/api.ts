@@ -221,6 +221,19 @@ export interface CryptoQuote {
   quoteSigner: string;
 }
 
+export interface CryptoEscrowState {
+  token: string;
+  start: number;
+  cancelEffective: number;
+  periodSeconds: number;
+  termPeriods: number;
+  setupAmount: string;
+  setupWithdrawn: string;
+  periodsWithdrawn: number;
+  periodAmounts: string[];
+  now: number;
+}
+
 export interface CryptoOrderStatus {
   orderId: string;
   status: string;
@@ -230,6 +243,9 @@ export interface CryptoOrderStatus {
   escrow: string;
   tokenSymbol?: string;
   expiry?: number;
+  label?: string | null;
+  claimed?: boolean;
+  escrowState?: CryptoEscrowState | null;
 }
 
 export function createCryptoQuote(params: {

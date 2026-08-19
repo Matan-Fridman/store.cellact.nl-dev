@@ -213,7 +213,9 @@ type TranslationsShape = {
     cancelCta: string;
     withdrawCta: string;
     claimCta: string;
-    waitWallet: string;
+    claimedDone: string;
+    escrowUnread: string;
+    numberLabel: (label: string) => string;
   };
   recover: {
     entry: string;
@@ -573,6 +575,9 @@ export const translations: Record<Language, TranslationsShape> = {
       withdrawCta: "Withdraw unused",
       claimCta: "Sign and show QR",
       waitWallet: "Confirm in your wallet",
+      claimedDone: "Already activated on a device",
+      escrowUnread: "Could not read escrow. Cancel needs a live lock read.",
+      numberLabel: (label) => `Number ${label}`,
     },
 
     recover: {
@@ -959,6 +964,9 @@ export const translations: Record<Language, TranslationsShape> = {
       withdrawCta: "משיכת יתרה",
       claimCta: "חתימה והצגת QR",
       waitWallet: "אשרו בארנק",
+      claimedDone: "כבר הופעל במכשיר",
+      escrowUnread: "לא ניתן לקרוא את החוזה. הביטול דורש קריאה חיה.",
+      numberLabel: (label) => `מספר ${label}`,
     },
 
     recover: {

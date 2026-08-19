@@ -15,8 +15,11 @@ import {
   pickEthereum,
   readEscrowSettlement,
   sendEscrowPayerTx,
+  settlementFromOnchain,
+  ensureChain,
   type CryptoChainId,
   type EscrowSettlement,
+  type EthereumProvider,
 } from "../hooks/useCryptoPurchase";
 
 const CLAIM_TYPES = {
@@ -36,7 +39,9 @@ type ManagedOrder = {
   escrow: string;
   paid: boolean;
   provisioned: boolean;
+  claimed: boolean;
   canClaim: boolean;
+  label: string | null;
   status: string;
   settlement: EscrowSettlement | null;
 };
@@ -76,49 +81,64 @@ async function settlementFor(
   chainId: CryptoChainId,
   escrow: string,
   idBytes32: string,
+  snap: CryptoOrderStatus["escrowState"],
+  injected?: EthereumProvider,
 ): Promise<EscrowSettlement | null> {
+  if (snap) {
+    try {
+      return settlementFromOnchain(chainId, snap);
+    } catch {
+      // Fall through to a wallet or RPC read.
+    }
+  }
   try {
-    return await readEscrowSettlement(chainId, escrow, idBytes32);
+    let runner: ethers.providers.Provider | undefined;
+    if (injected) {
+      await ensureChain(injected, chainId);
+      runner = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
+    }
+    return await readEscrowSettlement(chainId, escrow, idBytes32, runner);
   } catch {
     return null;
   }
 }
 
-async function loadManaged(address: string): Promise<ManagedOrder[]> {
+async function loadManaged(address: string, injected?: EthereumProvider): Promise<ManagedOrder[]> {
   const listed = await listCryptoOrders(address).catch(() => ({ orders: [] as CryptoOrderStatus[] }));
   const byId = new Map<string, ManagedOrder>();
 
-  await Promise.all(
-    listed.orders.map(async (order) => {
-      const chainId = asChainId(Number(order.chainId));
-      if (!chainId) return;
-      const escrow = order.escrow || CRYPTO_ESCROW[chainId];
-      const idBytes32 = bytes32Of(order.orderId);
-      const settlement = await settlementFor(chainId, escrow, idBytes32);
-      byId.set(`${chainId}:${idBytes32.toLowerCase()}`, {
-        orderId: order.orderId,
-        idBytes32,
-        chainId,
-        escrow,
-        paid: order.paid,
-        provisioned: order.provisioned,
-        canClaim: order.provisioned && isUuidOrder(order.orderId),
-        status: order.status,
-        settlement,
-      });
-    }),
-  );
+  for (const order of listed.orders) {
+    const chainId = asChainId(Number(order.chainId));
+    if (!chainId) continue;
+    const escrow = order.escrow || CRYPTO_ESCROW[chainId];
+    const idBytes32 = bytes32Of(order.orderId);
+    const claimed = Boolean(order.claimed);
+    const settlement = await settlementFor(chainId, escrow, idBytes32, order.escrowState, injected);
+    byId.set(`${chainId}:${idBytes32.toLowerCase()}`, {
+      orderId: order.orderId,
+      idBytes32,
+      chainId,
+      escrow,
+      paid: order.paid,
+      provisioned: order.provisioned,
+      claimed,
+      canClaim: order.provisioned && isUuidOrder(order.orderId) && !claimed,
+      label: order.label || null,
+      status: order.status,
+      settlement,
+    });
+  }
 
-  await Promise.all(
-    CHAINS.map(async (chainId) => {
-      const escrow = CRYPTO_ESCROW[chainId];
-      const ids = await listOnchainOrderIds(chainId, escrow, address).catch(() => [] as string[]);
-      await Promise.all(
-        ids.map(async (idBytes32) => {
+  if (byId.size === 0 && injected) {
+    await Promise.all(
+      CHAINS.map(async (chainId) => {
+        const escrow = CRYPTO_ESCROW[chainId];
+        const ids = await listOnchainOrderIds(chainId, escrow, address).catch(() => [] as string[]);
+        for (const idBytes32 of ids) {
           const key = `${chainId}:${idBytes32.toLowerCase()}`;
-          if (byId.has(key)) return;
-          const settlement = await settlementFor(chainId, escrow, idBytes32);
-          if (!settlement) return;
+          if (byId.has(key)) continue;
+          const settlement = await settlementFor(chainId, escrow, idBytes32, null, injected);
+          if (!settlement) continue;
           byId.set(key, {
             orderId: idBytes32,
             idBytes32,
@@ -126,14 +146,16 @@ async function loadManaged(address: string): Promise<ManagedOrder[]> {
             escrow,
             paid: true,
             provisioned: false,
+            claimed: false,
             canClaim: false,
+            label: null,
             status: "onchain",
             settlement,
           });
-        }),
-      );
-    }),
-  );
+        }
+      }),
+    );
+  }
 
   return [...byId.values()];
 }
@@ -157,7 +179,8 @@ export function CryptoRecoverPage() {
   const refresh = useCallback(async (address: string) => {
     setLoadingList(true);
     try {
-      const next = await loadManaged(address);
+      const injected = await pickEthereum().catch(() => undefined);
+      const next = await loadManaged(address, injected);
       if (payerRef.current?.toLowerCase() === address.toLowerCase()) {
         setOrders(next);
       }
@@ -213,9 +236,15 @@ export function CryptoRecoverPage() {
                 ...order,
                 paid: match.paid,
                 provisioned: match.provisioned,
-                canClaim: match.provisioned && isUuidOrder(order.orderId),
+                claimed: Boolean(match.claimed),
+                label: match.label || order.label,
+                canClaim: match.provisioned && isUuidOrder(order.orderId) && !match.claimed,
                 status: match.status,
                 escrow: match.escrow || order.escrow,
+                settlement:
+                  match.escrowState && asChainId(Number(match.chainId))
+                    ? settlementFromOnchain(asChainId(Number(match.chainId)) as CryptoChainId, match.escrowState)
+                    : order.settlement,
               };
             }),
           );
@@ -343,47 +372,56 @@ export function CryptoRecoverPage() {
                     : order.status;
                 return (
                   <li key={`${order.chainId}:${order.idBytes32}`} className="crypto-checkout-order">
-                    <p className="crypto-checkout-order-id">{order.orderId}</p>
                     <p className="crypto-checkout-order-status">
+                      {order.label ? copy.numberLabel(order.label) : statusLabel}
+                    </p>
+                    <p className="crypto-checkout-order-id">
                       {order.chainId === 80002 ? copy.amoy : copy.sepolia}
                       {" · "}
-                      {statusLabel}
+                      {order.label ? statusLabel : order.orderId}
                     </p>
-                    {settlement && (
-                      <ul className="crypto-checkout-order-split">
-                        {settlement.providerWithdrawable > 0n && (
-                          <li>
-                            {copy.cellactNow(
-                              formatEscrowAmount(settlement.providerWithdrawable, symbol),
-                              symbol,
-                            )}
-                          </li>
-                        )}
-                        {settlement.canWithdrawUnused ? (
-                          <li>
-                            {copy.youCanWithdraw(
-                              formatEscrowAmount(settlement.payerUnusedNow, symbol),
-                              symbol,
-                            )}
-                          </li>
-                        ) : (
-                          <li>{copy.nothingBackYet}</li>
-                        )}
-                        {settlement.canCancel && (
-                          <li>
-                            {copy.ifCancel(
-                              formatWhen(settlement.ifCancelEffectiveAt, lang),
-                              formatEscrowAmount(settlement.payerUnusedIfCancel, symbol),
-                              formatEscrowAmount(settlement.providerKeepsIfCancel, symbol),
-                              symbol,
-                            )}
-                          </li>
-                        )}
-                        {settlement.cancelAlreadySet && !settlement.cancelIsEffective && (
-                          <li>{copy.cancelScheduled(formatWhen(settlement.cancelEffectiveAt, lang))}</li>
-                        )}
-                      </ul>
+                    {order.claimed && (
+                      <p className="crypto-checkout-order-status">{copy.claimedDone}</p>
                     )}
+                    <ul className="crypto-checkout-order-split">
+                      {settlement ? (
+                        <>
+                          {settlement.providerWithdrawable > 0n && (
+                            <li>
+                              {copy.cellactNow(
+                                formatEscrowAmount(settlement.providerWithdrawable, symbol),
+                                symbol,
+                              )}
+                            </li>
+                          )}
+                          {settlement.canWithdrawUnused ? (
+                            <li>
+                              {copy.youCanWithdraw(
+                                formatEscrowAmount(settlement.payerUnusedNow, symbol),
+                                symbol,
+                              )}
+                            </li>
+                          ) : (
+                            <li>{copy.nothingBackYet}</li>
+                          )}
+                          {settlement.canCancel && (
+                            <li>
+                              {copy.ifCancel(
+                                formatWhen(settlement.ifCancelEffectiveAt, lang),
+                                formatEscrowAmount(settlement.payerUnusedIfCancel, symbol),
+                                formatEscrowAmount(settlement.providerKeepsIfCancel, symbol),
+                                symbol,
+                              )}
+                            </li>
+                          )}
+                          {settlement.cancelAlreadySet && !settlement.cancelIsEffective && (
+                            <li>{copy.cancelScheduled(formatWhen(settlement.cancelEffectiveAt, lang))}</li>
+                          )}
+                        </>
+                      ) : (
+                        <li>{copy.escrowUnread}</li>
+                      )}
+                    </ul>
                     <div className="crypto-checkout-order-actions">
                       {settlement?.canCancel && (
                         <Button

@@ -105,10 +105,10 @@ export function StorePage() {
       />
 
       <section className="crypto-pay">
-        <h2>Pay with crypto</h2>
-        <p>PayMyEmail or MetaMask on Polygon Amoy or Sepolia.</p>
+        <h2>{t.crypto.landingTitle}</h2>
+        <p>{t.crypto.landingLead}</p>
         <Link to="/crypto" className="btn-primary crypto-pay-link">
-          Continue to crypto checkout
+          {t.crypto.landingCta}
         </Link>
       </section>
 

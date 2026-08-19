@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ethers } from "ethers";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
+import { useLanguage } from "../contexts/LanguageContext";
 import { claimCryptoActivation, getCryptoStatus } from "../services/api";
 import { pickEthereum, type CryptoChainId } from "../hooks/useCryptoPurchase";
 
@@ -21,14 +22,16 @@ type WaitSession = {
 };
 
 export function CryptoWaitPage() {
+  const { t, lang: uiLang } = useLanguage();
+  const copy = t.crypto;
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const stored = sessionStorage.getItem("secnum_crypto_wait");
   const parsed = stored ? (JSON.parse(stored) as WaitSession) : null;
   const orderId = params.get("order") || parsed?.orderId || "";
   const chainId = Number(params.get("chain") || parsed?.chainId || 0) as CryptoChainId;
-  const lang = params.get("lang") === "he" ? "he" : "en";
-  const [message, setMessage] = useState("Waiting for on-chain payment and provisioning.");
+  const lang = params.get("lang") === "he" || uiLang === "he" ? "he" : "en";
+  const [message, setMessage] = useState(copy.waitPending);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [signing, setSigning] = useState(false);
@@ -48,13 +51,11 @@ export function CryptoWaitPage() {
         if (status.escrow) setEscrow(status.escrow);
         if (status.provisioned) {
           setReady(true);
-          setMessage("Payment confirmed. Sign with the paying wallet to get your QR.");
+          setMessage(copy.waitReady);
           window.clearInterval(timer);
           return;
         }
-        setMessage(
-          status.paid ? "Paid. Provisioning your number…" : "Waiting for the escrow subscribe transaction…",
-        );
+        setMessage(status.paid ? copy.waitPaid : copy.waitPending);
       } catch (err) {
         if (cancelled) return;
         const status =
@@ -63,7 +64,7 @@ export function CryptoWaitPage() {
             : 0;
         if (status >= 500 || status === 0) {
           setError(null);
-          setMessage("Payment sent. Confirming on-chain and provisioning…");
+          setMessage(copy.waitPaid);
           return;
         }
         setError(err instanceof Error ? err.message : "Status failed");
@@ -75,7 +76,7 @@ export function CryptoWaitPage() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [navigate, orderId, chainId, lang]);
+  }, [navigate, orderId, chainId, lang, copy.waitPaid, copy.waitPending, copy.waitReady]);
 
   async function signAndActivate() {
     setSigning(true);
@@ -113,20 +114,30 @@ export function CryptoWaitPage() {
   }
 
   return (
-    <Layout>
-      <section className="mx-auto max-w-lg px-6 py-16 text-center">
-        <h1 className="text-2xl font-semibold mb-3">Pay with crypto</h1>
-        <p className="text-sm mb-6">{message}</p>
-        {error && <p className="text-sm text-red-700 mb-4">{error}</p>}
-        {ready && (
-          <Button onClick={() => void signAndActivate()} loading={signing} disabled={signing}>
-            {signing ? "Waiting for signature…" : "Sign and show QR"}
-          </Button>
-        )}
-        {!ready && <p className="text-xs opacity-70">Keep this page open. Order {orderId}</p>}
-        <p className="mt-6 text-xs">
-          Left by accident? <Link to="/crypto/recover">Connect your wallet</Link>
-        </p>
+    <Layout hideAppStoreBadges>
+      <section className="crypto-checkout">
+        <div className="crypto-checkout-frame">
+          <p className="crypto-checkout-back">
+            <Link to="/crypto">{copy.back}</Link>
+          </p>
+          <p className="crypto-checkout-kicker">{copy.kicker}</p>
+          <h1>{copy.waitTitle}</h1>
+          <p className="crypto-checkout-lead">{message}</p>
+          {error && (
+            <p className="crypto-checkout-error" role="alert">
+              {error}
+            </p>
+          )}
+          {ready && (
+            <Button onClick={() => void signAndActivate()} loading={signing} disabled={signing}>
+              {signing ? copy.waitSigning : copy.waitSign}
+            </Button>
+          )}
+          {!ready && <p className="crypto-checkout-review-meta">{copy.waitKeepOpen(orderId)}</p>}
+          <p className="crypto-checkout-recover">
+            {copy.waitLeft} <Link to="/crypto/recover">{copy.recoverLink}</Link>
+          </p>
+        </div>
       </section>
     </Layout>
   );

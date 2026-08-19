@@ -2139,3 +2139,113 @@ html[data-fb-banner="1"] .landing-sticky {
 .crypto-checkout-order-actions .btn-secondary {
   margin-top: 0;
 }
+
+.crypto-checkout-frame.is-doc {
+  width: min(38rem, 100%);
+}
+
+.crypto-checkout-how--facts {
+  margin: 16px 0 0;
+}
+
+.crypto-checkout-how--facts li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.crypto-checkout-contract {
+  margin: 18px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.crypto-checkout-contract-label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.crypto-checkout-contract-addr {
+  margin: 8px 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.crypto-checkout-contract-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.crypto-checkout-contract-actions button,
+.crypto-checkout-contract-actions a {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.crypto-checkout-contract-note {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.crypto-checkout-why-link {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+}
+
+.crypto-checkout-why-link a {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.crypto-why {
+  margin-top: 22px;
+}
+
+.crypto-why h2 {
+  margin: 22px 0 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.crypto-why p {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.crypto-why .crypto-checkout-contract {
+  margin-top: 12px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.crypto-why pre {
+  margin: 12px 0 0;
+  padding: 14px 14px 16px;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.crypto-why code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

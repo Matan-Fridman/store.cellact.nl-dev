@@ -1,18 +1,98 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
 import { useLanguage } from "../contexts/LanguageContext";
 import {
+  CRYPTO_ESCROW,
+  escrowExplorerUrl,
   formatLockAmount,
+  shortHex,
   useCryptoPurchase,
   type CryptoAsset,
   type CryptoChainId,
 } from "../hooks/useCryptoPurchase";
 
+const ESCROW_CANCEL_CODE = `function cancel(bytes32 orderId) external whenNotPaused nonReentrant {
+    Subscription storage sub = subscriptions[orderId];
+    if (msg.sender != sub.payer) revert NotPayer();
+    // cancelEffective = end of current 30-day period
+    sub.cancelEffective = effective;
+
+    uint256 unusedFrom = _unusedFrom(sub);
+    uint256 amount;
+    for (uint256 i = unusedFrom; i < periods.length; i++) {
+        amount += periods[i];
+        periods[i] = 0;
+    }
+    emit Cancelled(orderId, effective);
+    if (amount > 0) {
+        _push(sub.token, sub.payer, amount);
+        emit UnusedWithdrawn(orderId, sub.payer, amount);
+    }
+}`;
+
+function EscrowContract({
+  chainId,
+  copy,
+  compact,
+}: {
+  chainId: CryptoChainId;
+  copy: {
+    contractLabel: string;
+    copyAddress: string;
+    copied: string;
+    openExplorer: string;
+    amoy: string;
+    sepolia: string;
+    whySameAddress: string;
+  };
+  compact: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+  const address = CRYPTO_ESCROW[chainId];
+
+  async function copyAddress() {
+    await navigator.clipboard.writeText(address);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1200);
+  }
+
+  return (
+    <div className="crypto-checkout-contract">
+      <p className="crypto-checkout-contract-label">{copy.contractLabel}</p>
+      <p className="crypto-checkout-contract-addr" dir="ltr">
+        {compact ? shortHex(address) : address}
+      </p>
+      <div className="crypto-checkout-contract-actions">
+        <button type="button" onClick={() => void copyAddress()}>
+          {copied ? copy.copied : copy.copyAddress}
+        </button>
+        {compact ? (
+          <a href={escrowExplorerUrl(chainId)} target="_blank" rel="noreferrer">
+            {copy.openExplorer}
+          </a>
+        ) : (
+          <>
+            <a href={escrowExplorerUrl(80002)} target="_blank" rel="noreferrer">
+              {copy.amoy}
+            </a>
+            <a href={escrowExplorerUrl(11155111)} target="_blank" rel="noreferrer">
+              {copy.sepolia}
+            </a>
+          </>
+        )}
+      </div>
+      {!compact && <p className="crypto-checkout-contract-note">{copy.whySameAddress}</p>}
+    </div>
+  );
+}
+
 export function CryptoPage() {
   const { t } = useLanguage();
   const copy = t.crypto;
+  const location = useLocation();
+  const isWhy = location.pathname.endsWith("/why");
   const crypto = useCryptoPurchase();
   const [chainId, setChainId] = useState<CryptoChainId>(80002);
   const [asset, setAsset] = useState<CryptoAsset>("usdc");
@@ -32,12 +112,48 @@ export function CryptoPage() {
   const stepPayClass = loading ? "is-current" : "";
 
   useEffect(() => {
+    if (isWhy) return;
     void crypto.loadQuote(chainId, asset).catch(() => undefined);
-  }, [chainId, asset, crypto.loadQuote]);
+  }, [chainId, asset, crypto.loadQuote, isWhy]);
 
   function openReview() {
     if (!lockAmount) return;
     setView("review");
+  }
+
+  if (isWhy) {
+    return (
+      <Layout hideAppStoreBadges>
+        <section className="crypto-checkout">
+          <div className="crypto-checkout-frame is-doc">
+            <p className="crypto-checkout-back">
+              <Link to="/crypto">{copy.whyBack}</Link>
+            </p>
+            <p className="crypto-checkout-kicker">{copy.kicker}</p>
+            <h1>{copy.whyTitle}</h1>
+            <p className="crypto-checkout-lead">{copy.whyLead}</p>
+
+            <article className="crypto-why">
+              <h2>{copy.whyRefuseTitle}</h2>
+              <p>{copy.whyRefuse}</p>
+              <h2>{copy.whyLockTitle}</h2>
+              <p>{copy.whyLock}</p>
+              <h2>{copy.whyCancelTitle}</h2>
+              <p>{copy.whyCancelBody}</p>
+              <h2>{copy.whyTrustTitle}</h2>
+              <p>{copy.whyTrust}</p>
+              <h2>{copy.whyContractTitle}</h2>
+              <EscrowContract chainId={chainId} copy={copy} compact={false} />
+              <h2>{copy.whyCodeTitle}</h2>
+              <p>{copy.whyCodeLead}</p>
+              <pre dir="ltr">
+                <code>{ESCROW_CANCEL_CODE}</code>
+              </pre>
+            </article>
+          </div>
+        </section>
+      </Layout>
+    );
   }
 
   return (
@@ -56,6 +172,20 @@ export function CryptoPage() {
           <p className="crypto-checkout-kicker">{copy.kicker}</p>
           <h1>{reviewing ? copy.reviewTitle : copy.title}</h1>
           <p className="crypto-checkout-lead">{reviewing ? copy.reviewLead : copy.lead}</p>
+
+          {!reviewing && (
+            <>
+              <ul className="crypto-checkout-how crypto-checkout-how--facts">
+                <li>{copy.factLock}</li>
+                <li>{copy.factCancel}</li>
+                <li>{copy.factLive}</li>
+              </ul>
+              <EscrowContract chainId={chainId} copy={copy} compact />
+              <p className="crypto-checkout-why-link">
+                <Link to="/crypto/why">{copy.whyCta}</Link>
+              </p>
+            </>
+          )}
 
           <ol className="crypto-checkout-steps" aria-label={`${copy.stepChoose}, ${copy.stepReview}, ${copy.stepPay}`}>
             <li className={stepChooseClass}>{copy.stepChoose}</li>
@@ -79,6 +209,9 @@ export function CryptoPage() {
                 <li>{copy.reviewAfter}</li>
                 <li>{copy.reviewClaim}</li>
               </ul>
+              <p className="crypto-checkout-why-link">
+                <Link to="/crypto/why">{copy.whyCta}</Link>
+              </p>
             </>
           ) : (
             <>

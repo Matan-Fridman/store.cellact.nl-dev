@@ -333,6 +333,9 @@ export function CryptoRecoverPage() {
           <p className="crypto-checkout-kicker">{copy.kicker}</p>
           <h1>{copy.manageTitle}</h1>
           <p className="crypto-checkout-lead">{copy.manageLead}</p>
+          <p className="crypto-checkout-why-link">
+            <Link to="/crypto/why">{copy.whyCta}</Link>
+          </p>
 
           <div className="crypto-checkout-wallet">
             <span

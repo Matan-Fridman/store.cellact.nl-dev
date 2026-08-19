@@ -118,6 +118,16 @@ export const CRYPTO_ESCROW: Record<CryptoChainId, string> = {
   11155111: "0xAacC72407Eb9d97a8DDf86cC22D1250752Bc4dFB",
 };
 
+export function escrowExplorerUrl(chainId: CryptoChainId, address = CRYPTO_ESCROW[chainId]): string {
+  const base = CRYPTO_CHAINS[chainId].blockExplorerUrls[0]?.replace(/\/$/, "") ?? "";
+  return `${base}/address/${address}`;
+}
+
+export function shortHex(value: string): string {
+  if (value.length < 12) return value;
+  return `${value.slice(0, 6)}…${value.slice(-4)}`;
+}
+
 const ESCROW_ACCOUNT_ABI = [
   "function subscriptions(bytes32 orderId) view returns (address payer, address provider, address token, uint256 serviceId, uint64 start, uint64 cancelEffective, uint32 periodSeconds, uint8 termPeriods, uint256 setupAmount, uint256 setupWithdrawn, uint256 periodsWithdrawn, bool exists)",
   "function getPeriodAmounts(bytes32 orderId) view returns (uint256[])",

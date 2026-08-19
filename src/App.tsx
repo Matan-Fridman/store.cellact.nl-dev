@@ -46,6 +46,7 @@ export default function App() {
           <Route path="/port/complete" element={<PortCompletePage />} />
           <Route path="/recover" element={<RecoverPage />} />
           <Route path="/crypto" element={<CryptoPage />} />
+          <Route path="/crypto/why" element={<CryptoPage />} />
           <Route path="/crypto/wait" element={<CryptoWaitPage />} />
           <Route path="/crypto/recover" element={<CryptoRecoverPage />} />
         </Routes>

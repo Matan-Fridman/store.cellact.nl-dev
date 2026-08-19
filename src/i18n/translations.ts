@@ -218,6 +218,40 @@ type TranslationsShape = {
     claimedDone: string;
     escrowUnread: string;
     numberLabel: (label: string) => string;
+    landingTitle: string;
+    landingLead: string;
+    landingCta: string;
+    factLock: string;
+    factCancel: string;
+    factLive: string;
+    contractLabel: string;
+    copyAddress: string;
+    copied: string;
+    openExplorer: string;
+    whyCta: string;
+    whyTitle: string;
+    whyLead: string;
+    whyRefuseTitle: string;
+    whyRefuse: string;
+    whyLockTitle: string;
+    whyLock: string;
+    whyCancelTitle: string;
+    whyCancelBody: string;
+    whyTrustTitle: string;
+    whyTrust: string;
+    whyContractTitle: string;
+    whySameAddress: string;
+    whyCodeTitle: string;
+    whyCodeLead: string;
+    whyBack: string;
+    waitTitle: string;
+    waitPending: string;
+    waitPaid: string;
+    waitReady: string;
+    waitKeepOpen: (orderId: string) => string;
+    waitLeft: string;
+    waitSign: string;
+    waitSigning: string;
   };
   recover: {
     entry: string;
@@ -530,9 +564,9 @@ export const translations: Record<Language, TranslationsShape> = {
 
     crypto: {
       back: "Back to store",
-      kicker: "Testnet",
-      title: "Pay with crypto",
-      lead: "Same 67% plan. USDC follows the euro price.",
+      kicker: "Testnet escrow",
+      title: "On-chain prepaid lock",
+      lead: "Pay twelve months once. No monthly pull.",
       stepChoose: "Choose",
       stepConnect: "Connect",
       stepReview: "Review",
@@ -540,12 +574,12 @@ export const translations: Record<Language, TranslationsShape> = {
       continue: "Review lock",
       reviewTitle: "Check the lock",
       reviewLead: "This amount leaves your wallet into escrow.",
-      reviewEscrow: "Funds lock in the subscription contract.",
-      reviewTerm: "Twelve months on the 67% plan.",
+      reviewEscrow: "Your wallet pays SubscriptionEscrow, not us.",
+      reviewTerm: "Twelve 30-day periods. No monthly signature.",
       reviewFxUsdc: "USDC follows the euro price.",
       reviewFxNative: "ETH or POL uses a live FX quote.",
-      reviewAfter: "After the transaction we provision the number.",
-      reviewClaim: "Then sign once to get the QR.",
+      reviewAfter: "Cancel refunds unused months in that tx.",
+      reviewClaim: "Then one signature for the QR.",
       changeSelection: "Change network or token",
       network: "Network",
       token: "Token",
@@ -562,7 +596,7 @@ export const translations: Record<Language, TranslationsShape> = {
       sepolia: "Sepolia",
       usdc: "USDC",
       manageTitle: "Your crypto orders",
-      manageLead: "Connect the wallet that paid. Amounts are read from escrow.",
+      manageLead: "The wallet that paid can cancel. Unused funds come back now.",
       manageConnected: (short) => `Connected ${short}`,
       noOrders: "No prepaid orders on this wallet.",
       statusReady: "Number ready",
@@ -582,6 +616,43 @@ export const translations: Record<Language, TranslationsShape> = {
       claimedDone: "Already activated on a device",
       escrowUnread: "Could not read escrow. Cancel needs a live lock read.",
       numberLabel: (label) => `Number ${label}`,
+      landingTitle: "Pay on-chain",
+      landingLead: "Prepaid 12-month escrow. Cancel returns unused funds now.",
+      landingCta: "Open crypto checkout",
+      factLock: "Funds sit in the contract, not with us.",
+      factCancel: "Cancel returns unused months in the same tx.",
+      factLive: "This month stays paid. The number doesn't drop.",
+      contractLabel: "SubscriptionEscrow",
+      copyAddress: "Copy",
+      copied: "Copied",
+      openExplorer: "Explorer",
+      whyCta: "Why we lock it this way",
+      whyTitle: "Why escrow, not monthly billing",
+      whyLead: "A monthly crypto charge fails. Empty wallet, missed tx, dead number, then you wait.",
+      whyRefuseTitle: "The thing we refuse",
+      whyRefuse:
+        "Don't make a live number depend on you remembering to pay every 30 days. Don't pause service while a transaction confirms.",
+      whyLockTitle: "The lock",
+      whyLock:
+        "You lock setup plus twelve 30-day periods. Each finished period vests to the provider. You don't sign every month.",
+      whyCancelTitle: "Cancel",
+      whyCancelBody:
+        "Unused future periods return to you in that transaction. The current period is spent. The number stays live until that period ends.",
+      whyTrustTitle: "Verify it",
+      whyTrust: "The UI is not the source of truth. Read the deployed contract.",
+      whyContractTitle: "Deployed contract",
+      whySameAddress: "Same bytecode on Amoy and Sepolia.",
+      whyCodeTitle: "The cancel code",
+      whyCodeLead: "cancel() refunds unused periods immediately. That is the product.",
+      whyBack: "Back to checkout",
+      waitTitle: "Waiting on escrow",
+      waitPending: "Waiting for the subscribe transaction…",
+      waitPaid: "Paid. Provisioning your number…",
+      waitReady: "Payment confirmed. Sign with the paying wallet for the QR.",
+      waitKeepOpen: (orderId) => `Keep this page open. Order ${orderId}`,
+      waitLeft: "Left by accident?",
+      waitSign: "Sign and show QR",
+      waitSigning: "Waiting for signature…",
     },
 
     recover: {
@@ -921,9 +992,9 @@ export const translations: Record<Language, TranslationsShape> = {
 
     crypto: {
       back: "חזרה לחנות",
-      kicker: "רשת בדיקה",
-      title: "תשלום בקריפטו",
-      lead: "אותה תוכנית ב-67%. USDC לפי מחיר האירו.",
+      kicker: "אסקרו ברשת בדיקה",
+      title: "נעילה מראש בחוזה",
+      lead: "שניים-עשר חודשים בתשלום אחד. בלי חיוב חודשי.",
       stepChoose: "בחירה",
       stepConnect: "חיבור",
       stepReview: "סקירה",
@@ -931,12 +1002,12 @@ export const translations: Record<Language, TranslationsShape> = {
       continue: "סקירת הנעילה",
       reviewTitle: "בדקו את הנעילה",
       reviewLead: "הסכום הזה יוצא מהארנק לחוזה הנעילה.",
-      reviewEscrow: "הכסף ננעל בחוזה המנוי.",
-      reviewTerm: "שניים-עשר חודשים בתוכנית 67%.",
+      reviewEscrow: "הארנק משלם ל-SubscriptionEscrow, לא אלינו.",
+      reviewTerm: "שתים-עשרה תקופות של 30 יום. בלי חתימה כל חודש.",
       reviewFxUsdc: "USDC לפי מחיר האירו.",
       reviewFxNative: "ETH או POL לפי שער חי.",
-      reviewAfter: "אחרי העסקה נספק את המספר.",
-      reviewClaim: "ואז חתימה אחת לקבלת ה-QR.",
+      reviewAfter: "ביטול מחזיר חודשים שלא נוצלו באותה עסקה.",
+      reviewClaim: "ואז חתימה אחת ל-QR.",
       changeSelection: "שינוי רשת או מטבע",
       network: "רשת",
       token: "מטבע",
@@ -953,7 +1024,7 @@ export const translations: Record<Language, TranslationsShape> = {
       sepolia: "Sepolia",
       usdc: "USDC",
       manageTitle: "ההזמנות בקריפטו",
-      manageLead: "חברו את הארנק ששילם. הסכומים נקראים מהחוזה.",
+      manageLead: "הארנק ששילם יכול לבטל. יתרה חוזרת עכשיו.",
       manageConnected: (short) => `מחובר ${short}`,
       noOrders: "אין הזמנות ממולאות מראש בארנק הזה.",
       statusReady: "המספר מוכן",
@@ -973,6 +1044,43 @@ export const translations: Record<Language, TranslationsShape> = {
       claimedDone: "כבר הופעל במכשיר",
       escrowUnread: "לא ניתן לקרוא את החוזה. הביטול דורש קריאה חיה.",
       numberLabel: (label) => `מספר ${label}`,
+      landingTitle: "תשלום בחוזה",
+      landingLead: "נעילה ל-12 חודשים. ביטול מחזיר יתרה עכשיו.",
+      landingCta: "לתשלום בחוזה",
+      factLock: "הכסף בחוזה, לא אצלנו.",
+      factCancel: "ביטול מחזיר חודשים שלא נוצלו באותה עסקה.",
+      factLive: "החודש הנוכחי משולם. המספר לא נופל.",
+      contractLabel: "SubscriptionEscrow",
+      copyAddress: "העתקה",
+      copied: "הועתק",
+      openExplorer: "אקספלורר",
+      whyCta: "למה נועלים ככה",
+      whyTitle: "למה אסקרו, לא חיוב חודשי",
+      whyLead: "חיוב קריפטו כל חודש נכשל. ארנק ריק, עסקה שפספסתם, מספר מת, ואז מחכים.",
+      whyRefuseTitle: "מה לא עושים",
+      whyRefuse:
+        "לא תולים מספר חי על זה שתזכרו לשלם כל 30 יום. לא עוצרים שירות בזמן שעסקה ממתינה לאישור.",
+      whyLockTitle: "הנעילה",
+      whyLock:
+        "נועלים הקמה ועוד שתים-עשרה תקופות של 30 יום. כל תקופה שנגמרה עוברת לספק. אין חתימה כל חודש.",
+      whyCancelTitle: "ביטול",
+      whyCancelBody:
+        "חודשים עתידיים חוזרים אליכם באותה עסקה. החודש הנוכחי נשאר משולם. המספר חי עד סוף התקופה.",
+      whyTrustTitle: "אל תסמכו על המסך",
+      whyTrust: "הממשק לא קובע. קראו את החוזה שפורסם.",
+      whyContractTitle: "החוזה שפורסם",
+      whySameAddress: "אותו בייטקוד ב-Amoy וב-Sepolia.",
+      whyCodeTitle: "קוד הביטול",
+      whyCodeLead: "cancel מחזיר יתרה מיד. זה המוצר.",
+      whyBack: "חזרה לתשלום",
+      waitTitle: "ממתינים לאסקרו",
+      waitPending: "ממתינים לעסקת ה-subscribe…",
+      waitPaid: "שולם. מקצים את המספר…",
+      waitReady: "התשלום אושר. חתמו עם הארנק ששילם לקבלת QR.",
+      waitKeepOpen: (orderId) => `השאירו את הדף פתוח. הזמנה ${orderId}`,
+      waitLeft: "יצאתם בטעות?",
+      waitSign: "חתימה והצגת QR",
+      waitSigning: "ממתינים לחתימה…",
     },
 
     recover: {

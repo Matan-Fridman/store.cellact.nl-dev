@@ -213,6 +213,7 @@ type TranslationsShape = {
     cancelCta: string;
     withdrawCta: string;
     claimCta: string;
+    waitWallet: string;
     claimedDone: string;
     escrowUnread: string;
     numberLabel: (label: string) => string;

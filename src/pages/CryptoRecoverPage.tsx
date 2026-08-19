@@ -264,10 +264,19 @@ export function CryptoRecoverPage() {
     setError(null);
     try {
       await sendEscrowPayerTx(order.chainId, order.escrow, order.idBytes32, method);
+      let snap: CryptoOrderStatus["escrowState"] = null;
       if (method === "cancel" && payerRef.current) {
-        await listCryptoOrders(payerRef.current).catch(() => undefined);
+        const listed = await listCryptoOrders(payerRef.current).catch(() => undefined);
+        snap = listed?.orders.find((item) => item.orderId === order.orderId)?.escrowState ?? null;
       }
-      const settlement = await settlementFor(order.chainId, order.escrow, order.idBytes32);
+      const injected = await pickEthereum().catch(() => undefined);
+      const settlement = await settlementFor(
+        order.chainId,
+        order.escrow,
+        order.idBytes32,
+        snap,
+        injected,
+      );
       setOrders((current) =>
         current.map((item) => (item.orderId === order.orderId ? { ...item, settlement } : item)),
       );

@@ -166,6 +166,32 @@ type TranslationsShape = {
     errorTitle: string;
     errorBack: string;
   };
+  recover: {
+    entry: string;
+    title: string;
+    sub: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    submit: string;
+    submitting: string;
+    sentTitle: string;
+    sentBody: string;
+    notCustomerTitle: string;
+    notCustomerBody: string;
+    notCustomerCta: string;
+    notRecoverableTitle: string;
+    notRecoverableBody: string;
+    openTitle: string;
+    openBody: string;
+    openCta: string;
+    completingTitle: string;
+    completingBody: string;
+    doneTitle: string;
+    doneBody: string;
+    numbersLabel: string;
+    errorTitle: string;
+    back: string;
+  };
 };
 
 export const translations: Record<Language, TranslationsShape> = {
@@ -411,6 +437,10 @@ export const translations: Record<Language, TranslationsShape> = {
           q: "Who do I call if I am stuck?",
           a: "Cellact support: +972 55 700 55 55 (Sun–Thu 08:00–18:00 Israel time), or support@arnacon.com.",
         },
+        {
+          q: "New phone — can I keep my number?",
+          a: "Yes. Use Recover on this site with the purchase email. We email a link, you open Arnacon on the new device, and we move every live number onto it.",
+        },
       ],
       stickyTag: "1,500 min / month + 50 SMS / day",
     },
@@ -443,6 +473,33 @@ export const translations: Record<Language, TranslationsShape> = {
         "It looks like this Israeli number was already linked to a device. You don’t need to activate it again.",
       alreadyActivatedSupport:
         "If you believe that’s wrong, contact support at support@arnacon.com",
+    },
+
+    recover: {
+      entry: "New device? Recover your number",
+      title: "Recover your number",
+      sub: "Enter the email you used to buy. We will move every live number onto this device.",
+      emailLabel: "Purchase email",
+      emailPlaceholder: "you@email.com",
+      submit: "Send recovery link",
+      submitting: "Checking…",
+      sentTitle: "Check your email",
+      sentBody: "We sent a recovery link. Open it on the new phone, then continue in Arnacon.",
+      notCustomerTitle: "No Secnum account on this email",
+      notCustomerBody: "This address has not bought a Cellact number. Buy one to get started.",
+      notCustomerCta: "Buy a number",
+      notRecoverableTitle: "Nothing left to recover",
+      notRecoverableBody: "This email has no live, non-expired numbers. Buy a number to continue.",
+      openTitle: "Open Arnacon on this phone",
+      openBody: "This proves the new identity. We then move your live numbers onto this device.",
+      openCta: "Continue in Arnacon",
+      completingTitle: "Moving your numbers…",
+      completingBody: "Linking every live number to this device and sending the install.",
+      doneTitle: "Numbers moved",
+      doneBody: "Install the product in Arnacon if it does not appear within a few seconds.",
+      numbersLabel: "Recovered numbers",
+      errorTitle: "Recovery failed",
+      back: "Back to store",
     },
 
     success: {
@@ -719,6 +776,10 @@ export const translations: Record<Language, TranslationsShape> = {
           q: "למי מתקשרים אם נתקעים?",
           a: "תמיכת Cellact: 055-700-5555 (א׳–ה׳ 08:00–18:00), או support@arnacon.com.",
         },
+        {
+          q: "החלפתי טלפון — אפשר לשמור את המספר?",
+          a: "כן. לחצו על שחזור באתר עם האימייל של הרכישה. נשלח קישור, פותחים את Arnacon במכשיר החדש, ומעבירים אליו את כל המספרים הפעילים.",
+        },
       ],
       stickyTag: "1,500 דקות בחודש + 50 הודעות סמס ליום",
     },
@@ -747,6 +808,33 @@ export const translations: Record<Language, TranslationsShape> = {
         "נראה שהמספר הישראלי הזה כבר מקושר למכשיר. אין צורך להפעיל אותו שוב.",
       alreadyActivatedSupport:
         "אם לדעתכם זו טעות, פנו לתמיכה ב־support@arnacon.com",
+    },
+
+    recover: {
+      entry: "מכשיר חדש? שחזור המספר",
+      title: "שחזור המספר",
+      sub: "הזינו את האימייל שאיתו קניתם. נעביר למכשיר הזה את כל המספרים הפעילים.",
+      emailLabel: "אימייל הרכישה",
+      emailPlaceholder: "you@email.com",
+      submit: "שלחו קישור לשחזור",
+      submitting: "בודקים…",
+      sentTitle: "בדקו את האימייל",
+      sentBody: "שלחנו קישור לשחזור. פתחו אותו בטלפון החדש והמשיכו ב-Arnacon.",
+      notCustomerTitle: "אין חשבון Secnum לאימייל הזה",
+      notCustomerBody: "הכתובת הזו לא רכשה מספר. אפשר לקנות מספר ולהתחיל.",
+      notCustomerCta: "קנו מספר",
+      notRecoverableTitle: "אין מה לשחזר",
+      notRecoverableBody: "לאימייל הזה אין מספרים פעילים שלא פגו. אפשר לקנות מספר ולהמשיך.",
+      openTitle: "פתחו את Arnacon בטלפון הזה",
+      openBody: "כך מוכיחים את הזהות החדשה. אחר כך נעביר למכשיר את המספרים הפעילים.",
+      openCta: "המשיכו ב-Arnacon",
+      completingTitle: "מעבירים את המספרים…",
+      completingBody: "מקשרים כל מספר פעיל למכשיר הזה ושולחים התקנה.",
+      doneTitle: "המספרים הועברו",
+      doneBody: "אם המוצר לא מופיע תוך כמה שניות, התקינו אותו מ-Arnacon.",
+      numbersLabel: "מספרים ששוחזרו",
+      errorTitle: "השחזור נכשל",
+      back: "חזרה לחנות",
     },
 
     success: {

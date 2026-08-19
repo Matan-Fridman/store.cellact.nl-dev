@@ -8,6 +8,7 @@ import { SuccessPage } from "./pages/SuccessPage";
 import { ActivatePage } from "./pages/ActivatePage";
 import { PortPage } from "./pages/PortPage";
 import { PortCompletePage } from "./pages/PortCompletePage";
+import { RecoverPage } from "./pages/RecoverPage";
 import { initAnalytics, trackPageView } from "./lib/analytics";
 
 function AnalyticsTracker() {
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="/activate" element={<ActivatePage />} />
           <Route path="/port" element={<PortPage />} />
           <Route path="/port/complete" element={<PortCompletePage />} />
+          <Route path="/recover" element={<RecoverPage />} />
         </Routes>
       </BrowserRouter>
     </LanguageProvider>

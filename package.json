@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && cp dist/index.html dist/404.html && for r in activate claim success port port/complete 67; do mkdir -p \"dist/$r\" && cp dist/index.html \"dist/$r/index.html\"; done",
+    "build": "tsc -b && vite build && cp dist/index.html dist/404.html && for r in activate claim success port port/complete recover 67; do mkdir -p \"dist/$r\" && cp dist/index.html \"dist/$r/index.html\"; done",
     "lint": "eslint .",
     "preview": "vite preview"
   },

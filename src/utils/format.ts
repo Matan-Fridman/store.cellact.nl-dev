@@ -64,6 +64,18 @@ export function buildArnaconClaimUrl(
   return `arnacon://install?url=${encodeURIComponent(claimPage)}&provider=Secnum`;
 }
 
+export function buildArnaconRecoverUrl(
+  token: string,
+  storeOrigin: string,
+  lang?: "en" | "he",
+): string {
+  const base = storeOrigin.replace(/\/$/, "");
+  const params = new URLSearchParams({ token });
+  if (lang === "he" || lang === "en") params.set("lang", lang);
+  const recoverPage = `${base}/recover?${params.toString()}`;
+  return `arnacon://install?url=${encodeURIComponent(recoverPage)}&provider=Secnum`;
+}
+
 /**
  * Ensures the `dev` (and optional `lang`) params inside an arnacon:// deep link
  * match the current environment / purchase language.

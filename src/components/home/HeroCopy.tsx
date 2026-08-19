@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Button } from "../Button";
 import { ErrorAlert } from "../ErrorAlert";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -67,6 +68,15 @@ export function HeroCopy({ onPurchase, loading, error, onDismissError }: HeroCop
         </Button>
 
         <p className="landing-fineprint">{copy.finePrint}</p>
+
+        <p style={{ margin: "12px 0 0", fontSize: "0.9rem" }}>
+          <Link
+            to="/recover"
+            style={{ color: "var(--color-text-muted)", textDecoration: "underline", textUnderlineOffset: "3px" }}
+          >
+            {t.recover.entry}
+          </Link>
+        </p>
 
         <ErrorAlert message={error} onDismiss={onDismissError} />
       </motion.div>

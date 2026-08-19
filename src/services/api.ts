@@ -165,3 +165,42 @@ export function activateWithProof(
   const { ACTIVATE_URL } = getApiConfig();
   return post<ActivateResponse>(ACTIVATE_URL, { proof, label, web3identity });
 }
+
+export type RecoveryRequestResult = {
+  ok: true;
+  customer: boolean;
+  recoverable: boolean;
+  emailed?: boolean;
+};
+
+export type RecoveryCompleteResult = {
+  ok: true;
+  web3identity: string;
+  labels: string[];
+  installed: string[];
+  failedInstalls: string[];
+};
+
+export function requestRecovery(
+  email: string,
+  lang: "en" | "he",
+): Promise<RecoveryRequestResult> {
+  const { RECOVERY_URL } = getApiConfig();
+  return post<RecoveryRequestResult>(RECOVERY_URL, {
+    action: "request",
+    email,
+    lang,
+  });
+}
+
+export function completeRecovery(
+  token: string,
+  web3identity: string,
+): Promise<RecoveryCompleteResult> {
+  const { RECOVERY_URL } = getApiConfig();
+  return post<RecoveryCompleteResult>(RECOVERY_URL, {
+    action: "complete",
+    token,
+    web3identity,
+  });
+}

@@ -114,8 +114,8 @@ function waitPath(orderId: string, chainId: CryptoChainId, lang: "en" | "he"): s
 }
 
 export const CRYPTO_ESCROW: Record<CryptoChainId, string> = {
-  80002: "0xD2D3846dDB09233a8EfAbF864b1C003c8d301C45",
-  11155111: "0xD2D3846dDB09233a8EfAbF864b1C003c8d301C45",
+  80002: "0xAacC72407Eb9d97a8DDf86cC22D1250752Bc4dFB",
+  11155111: "0xAacC72407Eb9d97a8DDf86cC22D1250752Bc4dFB",
 };
 
 const ESCROW_ACCOUNT_ABI = [

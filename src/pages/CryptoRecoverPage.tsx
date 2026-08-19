@@ -395,37 +395,39 @@ export function CryptoRecoverPage() {
                     <ul className="crypto-checkout-order-split">
                       {settlement ? (
                         <>
-                          {settlement.providerWithdrawable > 0n && (
-                            <li>
-                              {copy.cellactNow(
-                                formatEscrowAmount(settlement.providerWithdrawable, symbol),
-                                symbol,
-                              )}
-                            </li>
-                          )}
-                          {settlement.canWithdrawUnused ? (
+                          {settlement.canWithdrawUnused && (
                             <li>
                               {copy.youCanWithdraw(
                                 formatEscrowAmount(settlement.payerUnusedNow, symbol),
                                 symbol,
                               )}
                             </li>
-                          ) : (
-                            <li>{copy.nothingBackYet}</li>
                           )}
                           {settlement.canCancel && (
                             <li>
                               {copy.ifCancel(
                                 formatWhen(settlement.ifCancelEffectiveAt, lang),
                                 formatEscrowAmount(settlement.payerUnusedIfCancel, symbol),
-                                formatEscrowAmount(settlement.providerKeepsIfCancel, symbol),
                                 symbol,
                               )}
                             </li>
                           )}
                           {settlement.cancelAlreadySet && !settlement.cancelIsEffective && (
-                            <li>{copy.cancelScheduled(formatWhen(settlement.cancelEffectiveAt, lang))}</li>
+                            <li>
+                              {settlement.payerUnusedIfCancel > 0n
+                                ? copy.youWithdrawOn(
+                                    formatEscrowAmount(settlement.payerUnusedIfCancel, symbol),
+                                    symbol,
+                                    formatWhen(settlement.cancelEffectiveAt, lang),
+                                  )
+                                : copy.cancelledReturned(formatWhen(settlement.cancelEffectiveAt, lang))}
+                            </li>
                           )}
+                          {!settlement.canCancel &&
+                            !settlement.cancelAlreadySet &&
+                            !settlement.canWithdrawUnused && (
+                              <li>{copy.nothingBackYet}</li>
+                            )}
                         </>
                       ) : (
                         <li>{copy.escrowUnread}</li>
@@ -442,12 +444,12 @@ export function CryptoRecoverPage() {
                           {acting && action?.kind === "cancel" ? copy.waitWallet : copy.cancelCta}
                         </Button>
                       )}
-                      {settlement && (
+                      {settlement?.canWithdrawUnused && (
                         <Button
                           variant="secondary"
                           onClick={() => void runPayerTx(order, "withdrawUnused")}
                           loading={acting && action?.kind === "withdraw"}
-                          disabled={busy || !settlement.canWithdrawUnused}
+                          disabled={busy}
                         >
                           {acting && action?.kind === "withdraw" ? copy.waitWallet : copy.withdrawCta}
                         </Button>

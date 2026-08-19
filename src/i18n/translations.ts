@@ -205,10 +205,11 @@ type TranslationsShape = {
     noOrders: string;
     statusReady: string;
     statusProvisioning: string;
-    cellactNow: (amount: string, symbol: string) => string;
     youCanWithdraw: (amount: string, symbol: string) => string;
+    youWithdrawOn: (amount: string, symbol: string, date: string) => string;
+    cancelledReturned: (date: string) => string;
     nothingBackYet: string;
-    ifCancel: (date: string, you: string, they: string, symbol: string) => string;
+    ifCancel: (date: string, you: string, symbol: string) => string;
     cancelScheduled: (date: string) => string;
     cancelCta: string;
     withdrawCta: string;
@@ -566,13 +567,15 @@ export const translations: Record<Language, TranslationsShape> = {
       noOrders: "No prepaid orders on this wallet.",
       statusReady: "Number ready",
       statusProvisioning: "Provisioning",
-      cellactNow: (amount, symbol) => `Cellact can take ${amount} ${symbol} now`,
       youCanWithdraw: (amount, symbol) => `You can withdraw ${amount} ${symbol}`,
+      youWithdrawOn: (amount, symbol, date) =>
+        `You withdraw ${amount} ${symbol} from ${date}`,
+      cancelledReturned: (date) => `Remaining funds are back. Number works until ${date}.`,
       nothingBackYet: "Unused funds unlock after the current period ends.",
-      ifCancel: (date, you, they, symbol) =>
-        `Cancel: service until ${date}. Then you withdraw ${you} ${symbol}. Cellact keeps ${they} ${symbol}.`,
+      ifCancel: (date, you, symbol) =>
+        `Service until ${date}. Cancel returns ${you} ${symbol} now.`,
       cancelScheduled: (date) => `Cancel takes effect ${date}`,
-      cancelCta: "Cancel at period end",
+      cancelCta: "Cancel and withdraw unused",
       withdrawCta: "Withdraw unused",
       claimCta: "Sign and show QR",
       waitWallet: "Confirm in your wallet",
@@ -955,13 +958,15 @@ export const translations: Record<Language, TranslationsShape> = {
       noOrders: "אין הזמנות ממולאות מראש בארנק הזה.",
       statusReady: "המספר מוכן",
       statusProvisioning: "בהקצאה",
-      cellactNow: (amount, symbol) => `Cellact יכולה לקחת ${amount} ${symbol} עכשיו`,
       youCanWithdraw: (amount, symbol) => `אפשר למשוך ${amount} ${symbol}`,
+      youWithdrawOn: (amount, symbol, date) =>
+        `תמשכו ${amount} ${symbol} מ-${date}`,
+      cancelledReturned: (date) => `היתרה חזרה. המספר פעיל עד ${date}.`,
       nothingBackYet: "היתרה נפתחת בסוף התקופה הנוכחית.",
-      ifCancel: (date, you, they, symbol) =>
-        `ביטול: השירות עד ${date}. אחר כך תמשכו ${you} ${symbol}. Cellact תשאיר ${they} ${symbol}.`,
+      ifCancel: (date, you, symbol) =>
+        `השירות עד ${date}. ביטול מחזיר ${you} ${symbol} עכשיו.`,
       cancelScheduled: (date) => `הביטול נכנס לתוקף ${date}`,
-      cancelCta: "ביטול בסוף התקופה",
+      cancelCta: "ביטול ומשיכת יתרה",
       withdrawCta: "משיכת יתרה",
       claimCta: "חתימה והצגת QR",
       waitWallet: "אשרו בארנק",

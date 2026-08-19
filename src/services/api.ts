@@ -204,3 +204,61 @@ export function completeRecovery(
     web3identity,
   });
 }
+
+export interface CryptoQuote {
+  orderId: string;
+  orderIdBytes32: string;
+  chainId: number;
+  escrow: string;
+  token: string;
+  tokenSymbol: string;
+  setupAmount: string;
+  periodAmounts: string[];
+  totalAmount: string;
+  expiry: number;
+  serviceId: number;
+  signature: string;
+  quoteSigner: string;
+}
+
+export interface CryptoOrderStatus {
+  orderId: string;
+  status: string;
+  paid: boolean;
+  provisioned: boolean;
+  chainId: number;
+  escrow: string;
+  tokenSymbol?: string;
+  expiry?: number;
+}
+
+export function createCryptoQuote(params: {
+  chainId: number;
+  token: "native" | "usdc";
+}): Promise<CryptoQuote> {
+  const { CRYPTO_URL } = getApiConfig();
+  return post<CryptoQuote>(`${CRYPTO_URL.replace(/\/$/, "")}/quote`, params);
+}
+
+export function getCryptoStatus(params: {
+  orderId: string;
+  chainId: number;
+  lang?: "en" | "he";
+}): Promise<CryptoOrderStatus> {
+  const { CRYPTO_URL } = getApiConfig();
+  return post<CryptoOrderStatus>(`${CRYPTO_URL.replace(/\/$/, "")}/status`, params);
+}
+
+export function listCryptoOrders(payer: string): Promise<{ orders: CryptoOrderStatus[] }> {
+  const { CRYPTO_URL } = getApiConfig();
+  return post<{ orders: CryptoOrderStatus[] }>(`${CRYPTO_URL.replace(/\/$/, "")}/orders`, { payer });
+}
+
+export function claimCryptoActivation(params: {
+  orderId: string;
+  signature: string;
+  issuedAt: number;
+}): Promise<{ token: string }> {
+  const { CRYPTO_URL } = getApiConfig();
+  return post<{ token: string }>(`${CRYPTO_URL.replace(/\/$/, "")}/claim`, params);
+}

@@ -166,6 +166,40 @@ type TranslationsShape = {
     errorTitle: string;
     errorBack: string;
   };
+  crypto: {
+    back: string;
+    kicker: string;
+    title: string;
+    lead: string;
+    stepChoose: string;
+    stepConnect: string;
+    stepPay: string;
+    network: string;
+    token: string;
+    walletOff: string;
+    connect: string;
+    connecting: string;
+    stepReview: string;
+    continue: string;
+    reviewTitle: string;
+    reviewLead: string;
+    reviewEscrow: string;
+    reviewTerm: string;
+    reviewFxUsdc: string;
+    reviewFxNative: string;
+    reviewAfter: string;
+    reviewClaim: string;
+    changeSelection: string;
+    pay: (symbol: string) => string;
+    paying: string;
+    recover: string;
+    recoverLink: string;
+    quoteLoading: string;
+    lock: (amount: string, symbol: string) => string;
+    amoy: string;
+    sepolia: string;
+    usdc: string;
+  };
   recover: {
     entry: string;
     title: string;
@@ -473,6 +507,41 @@ export const translations: Record<Language, TranslationsShape> = {
         "It looks like this Israeli number was already linked to a device. You don’t need to activate it again.",
       alreadyActivatedSupport:
         "If you believe that’s wrong, contact support at support@arnacon.com",
+    },
+
+    crypto: {
+      back: "Back to store",
+      kicker: "Testnet",
+      title: "Pay with crypto",
+      lead: "Same 67% plan. USDC follows the euro price.",
+      stepChoose: "Choose",
+      stepConnect: "Connect",
+      stepReview: "Review",
+      stepPay: "Pay",
+      continue: "Review lock",
+      reviewTitle: "Check the lock",
+      reviewLead: "This amount leaves your wallet into escrow.",
+      reviewEscrow: "Funds lock in the subscription contract.",
+      reviewTerm: "Twelve months on the 67% plan.",
+      reviewFxUsdc: "USDC follows the euro price.",
+      reviewFxNative: "ETH or POL uses a live FX quote.",
+      reviewAfter: "After the transaction we provision the number.",
+      reviewClaim: "Then sign once to get the QR.",
+      changeSelection: "Change network or token",
+      network: "Network",
+      token: "Token",
+      walletOff: "No wallet connected",
+      connect: "Connect",
+      connecting: "Connecting…",
+      pay: (symbol) => `Pay with ${symbol}`,
+      paying: "Confirm in your wallet",
+      quoteLoading: "Getting the lock amount…",
+      lock: (amount, symbol) => `Lock ${amount} ${symbol}`,
+      recover: "Already paid?",
+      recoverLink: "Find your order",
+      amoy: "Polygon Amoy",
+      sepolia: "Sepolia",
+      usdc: "USDC",
     },
 
     recover: {
@@ -808,6 +877,41 @@ export const translations: Record<Language, TranslationsShape> = {
         "נראה שהמספר הישראלי הזה כבר מקושר למכשיר. אין צורך להפעיל אותו שוב.",
       alreadyActivatedSupport:
         "אם לדעתכם זו טעות, פנו לתמיכה ב־support@arnacon.com",
+    },
+
+    crypto: {
+      back: "חזרה לחנות",
+      kicker: "רשת בדיקה",
+      title: "תשלום בקריפטו",
+      lead: "אותה תוכנית ב-67%. USDC לפי מחיר האירו.",
+      stepChoose: "בחירה",
+      stepConnect: "חיבור",
+      stepReview: "סקירה",
+      stepPay: "תשלום",
+      continue: "סקירת הנעילה",
+      reviewTitle: "בדקו את הנעילה",
+      reviewLead: "הסכום הזה יוצא מהארנק לחוזה הנעילה.",
+      reviewEscrow: "הכסף ננעל בחוזה המנוי.",
+      reviewTerm: "שניים-עשר חודשים בתוכנית 67%.",
+      reviewFxUsdc: "USDC לפי מחיר האירו.",
+      reviewFxNative: "ETH או POL לפי שער חי.",
+      reviewAfter: "אחרי העסקה נספק את המספר.",
+      reviewClaim: "ואז חתימה אחת לקבלת ה-QR.",
+      changeSelection: "שינוי רשת או מטבע",
+      network: "רשת",
+      token: "מטבע",
+      walletOff: "אין ארנק מחובר",
+      connect: "חיבור",
+      connecting: "מתחברים…",
+      pay: (symbol) => `תשלום ב-${symbol}`,
+      paying: "אשרו בארנק",
+      quoteLoading: "מחשבים את הסכום…",
+      lock: (amount, symbol) => `נעילה של ${amount} ${symbol}`,
+      recover: "כבר שילמתם?",
+      recoverLink: "איתור הזמנה",
+      amoy: "Polygon Amoy",
+      sepolia: "Sepolia",
+      usdc: "USDC",
     },
 
     recover: {

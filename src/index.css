@@ -1739,3 +1739,347 @@ html[data-fb-banner="1"] .landing-sticky {
     display: none;
   }
 }
+
+.crypto-pay {
+  max-width: 36rem;
+  margin: 0 auto;
+  padding: 48px 24px 72px;
+}
+
+.crypto-pay h1,
+.crypto-pay h2 {
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.crypto-pay-back {
+  margin: 0 0 16px;
+  font-size: 0.8rem;
+}
+
+.crypto-pay-back a,
+.crypto-pay a {
+  color: inherit;
+  font-weight: 600;
+}
+
+.crypto-pay-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  width: 100%;
+  border-radius: 12px;
+  padding: 14px 24px;
+}
+
+.crypto-pay p {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.crypto-pay-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.crypto-pay-row button {
+  border: 1px solid var(--color-border);
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.crypto-pay-row button[aria-pressed="true"] {
+  border-color: var(--color-text);
+  background: var(--color-text);
+  color: #fff;
+}
+
+.crypto-pay .btn-primary {
+  margin-top: 8px;
+}
+
+.crypto-pay-error {
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: #b42318;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.crypto-checkout {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(88px + env(safe-area-inset-top, 0px)) 20px 40px;
+}
+
+.crypto-checkout-frame {
+  width: min(24.5rem, 100%);
+  padding: 28px 24px 32px;
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+}
+
+.crypto-checkout-back {
+  margin: 0 0 20px;
+  font-size: 0.8rem;
+}
+
+.crypto-checkout-back a {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.crypto-checkout-back button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.crypto-checkout-back button:hover {
+  color: var(--color-text);
+}
+
+.crypto-checkout-kicker {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.crypto-checkout h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.crypto-checkout-lead {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.crypto-checkout-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin: 22px 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.crypto-checkout-steps li {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.crypto-checkout-steps li::before {
+  content: "";
+  display: block;
+  height: 3px;
+  margin-bottom: 8px;
+  border-radius: 99px;
+  background: var(--color-border);
+}
+
+.crypto-checkout-steps li.is-done,
+.crypto-checkout-steps li.is-current {
+  color: var(--color-text);
+}
+
+.crypto-checkout-steps li.is-done::before,
+.crypto-checkout-steps li.is-current::before {
+  background: var(--color-text);
+}
+
+.crypto-checkout-wallet {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg);
+}
+
+.crypto-checkout-wallet-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #c4cdd6;
+}
+
+.crypto-checkout-wallet-dot.is-on {
+  background: #12b76a;
+}
+
+.crypto-checkout-wallet-copy {
+  flex: 1;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.crypto-checkout-wallet-copy strong {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.crypto-checkout-wallet-id {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.crypto-checkout-wallet-action {
+  flex: 0 0 auto;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.crypto-checkout-wallet-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.crypto-checkout-label {
+  display: block;
+  margin: 18px 0 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.crypto-checkout-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg);
+}
+
+.crypto-checkout-seg button {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 8px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.crypto-checkout-seg button[aria-pressed="true"] {
+  background: var(--color-text);
+  color: #fff;
+}
+
+.crypto-checkout-amount {
+  margin: 18px 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  min-height: 1.4em;
+}
+
+.crypto-checkout-amount.is-review {
+  font-size: 1.35rem;
+}
+
+.crypto-checkout-review-meta {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.crypto-checkout-how {
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crypto-checkout-how li {
+  margin: 0;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.crypto-checkout-how li:last-child {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.crypto-checkout .btn-primary {
+  margin-top: 22px;
+}
+
+.crypto-checkout-error {
+  display: block;
+  width: 100%;
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: inherit;
+  font-size: 0.85rem;
+  color: #b42318;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.crypto-checkout-recover {
+  margin: 14px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.crypto-checkout-recover a {
+  color: var(--color-text);
+  font-weight: 700;
+}

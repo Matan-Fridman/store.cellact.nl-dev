@@ -15,6 +15,7 @@ export const URLS = {
   ACTIVATE_URL:          `${BASE_URL}/secnum-activate-number`,
   RECOVERY_URL:          `${BASE_URL}/secnum-recovery`,
   STRIPE_URL:            `${BASE_URL}/payment-link-generator`,
+  CRYPTO_URL:             `${BASE_URL}/secnum-crypto-checkout`,
   ORDER_RESULT_URL:      `${BASE_URL}/secnum-order-result`,
   QR_CREATE_SESSION_URL: `${BASE_URL}/qr-login-create-session`,
   QR_CONFIRM_URL:        `${BASE_URL}/qr-login-confirm/confirm`,

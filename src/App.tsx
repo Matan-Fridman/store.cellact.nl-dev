@@ -9,6 +9,9 @@ import { ActivatePage } from "./pages/ActivatePage";
 import { PortPage } from "./pages/PortPage";
 import { PortCompletePage } from "./pages/PortCompletePage";
 import { RecoverPage } from "./pages/RecoverPage";
+import { CryptoWaitPage } from "./pages/CryptoWaitPage";
+import { CryptoRecoverPage } from "./pages/CryptoRecoverPage";
+import { CryptoPage } from "./pages/CryptoPage";
 import { initAnalytics, trackPageView } from "./lib/analytics";
 
 function AnalyticsTracker() {
@@ -42,6 +45,9 @@ export default function App() {
           <Route path="/port" element={<PortPage />} />
           <Route path="/port/complete" element={<PortCompletePage />} />
           <Route path="/recover" element={<RecoverPage />} />
+          <Route path="/crypto" element={<CryptoPage />} />
+          <Route path="/crypto/wait" element={<CryptoWaitPage />} />
+          <Route path="/crypto/recover" element={<CryptoRecoverPage />} />
         </Routes>
       </BrowserRouter>
     </LanguageProvider>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { HeroSection } from "../components/home/HeroSection";
 import { HowItWorks } from "../components/home/HowItWorks";
@@ -103,6 +103,14 @@ export function StorePage() {
         loading={loading}
         showCoupons={!facebookChrome}
       />
+
+      <section className="crypto-pay">
+        <h2>Pay with crypto</h2>
+        <p>PayMyEmail or MetaMask on Polygon Amoy or Sepolia.</p>
+        <Link to="/crypto" className="btn-primary crypto-pay-link">
+          Continue to crypto checkout
+        </Link>
+      </section>
 
       {showSticky && (
         <div className="landing-sticky">

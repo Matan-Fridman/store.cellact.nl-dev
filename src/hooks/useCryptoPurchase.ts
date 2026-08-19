@@ -1,0 +1,295 @@
+import { useCallback, useEffect, useState } from "react";
+import { ethers } from "ethers";
+import { createCryptoQuote, getCryptoStatus, type CryptoQuote } from "../services/api";
+import { useLanguage } from "../contexts/LanguageContext";
+import type { AsyncStatus } from "../types";
+
+const SUBSCRIBE_ABI = [
+  "function subscribe(bytes32 orderId, uint256 serviceId, address token, uint256 setupAmount, uint256[] periodAmounts, uint256 totalAmount, uint256 expiry, bytes signature, string orderRef) payable",
+];
+const ERC20_ABI = ["function approve(address spender, uint256 amount) returns (bool)"];
+
+export type EthereumProvider = {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  isPayMyEmail?: boolean;
+  on?: (event: string, handler: (...args: unknown[]) => void) => void;
+  removeListener?: (event: string, handler: (...args: unknown[]) => void) => void;
+};
+
+declare global {
+  interface Window {
+    ethereum?: EthereumProvider;
+  }
+}
+
+export type CryptoAsset = "native" | "usdc";
+export type CryptoChainId = 80002 | 11155111;
+
+export const CRYPTO_CHAINS: Record<
+  CryptoChainId,
+  {
+    chainId: string;
+    chainName: string;
+    nativeCurrency: { name: string; symbol: string; decimals: number };
+    rpcUrls: string[];
+    blockExplorerUrls: string[];
+  }
+> = {
+  80002: {
+    chainId: "0x13882",
+    chainName: "Polygon Amoy",
+    nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 },
+    rpcUrls: ["https://rpc-amoy.polygon.technology"],
+    blockExplorerUrls: ["https://amoy.polygonscan.com"],
+  },
+  11155111: {
+    chainId: "0xaa36a7",
+    chainName: "Sepolia",
+    nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+    rpcUrls: ["https://rpc.sepolia.org"],
+    blockExplorerUrls: ["https://sepolia.etherscan.io"],
+  },
+};
+
+export async function pickEthereum(): Promise<EthereumProvider> {
+  const announced: Array<{ info?: { rdns?: string }; provider: EthereumProvider }> = [];
+  const onAnnounce = (event: Event) => {
+    const detail = (event as CustomEvent).detail as {
+      info?: { rdns?: string };
+      provider: EthereumProvider;
+    };
+    if (detail?.provider) announced.push(detail);
+  };
+  window.addEventListener("eip6963:announceProvider", onAnnounce);
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+  await new Promise((resolve) => window.setTimeout(resolve, 80));
+  window.removeEventListener("eip6963:announceProvider", onAnnounce);
+  const pme = announced.find(
+    (item) => item.provider.isPayMyEmail || item.info?.rdns === "email.paymyemail.wallet",
+  );
+  const provider = pme?.provider || window.ethereum;
+  if (!provider) {
+    throw new Error("Install PayMyEmail or MetaMask to pay with crypto.");
+  }
+  return provider;
+}
+
+function providerErrorCode(err: unknown): number | undefined {
+  if (!err || typeof err !== "object") return undefined;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === "number" ? code : undefined;
+}
+
+export async function ensureChain(injected: EthereumProvider, chainId: CryptoChainId): Promise<void> {
+  const chain = CRYPTO_CHAINS[chainId];
+  try {
+    await injected.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: chain.chainId }],
+    });
+  } catch (err) {
+    const code = providerErrorCode(err);
+    if (code !== 4902 && code !== -32603) throw err;
+    await injected.request({
+      method: "wallet_addEthereumChain",
+      params: [chain],
+    });
+    await injected.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: chain.chainId }],
+    });
+  }
+}
+
+function waitPath(orderId: string, chainId: CryptoChainId, lang: "en" | "he"): string {
+  const base = import.meta.env.BASE_URL.endsWith("/")
+    ? import.meta.env.BASE_URL
+    : `${import.meta.env.BASE_URL}/`;
+  const params = new URLSearchParams({
+    order: orderId,
+    chain: String(chainId),
+    lang,
+  });
+  return `${base}crypto/wait?${params.toString()}`;
+}
+
+export function formatLockAmount(amount: string, symbol: string): string {
+  const decimals = symbol === "USDC" ? 6 : 18;
+  const raw = ethers.utils.formatUnits(amount, decimals);
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return raw;
+  if (symbol === "USDC") return value.toFixed(2);
+  return value.toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+function shortenAddress(address: string): string {
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
+
+function describeWallet(injected: EthereumProvider): string {
+  return injected.isPayMyEmail ? "PayMyEmail" : "Wallet";
+}
+
+function firstAccount(value: unknown): string | null {
+  if (!Array.isArray(value) || typeof value[0] !== "string" || value[0].length === 0) {
+    return null;
+  }
+  return value[0];
+}
+
+export function useCryptoPurchase() {
+  const { lang } = useLanguage();
+  const [status, setStatus] = useState<AsyncStatus>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [account, setAccount] = useState<string | null>(null);
+  const [walletName, setWalletName] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
+  const [quote, setQuote] = useState<CryptoQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+
+  const reset = useCallback(() => {
+    setStatus("idle");
+    setError(null);
+  }, []);
+
+  const rememberWallet = useCallback((injected: EthereumProvider, accounts: unknown) => {
+    setAccount(firstAccount(accounts));
+    setWalletName(describeWallet(injected));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let injected: EthereumProvider | undefined;
+    const onAccountsChanged = (...args: unknown[]) => {
+      setAccount(firstAccount(args[0]));
+    };
+
+    void (async () => {
+      try {
+        const provider = await pickEthereum();
+        if (cancelled) return;
+        injected = provider;
+        injected.on?.("accountsChanged", onAccountsChanged);
+        const accounts = await injected.request({ method: "eth_accounts" });
+        if (!cancelled) rememberWallet(injected, accounts);
+      } catch {
+        if (!cancelled) {
+          setAccount(null);
+          setWalletName(null);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      injected?.removeListener?.("accountsChanged", onAccountsChanged);
+    };
+  }, [rememberWallet]);
+
+  const loadQuote = useCallback(async (chainId: CryptoChainId, token: CryptoAsset) => {
+    setQuoteLoading(true);
+    setError(null);
+    try {
+      const next = await createCryptoQuote({ chainId, token });
+      setQuote(next);
+      return next;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Quote failed";
+      setQuote(null);
+      setError(message);
+      setStatus("error");
+      throw err;
+    } finally {
+      setQuoteLoading(false);
+    }
+  }, []);
+
+  const connect = useCallback(async () => {
+    setConnecting(true);
+    setError(null);
+    try {
+      const injected = await pickEthereum();
+      const accounts = await injected.request({ method: "eth_requestAccounts" });
+      rememberWallet(injected, accounts);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Wallet connect failed";
+      setError(message);
+      setStatus("error");
+    } finally {
+      setConnecting(false);
+    }
+  }, [rememberWallet]);
+
+  const initiate = useCallback(
+    async (chainId: CryptoChainId, token: CryptoAsset) => {
+      setStatus("loading");
+      setError(null);
+      try {
+        const injected = await pickEthereum();
+        const accounts = await injected.request({ method: "eth_requestAccounts" });
+        rememberWallet(injected, accounts);
+        await ensureChain(injected, chainId);
+        const web3 = new ethers.providers.Web3Provider(
+          injected as ethers.providers.ExternalProvider,
+        );
+        const signer = web3.getSigner();
+        const freshEnough = quote && quote.chainId === chainId && quote.expiry > Math.floor(Date.now() / 1000) + 30;
+        const paidQuote = freshEnough ? quote : await loadQuote(chainId, token);
+        const escrow = new ethers.Contract(paidQuote.escrow, SUBSCRIBE_ABI, signer);
+        if (paidQuote.token !== ethers.constants.AddressZero) {
+          const erc20 = new ethers.Contract(paidQuote.token, ERC20_ABI, signer);
+          const approve = await erc20.approve(paidQuote.escrow, paidQuote.totalAmount);
+          await approve.wait();
+        }
+        const tx = await escrow.subscribe(
+          paidQuote.orderIdBytes32,
+          paidQuote.serviceId,
+          paidQuote.token,
+          paidQuote.setupAmount,
+          paidQuote.periodAmounts,
+          paidQuote.totalAmount,
+          paidQuote.expiry,
+          paidQuote.signature,
+          paidQuote.orderId,
+          { value: paidQuote.token === ethers.constants.AddressZero ? paidQuote.totalAmount : 0 },
+        );
+        await tx.wait();
+        await getCryptoStatus({
+          orderId: paidQuote.orderId,
+          chainId: paidQuote.chainId,
+          lang: lang === "he" ? "he" : "en",
+        }).catch(() => undefined);
+        sessionStorage.setItem(
+          "secnum_crypto_wait",
+          JSON.stringify({
+            orderId: paidQuote.orderId,
+            chainId: paidQuote.chainId,
+            escrow: paidQuote.escrow,
+            txHash: tx.hash,
+          }),
+        );
+        window.location.assign(waitPath(paidQuote.orderId, chainId, lang === "he" ? "he" : "en"));
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Crypto checkout failed";
+        setError(message);
+        setStatus("error");
+      }
+    },
+    [lang, rememberWallet, quote, loadQuote],
+  );
+
+  return {
+    status,
+    error,
+    initiate,
+    reset,
+    connect,
+    connecting,
+    loadQuote,
+    quote,
+    quoteLoading,
+    account,
+    accountShort: account ? shortenAddress(account) : null,
+    walletName,
+  };
+}

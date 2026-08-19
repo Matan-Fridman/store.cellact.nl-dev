@@ -20,7 +20,8 @@ export function ActivatePage() {
 
   const token = searchParams.get("token");
   const purchaseLang = lang === "he" ? "he" : "en";
-  const isProd = !import.meta.env.DEV;
+  const apiBase = import.meta.env.VITE_BASE_URL || "";
+  const isProd = apiBase.includes("arnacon-production-gcp");
 
   useEffect(() => {
     if (!token) {

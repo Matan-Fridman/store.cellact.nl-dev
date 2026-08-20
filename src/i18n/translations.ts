@@ -190,7 +190,7 @@ type TranslationsShape = {
     reviewAfter: string;
     reviewClaim: string;
     changeSelection: string;
-    pay: (symbol: string) => string;
+    pay: (amount: string, symbol: string) => string;
     paying: string;
     recover: string;
     recoverLink: string;
@@ -198,6 +198,11 @@ type TranslationsShape = {
     perMonth: (amount: string, symbol: string) => string;
     introMonths: (amount: string, symbol: string, count: number) => string;
     lock: (amount: string, symbol: string) => string;
+    prepaidLine: string;
+    infoLabel: string;
+    infoTitle: string;
+    infoBody: string;
+    infoMore: string;
     amoy: string;
     sepolia: string;
     usdc: string;
@@ -266,6 +271,13 @@ type TranslationsShape = {
     whySameAddress: string;
     whyCodeTitle: string;
     whyCodeLead: string;
+    whySubscribeTitle: string;
+    whySubscribeLead: string;
+    whyExampleTitle: string;
+    whyExampleLead: string;
+    whyExampleNow: string;
+    whyExampleBack: string;
+    whyExampleNote: string;
     whyBack: string;
     waitTitle: string;
     waitPending: string;
@@ -609,12 +621,18 @@ export const translations: Record<Language, TranslationsShape> = {
       walletOff: "No wallet connected",
       connect: "Connect",
       connecting: "Connecting…",
-      pay: (symbol) => `Pay with ${symbol}`,
+      pay: (amount, symbol) => `Pay ${amount} ${symbol}`,
       paying: "Confirm in your wallet",
-      quoteLoading: "Getting the monthly price…",
+      quoteLoading: "Getting the total…",
       perMonth: (amount, symbol) => `${amount} ${symbol} / month`,
       introMonths: (amount, symbol, count) => `First ${count} months: ${amount} ${symbol} / month`,
       lock: (amount, symbol) => `Lock ${amount} ${symbol}`,
+      prepaidLine: "12 months in advance. Cancel anytime.",
+      infoLabel: "How prepaid escrow works",
+      infoTitle: "Prepaid escrow",
+      infoBody:
+        "The total locks in SubscriptionEscrow, not with us. Twelve 30-day periods. Cancel returns unused months in that transaction. This month stays paid.",
+      infoMore: "Read more",
       recover: "Already paid?",
       recoverLink: "Find your order",
       amoy: "Polygon Amoy",
@@ -677,23 +695,35 @@ export const translations: Record<Language, TranslationsShape> = {
       copied: "Copied",
       openExplorer: "Explorer",
       whyCta: "Why we lock it this way",
-      whyTitle: "Why escrow, not monthly billing",
-      whyLead: "A monthly crypto charge fails. Empty wallet, missed tx, dead number, then you wait.",
-      whyRefuseTitle: "The thing we refuse",
+      whyTitle: "You pay twelve months. You can leave in one tap.",
+      whyLead:
+        "Crypto cannot bill you every month. Empty wallet, missed signature, dead number. So we lock the year once, in a contract you can read, and unused months come back when you cancel.",
+      whyRefuseTitle: "Why not charge monthly?",
       whyRefuse:
-        "Don't make a live number depend on you remembering to pay every 30 days. Don't pause service while a transaction confirms.",
-      whyLockTitle: "The lock",
+        "A live phone number cannot wait for you to remember a transaction. If the wallet is empty, or MetaMask is rate-limited, the number dies. We refuse that product.",
+      whyLockTitle: "What the lock actually is",
       whyLock:
-        "You lock setup plus twelve 30-day periods. Each finished period vests to the provider. You don't sign every month.",
-      whyCancelTitle: "Cancel",
+        "Your wallet sends setup plus twelve 30-day periods into SubscriptionEscrow. The contract holds the funds. Each finished period vests to the provider. You do not sign again next month.",
+      whyExampleTitle: "A year on a timeline",
+      whyExampleLead: "You cancel in month 1. Here is the split.",
+      whyExampleNow: "This month stays paid",
+      whyExampleBack: "Unused months return now",
+      whyExampleNote:
+        "Cancel on day 40. Period 1 is spent. Periods 2–12 refund in that same transaction. The number stays live until period 1 ends. We do not keep the unused year.",
+      whyCancelTitle: "Cancel is a refund, not a ticket",
       whyCancelBody:
-        "Unused future periods return to you in that transaction. The current period is spent. The number stays live until that period ends.",
-      whyTrustTitle: "Verify it",
-      whyTrust: "The UI is not the source of truth. Read the deployed contract.",
-      whyContractTitle: "Deployed contract",
-      whySameAddress: "Same bytecode on Amoy and Sepolia.",
-      whyCodeTitle: "The cancel code",
-      whyCodeLead: "cancel() refunds unused periods immediately. That is the product.",
+        "cancel() is public. Only the paying wallet can call it. Unused future periods return immediately. The current period is the cost of the month you already used.",
+      whyTrustTitle: "Do not trust this page",
+      whyTrust:
+        "This article is a map. The deployed bytecode is the product. Same address on Polygon Amoy and Sepolia. Open it on the explorer and read cancel().",
+      whyContractTitle: "Contract on each chain",
+      whySameAddress: "Same bytecode. Same address. Two testnets.",
+      whySubscribeTitle: "What subscribe() locks",
+      whySubscribeLead:
+        "The quote is signed off-chain. The contract checks the signer, the total, and that this order was never used. Then it pulls the full amount.",
+      whyCodeTitle: "What cancel() returns",
+      whyCodeLead:
+        "Unused periods are zeroed and pushed back to you in the same call. That is the product, not a promise in the UI.",
       whyBack: "Back to checkout",
       waitTitle: "Waiting on escrow",
       waitPending: "Waiting for the subscribe transaction…",
@@ -1064,12 +1094,18 @@ export const translations: Record<Language, TranslationsShape> = {
       walletOff: "אין ארנק מחובר",
       connect: "חיבור",
       connecting: "מתחברים…",
-      pay: (symbol) => `תשלום ב-${symbol}`,
+      pay: (amount, symbol) => `תשלום ${amount} ${symbol}`,
       paying: "אשרו בארנק",
-      quoteLoading: "מחשבים מחיר לחודש…",
+      quoteLoading: "מחשבים את הסכום…",
       perMonth: (amount, symbol) => `${amount} ${symbol} לחודש`,
       introMonths: (amount, symbol, count) => `${count} החודשים הראשונים: ${amount} ${symbol} לחודש`,
       lock: (amount, symbol) => `נעילה של ${amount} ${symbol}`,
+      prepaidLine: "שניים-עשר חודשים מראש. ביטול בכל רגע.",
+      infoLabel: "איך נעילה מראש עובדת",
+      infoTitle: "אסקרו מראש",
+      infoBody:
+        "הסכום ננעל ב-SubscriptionEscrow, לא אצלנו. שתים-עשרה תקופות של 30 יום. ביטול מחזיר חודשים שלא נוצלו באותה עסקה. החודש הזה נשאר משולם.",
+      infoMore: "לקריאה נוספת",
       recover: "כבר שילמתם?",
       recoverLink: "איתור הזמנה",
       amoy: "Polygon Amoy",
@@ -1132,23 +1168,35 @@ export const translations: Record<Language, TranslationsShape> = {
       copied: "הועתק",
       openExplorer: "אקספלורר",
       whyCta: "למה נועלים ככה",
-      whyTitle: "למה אסקרו, לא חיוב חודשי",
-      whyLead: "חיוב קריפטו כל חודש נכשל. ארנק ריק, עסקה שפספסתם, מספר מת, ואז מחכים.",
-      whyRefuseTitle: "מה לא עושים",
+      whyTitle: "משלמים שניים-עשר חודשים. יוצאים בלחיצה.",
+      whyLead:
+        "קריפטו לא יודע לחייב כל חודש. ארנק ריק, חתימה שפספסתם, מספר מת. לכן נועלים את השנה פעם אחת, בחוזה שאפשר לקרוא, וחודשים שלא נוצלו חוזרים בביטול.",
+      whyRefuseTitle: "למה לא כל חודש?",
       whyRefuse:
-        "לא תולים מספר חי על זה שתזכרו לשלם כל 30 יום. לא עוצרים שירות בזמן שעסקה ממתינה לאישור.",
-      whyLockTitle: "הנעילה",
+        "מספר חי לא יכול לחכות שתזכרו לעשות עסקה. אם הארנק ריק, או ש-MetaMask מוגבל, המספר מת. את זה אנחנו לא מוכרים.",
+      whyLockTitle: "מה הנעילה באמת",
       whyLock:
-        "נועלים הקמה ועוד שתים-עשרה תקופות של 30 יום. כל תקופה שנגמרה עוברת לספק. אין חתימה כל חודש.",
-      whyCancelTitle: "ביטול",
+        "הארנק שולח הקמה ועוד שתים-עשרה תקופות של 30 יום ל-SubscriptionEscrow. החוזה מחזיק את הכסף. כל תקופה שנגמרה עוברת לספק. אין חתימה בחודש הבא.",
+      whyExampleTitle: "שנה על ציר זמן",
+      whyExampleLead: "מבטלים בחודש הראשון. ככה מתחלק.",
+      whyExampleNow: "החודש הזה נשאר משולם",
+      whyExampleBack: "חודשים שלא נוצלו חוזרים עכשיו",
+      whyExampleNote:
+        "ביטול ביום 40. תקופה 1 שולמה. תקופות 2–12 חוזרות באותה עסקה. המספר חי עד סוף תקופה 1. אנחנו לא שומרים את השנה שלא נוצלה.",
+      whyCancelTitle: "ביטול הוא החזר, לא כרטיס",
       whyCancelBody:
-        "חודשים עתידיים חוזרים אליכם באותה עסקה. החודש הנוכחי נשאר משולם. המספר חי עד סוף התקופה.",
-      whyTrustTitle: "אל תסמכו על המסך",
-      whyTrust: "הממשק לא קובע. קראו את החוזה שפורסם.",
-      whyContractTitle: "החוזה שפורסם",
-      whySameAddress: "אותו בייטקוד ב-Amoy וב-Sepolia.",
-      whyCodeTitle: "קוד הביטול",
-      whyCodeLead: "cancel מחזיר יתרה מיד. זה המוצר.",
+        "cancel הוא פונקציה ציבורית. רק הארנק ששילם יכול לקרוא לה. תקופות עתידיות חוזרות מיד. התקופה הנוכחית היא מחיר החודש שכבר השתמשתם בו.",
+      whyTrustTitle: "אל תסמכו על הדף הזה",
+      whyTrust:
+        "המאמר הזה מפה. הבייטקוד שפורסם הוא המוצר. אותה כתובת ב-Polygon Amoy וב-Sepolia. פתחו באקספלורר וקראו את cancel.",
+      whyContractTitle: "החוזה בכל רשת",
+      whySameAddress: "אותו בייטקוד. אותה כתובת. שתי רשתות בדיקה.",
+      whySubscribeTitle: "מה subscribe נועל",
+      whySubscribeLead:
+        "המחיר נחתם מחוץ לשרשרת. החוזה בודק את החותם, את הסכום, ושלהזמנה הזו לא השתמשו. ואז מושך את הסכום המלא.",
+      whyCodeTitle: "מה cancel מחזיר",
+      whyCodeLead:
+        "תקופות שלא נוצלו מתאפסות וחוזרות אליכם באותה קריאה. זה המוצר, לא הבטחה במסך.",
       whyBack: "חזרה לתשלום",
       waitTitle: "ממתינים לאסקרו",
       waitPending: "ממתינים לעסקת ה-subscribe…",

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
@@ -6,6 +6,7 @@ import { useLanguage } from "../contexts/LanguageContext";
 import {
   CRYPTO_ESCROW,
   escrowExplorerUrl,
+  formatLockAmount,
   quoteMonthly,
   shortHex,
   useCryptoPurchase,
@@ -13,10 +14,44 @@ import {
   type CryptoChainId,
 } from "../hooks/useCryptoPurchase";
 
-const ESCROW_CANCEL_CODE = `function cancel(bytes32 orderId) external whenNotPaused nonReentrant {
+const CHAINS: CryptoChainId[] = [80002, 11155111];
+
+const SUBSCRIBE_SNIPPET = `function subscribe(
+    bytes32 orderId,
+    uint256 serviceId,
+    address token,
+    uint256 setupAmount,
+    uint256[] calldata periodAmounts,
+    uint256 totalAmount,
+    uint256 expiry,
+    bytes calldata signature,
+    string calldata orderRef
+) external payable {
+    if (orderUsed[orderId]) revert OrderUsed();
+    if (block.timestamp > expiry) revert ExpiredQuote();
+    if (_recover(digest, signature) != quoteSigner) revert BadQuoteSigner();
+
+    if (token == address(0)) {
+        if (msg.value != totalAmount) revert WrongPayment();
+    } else {
+        _pull(token, msg.sender, totalAmount);
+    }
+
+    orderUsed[orderId] = true;
+    subscriptions[orderId] = Subscription({
+        payer: msg.sender,
+        start: uint64(block.timestamp),
+        cancelEffective: 0,
+        ...
+    });
+}`;
+
+const CANCEL_SNIPPET = `function cancel(bytes32 orderId) external {
     Subscription storage sub = subscriptions[orderId];
     if (msg.sender != sub.payer) revert NotPayer();
-    // cancelEffective = end of current 30-day period
+    if (sub.cancelEffective != 0) revert CancelAlreadySet();
+
+    // cancelEffective = end of the current 30-day period
     sub.cancelEffective = effective;
 
     uint256 unusedFrom = _unusedFrom(sub);
@@ -32,51 +67,186 @@ const ESCROW_CANCEL_CODE = `function cancel(bytes32 orderId) external whenNotPau
     }
 }`;
 
-function EscrowContract({
-  chainId,
-  copy,
-}: {
-  chainId: CryptoChainId;
-  copy: {
-    contractLabel: string;
-    copyAddress: string;
-    copied: string;
-    amoy: string;
-    sepolia: string;
-    whySameAddress: string;
-  };
-}) {
-  const [copied, setCopied] = useState(false);
-  const address = CRYPTO_ESCROW[chainId];
+type CryptoCopy = ReturnType<typeof useLanguage>["t"]["crypto"];
 
-  async function copyAddress() {
-    await navigator.clipboard.writeText(address);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1200);
+function EscrowContracts({ copy }: { copy: CryptoCopy }) {
+  const [copied, setCopied] = useState<CryptoChainId | null>(null);
+
+  async function copyAddress(chainId: CryptoChainId) {
+    await navigator.clipboard.writeText(CRYPTO_ESCROW[chainId]);
+    setCopied(chainId);
+    window.setTimeout(() => setCopied(null), 1200);
   }
 
   return (
-    <div className="crypto-checkout-contract">
-      <p className="crypto-checkout-contract-label">{copy.contractLabel}</p>
-      <p className="crypto-checkout-contract-addr" dir="ltr">
-        {shortHex(address)}
-      </p>
-      <p className="crypto-checkout-contract-addr is-full" dir="ltr">
-        {address}
-      </p>
-      <div className="crypto-checkout-contract-actions">
-        <button type="button" onClick={() => void copyAddress()}>
-          {copied ? copy.copied : copy.copyAddress}
-        </button>
-        <a href={escrowExplorerUrl(80002)} target="_blank" rel="noreferrer">
-          {copy.amoy}
-        </a>
-        <a href={escrowExplorerUrl(11155111)} target="_blank" rel="noreferrer">
-          {copy.sepolia}
-        </a>
-      </div>
-      <p className="crypto-checkout-contract-note">{copy.whySameAddress}</p>
+    <div className="crypto-article-chains">
+      {CHAINS.map((chainId) => {
+        const address = CRYPTO_ESCROW[chainId];
+        const name = chainId === 80002 ? copy.amoy : copy.sepolia;
+        return (
+          <div key={chainId} className="crypto-article-chain">
+            <p className="crypto-article-chain-name">{name}</p>
+            <p className="crypto-article-chain-addr" dir="ltr">
+              {shortHex(address)}
+            </p>
+            <p className="crypto-article-chain-addr is-full" dir="ltr">
+              {address}
+            </p>
+            <div className="crypto-article-chain-actions">
+              <button type="button" onClick={() => void copyAddress(chainId)}>
+                {copied === chainId ? copy.copied : copy.copyAddress}
+              </button>
+              <a href={escrowExplorerUrl(chainId)} target="_blank" rel="noreferrer">
+                {copy.openExplorer}
+              </a>
+            </div>
+          </div>
+        );
+      })}
+      <p className="crypto-article-chain-note">{copy.whySameAddress}</p>
     </div>
+  );
+}
+
+function EscrowInfo({ copy }: { copy: CryptoCopy }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const leaveTimer = useRef(0);
+  const [open, setOpen] = useState(false);
+  const [pinned, setPinned] = useState(false);
+
+  function cancelLeave() {
+    window.clearTimeout(leaveTimer.current);
+  }
+
+  function scheduleLeave() {
+    cancelLeave();
+    leaveTimer.current = window.setTimeout(() => {
+      if (!pinned) setOpen(false);
+    }, 220);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (event: MouseEvent) => {
+      if (!wrapRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+        setPinned(false);
+      }
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        setPinned(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  useEffect(() => () => window.clearTimeout(leaveTimer.current), []);
+
+  return (
+    <div
+      className="crypto-info"
+      ref={wrapRef}
+      onMouseEnter={() => {
+        cancelLeave();
+        setOpen(true);
+      }}
+      onMouseLeave={scheduleLeave}
+    >
+      <button
+        type="button"
+        className="crypto-info-btn"
+        aria-label={copy.infoLabel}
+        aria-expanded={open}
+        aria-controls="crypto-escrow-info"
+        onClick={() => {
+          if (pinned) {
+            setPinned(false);
+            setOpen(false);
+            return;
+          }
+          setPinned(true);
+          setOpen(true);
+        }}
+      >
+        i
+      </button>
+      {open && (
+        <div className="crypto-info-pop" id="crypto-escrow-info" role="dialog" aria-label={copy.infoTitle}>
+          <p className="crypto-info-title">{copy.infoTitle}</p>
+          <p>{copy.infoBody}</p>
+          <Link to="/crypto/why" onClick={() => setOpen(false)}>
+            {copy.infoMore}
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WhyArticle({ copy }: { copy: CryptoCopy }) {
+  return (
+    <Layout hideAppStoreBadges>
+      <section className="crypto-article-page">
+        <article className="crypto-article">
+          <p className="crypto-checkout-back">
+            <Link to="/crypto">{copy.whyBack}</Link>
+          </p>
+          <p className="crypto-article-kicker">{copy.kicker}</p>
+          <h1>{copy.whyTitle}</h1>
+          <p className="crypto-article-dek">{copy.whyLead}</p>
+
+          <h2>{copy.whyRefuseTitle}</h2>
+          <p>{copy.whyRefuse}</p>
+
+          <h2>{copy.whyLockTitle}</h2>
+          <p>{copy.whyLock}</p>
+
+          <h2>{copy.whyExampleTitle}</h2>
+          <p>{copy.whyExampleLead}</p>
+          <ol className="crypto-article-months" aria-hidden="true">
+            {Array.from({ length: 12 }, (_, index) => (
+              <li key={index} className={index === 0 ? "is-now" : "is-back"}>
+                {index + 1}
+              </li>
+            ))}
+          </ol>
+          <ul className="crypto-article-legend">
+            <li className="is-now">{copy.whyExampleNow}</li>
+            <li className="is-back">{copy.whyExampleBack}</li>
+          </ul>
+          <p className="crypto-article-callout is-back">{copy.whyExampleNote}</p>
+
+          <h2>{copy.whyCancelTitle}</h2>
+          <p>{copy.whyCancelBody}</p>
+          <p className="crypto-article-callout is-now">{copy.factLive}</p>
+          <p className="crypto-article-callout is-lock">{copy.factLock}</p>
+
+          <h2>{copy.whyTrustTitle}</h2>
+          <p>{copy.whyTrust}</p>
+          <h2>{copy.whyContractTitle}</h2>
+          <EscrowContracts copy={copy} />
+
+          <h2>{copy.whySubscribeTitle}</h2>
+          <p>{copy.whySubscribeLead}</p>
+          <pre dir="ltr">
+            <code>{SUBSCRIBE_SNIPPET}</code>
+          </pre>
+
+          <h2>{copy.whyCodeTitle}</h2>
+          <p>{copy.whyCodeLead}</p>
+          <pre dir="ltr">
+            <code>{CANCEL_SNIPPET}</code>
+          </pre>
+        </article>
+      </section>
+    </Layout>
   );
 }
 
@@ -98,6 +268,7 @@ export function CryptoPage() {
       ? crypto.quote
       : null;
   const monthly = quoteReady ? quoteMonthly(quoteReady) : null;
+  const total = quoteReady ? formatLockAmount(quoteReady.totalAmount, expectedSymbol) : null;
 
   useEffect(() => {
     if (isWhy) return;
@@ -105,37 +276,7 @@ export function CryptoPage() {
   }, [chainId, asset, crypto.loadQuote, isWhy]);
 
   if (isWhy) {
-    return (
-      <Layout hideAppStoreBadges>
-        <section className="crypto-explain-page">
-          <div className="crypto-checkout-frame is-doc">
-            <p className="crypto-checkout-back">
-              <Link to="/crypto">{copy.whyBack}</Link>
-            </p>
-            <p className="crypto-checkout-kicker">{copy.kicker}</p>
-            <h1>{copy.whyTitle}</h1>
-            <p className="crypto-checkout-lead">{copy.whyLead}</p>
-            <article className="crypto-why">
-              <h2>{copy.whyRefuseTitle}</h2>
-              <p>{copy.whyRefuse}</p>
-              <h2>{copy.whyLockTitle}</h2>
-              <p>{copy.whyLock}</p>
-              <h2>{copy.whyCancelTitle}</h2>
-              <p>{copy.whyCancelBody}</p>
-              <h2>{copy.whyTrustTitle}</h2>
-              <p>{copy.whyTrust}</p>
-              <h2>{copy.whyContractTitle}</h2>
-              <EscrowContract chainId={chainId} copy={copy} />
-              <h2>{copy.whyCodeTitle}</h2>
-              <p>{copy.whyCodeLead}</p>
-              <pre dir="ltr">
-                <code>{ESCROW_CANCEL_CODE}</code>
-              </pre>
-            </article>
-          </div>
-        </section>
-      </Layout>
-    );
+    return <WhyArticle copy={copy} />;
   }
 
   return (
@@ -146,19 +287,6 @@ export function CryptoPage() {
             <Link to="/">{copy.back}</Link>
           </p>
           <h1>{copy.title}</h1>
-
-          <p className="crypto-checkout-amount">
-            {crypto.quoteLoading && !monthly
-              ? copy.quoteLoading
-              : monthly
-                ? copy.perMonth(monthly.monthly, paySymbol)
-                : "\u00a0"}
-          </p>
-          {monthly?.intro && (
-            <p className="crypto-checkout-review-meta">
-              {copy.introMonths(monthly.intro, paySymbol, monthly.introCount)}
-            </p>
-          )}
 
           <div className="crypto-checkout-wallet">
             <span
@@ -229,6 +357,30 @@ export function CryptoPage() {
             </button>
           </div>
 
+          <div className="crypto-checkout-charge">
+            <p className="crypto-checkout-amount is-review">
+              {crypto.quoteLoading && !total
+                ? copy.quoteLoading
+                : total
+                  ? `${total} ${paySymbol}`
+                  : "\u00a0"}
+            </p>
+            {monthly && (
+              <p className="crypto-checkout-review-meta">
+                {copy.perMonth(monthly.monthly, paySymbol)}
+              </p>
+            )}
+            {monthly?.intro && (
+              <p className="crypto-checkout-review-meta">
+                {copy.introMonths(monthly.intro, paySymbol, monthly.introCount)}
+              </p>
+            )}
+            <p className="crypto-checkout-prepaid">
+              <span>{copy.prepaidLine}</span>
+              <EscrowInfo copy={copy} />
+            </p>
+          </div>
+
           {crypto.error && (
             <button type="button" className="crypto-checkout-error" onClick={crypto.reset}>
               {crypto.error === "expired_quote"
@@ -242,9 +394,9 @@ export function CryptoPage() {
           <Button
             onClick={() => void crypto.initiate(chainId, asset)}
             loading={loading}
-            disabled={loading || !monthly}
+            disabled={loading || !total}
           >
-            {loading ? copy.paying : copy.pay(paySymbol)}
+            {loading ? copy.paying : total ? copy.pay(total, paySymbol) : copy.pay("—", paySymbol)}
           </Button>
 
           <p className="crypto-checkout-recover">

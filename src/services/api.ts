@@ -12,10 +12,14 @@ class ApiError extends Error {
   }
 }
 
-async function post<T>(url: string, body: Record<string, unknown>): Promise<T> {
+async function post<T>(
+  url: string,
+  body: Record<string, unknown>,
+  timeoutMs = 20_000,
+): Promise<T> {
   let res: Response;
   const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), 20000);
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
     res = await fetch(url, {
       method: "POST",
@@ -23,8 +27,16 @@ async function post<T>(url: string, body: Record<string, unknown>): Promise<T> {
       body: JSON.stringify(body),
       signal: controller.signal,
     });
-  } catch {
-    throw new ApiError("Failed to reach checkout server", 0);
+  } catch (err) {
+    const aborted =
+      (err instanceof DOMException && err.name === "AbortError") ||
+      (err instanceof Error && err.name === "AbortError");
+    throw new ApiError(
+      aborted
+        ? "Server is still working. Wait before trying again — your number may already be installing."
+        : "Failed to reach checkout server",
+      0,
+    );
   } finally {
     window.clearTimeout(timer);
   }
@@ -132,12 +144,16 @@ export function activateNumber(
   owner: string,
 ): Promise<ActivateResponse> {
   const { API_URL } = getApiConfig();
-  return post<ActivateResponse>(API_URL, {
-    action: "activate",
-    userSecret,
-    label,
-    owner,
-  });
+  return post<ActivateResponse>(
+    API_URL,
+    {
+      action: "activate",
+      userSecret,
+      label,
+      owner,
+    },
+    240_000,
+  );
 }
 
 export interface GroupMembersResponse {
@@ -168,7 +184,7 @@ export function activateWithProof(
   web3identity: string,
 ): Promise<ActivateResponse> {
   const { ACTIVATE_URL } = getApiConfig();
-  return post<ActivateResponse>(ACTIVATE_URL, { proof, label, web3identity });
+  return post<ActivateResponse>(ACTIVATE_URL, { proof, label, web3identity }, 240_000);
 }
 
 export type RecoveryRequestResult = {
@@ -203,11 +219,15 @@ export function completeRecovery(
   web3identity: string,
 ): Promise<RecoveryCompleteResult> {
   const { RECOVERY_URL } = getApiConfig();
-  return post<RecoveryCompleteResult>(RECOVERY_URL, {
-    action: "complete",
-    token,
-    web3identity,
-  });
+  return post<RecoveryCompleteResult>(
+    RECOVERY_URL,
+    {
+      action: "complete",
+      token,
+      web3identity,
+    },
+    240_000,
+  );
 }
 
 export interface CryptoQuote {

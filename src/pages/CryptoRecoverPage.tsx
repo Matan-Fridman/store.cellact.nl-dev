@@ -15,6 +15,7 @@ import {
   pickEthereum,
   readEscrowSettlement,
   sendEscrowPayerTx,
+  signAndRelayCancel,
   settlementFromOnchain,
   ensureChain,
   type CryptoChainId,
@@ -353,7 +354,11 @@ export function CryptoRecoverPage() {
     setAction({ orderId: order.orderId, kind: method === "cancel" ? "cancel" : "withdraw" });
     setError(null);
     try {
-      await sendEscrowPayerTx(order.chainId, order.escrow, order.idBytes32, method);
+      if (method === "cancel") {
+        await signAndRelayCancel(order.chainId, order.escrow, order.orderId, order.idBytes32);
+      } else {
+        await sendEscrowPayerTx(order.chainId, order.escrow, order.idBytes32, method);
+      }
       if (method === "cancel" && payerRef.current) {
         await listCryptoOrders(payerRef.current).catch(() => undefined);
       }

@@ -712,7 +712,7 @@ export const translations: Record<Language, TranslationsShape> = {
         "Cancel on day 40. Period 1 is spent. Periods 2–12 refund in that same transaction. The number stays live until period 1 ends. We do not keep the unused year.",
       whyCancelTitle: "Cancel is a refund, not a ticket",
       whyCancelBody:
-        "cancel() is public. Only the paying wallet can call it. Unused future periods return immediately. The current period is the cost of the month you already used.",
+        "The paying wallet signs Cancel(orderId, deadline). A relayer can submit and pay gas. Unused future periods return immediately to you. cancel() stays on the contract if you want to submit it yourself.",
       whyTrustTitle: "Do not trust this page",
       whyTrust:
         "This article is a map. The deployed bytecode is the product. Same address on Polygon Amoy and Sepolia. Open it on the explorer and read cancel().",
@@ -723,7 +723,7 @@ export const translations: Record<Language, TranslationsShape> = {
         "The quote is signed off-chain. The contract checks the signer, the total, and that this order was never used. Then it pulls the full amount.",
       whyCodeTitle: "What cancel() returns",
       whyCodeLead:
-        "Unused periods are zeroed and pushed back to you in the same call. That is the product, not a promise in the UI.",
+        "Unused periods are zeroed and pushed back to you in the same call. cancelWithSig is the same refund; a relayer pays the gas.",
       whyBack: "Back to checkout",
       waitTitle: "Waiting on escrow",
       waitPending: "Waiting for the subscribe transaction…",
@@ -1185,7 +1185,7 @@ export const translations: Record<Language, TranslationsShape> = {
         "ביטול ביום 40. תקופה 1 שולמה. תקופות 2–12 חוזרות באותה עסקה. המספר חי עד סוף תקופה 1. אנחנו לא שומרים את השנה שלא נוצלה.",
       whyCancelTitle: "ביטול הוא החזר, לא כרטיס",
       whyCancelBody:
-        "cancel הוא פונקציה ציבורית. רק הארנק ששילם יכול לקרוא לה. תקופות עתידיות חוזרות מיד. התקופה הנוכחית היא מחיר החודש שכבר השתמשתם בו.",
+        "הארנק ששילם חותם על Cancel. רילייר יכול לשלוח ולשלם גז. חודשים שלא נוצלו חוזרים אליכם מיד. cancel נשאר בחוזה אם תרצו לשלוח בעצמכם.",
       whyTrustTitle: "אל תסמכו על הדף הזה",
       whyTrust:
         "המאמר הזה מפה. הבייטקוד שפורסם הוא המוצר. אותה כתובת ב-Polygon Amoy וב-Sepolia. פתחו באקספלורר וקראו את cancel.",
@@ -1196,7 +1196,7 @@ export const translations: Record<Language, TranslationsShape> = {
         "המחיר נחתם מחוץ לשרשרת. החוזה בודק את החותם, את הסכום, ושלהזמנה הזו לא השתמשו. ואז מושך את הסכום המלא.",
       whyCodeTitle: "מה cancel מחזיר",
       whyCodeLead:
-        "תקופות שלא נוצלו מתאפסות וחוזרות אליכם באותה קריאה. זה המוצר, לא הבטחה במסך.",
+        "תקופות שלא נוצלו מתאפסות וחוזרות אליכם באותה קריאה. cancelWithSig הוא אותו החזר; רילייר משלם את הגז.",
       whyBack: "חזרה לתשלום",
       waitTitle: "ממתינים לאסקרו",
       waitPending: "ממתינים לעסקת ה-subscribe…",

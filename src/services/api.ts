@@ -278,3 +278,16 @@ export function claimCryptoActivation(params: {
   const { CRYPTO_URL } = getApiConfig();
   return post<{ token: string }>(`${CRYPTO_URL.replace(/\/$/, "")}/claim`, params);
 }
+
+export function relayCryptoCancel(params: {
+  orderId: string;
+  chainId: number;
+  deadline: number;
+  signature: string;
+}): Promise<{ txHash: string; cancelEffective: number }> {
+  const { CRYPTO_URL } = getApiConfig();
+  return post<{ txHash: string; cancelEffective: number }>(
+    `${CRYPTO_URL.replace(/\/$/, "")}/cancel`,
+    params,
+  );
+}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ethers } from "ethers";
-import { createCryptoQuote, getCryptoStatus, type CryptoQuote } from "../services/api";
+import { createCryptoQuote, getCryptoStatus, relayCryptoCancel, type CryptoQuote } from "../services/api";
 import { useLanguage } from "../contexts/LanguageContext";
 import type { AsyncStatus } from "../types";
 
@@ -443,6 +443,46 @@ export async function sendEscrowPayerTx(
       throw mapped;
     }
     throw err;
+  }
+}
+
+const CANCEL_TYPES = {
+  Cancel: [
+    { name: "orderId", type: "bytes32" },
+    { name: "deadline", type: "uint256" },
+  ],
+};
+
+export async function signAndRelayCancel(
+  chainId: CryptoChainId,
+  escrow: string,
+  orderId: string,
+  idBytes32: string,
+): Promise<void> {
+  const injected = await pickEthereum();
+  await ensureChain(injected, chainId);
+  const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
+  const deadline = Math.floor(Date.now() / 1000) + 600;
+  const signature = await web3.getSigner()._signTypedData(
+    { name: "SubscriptionEscrow", version: "1", chainId, verifyingContract: escrow },
+    CANCEL_TYPES,
+    { orderId: idBytes32, deadline },
+  );
+  try {
+    await relayCryptoCancel({ orderId, chainId, deadline, signature });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "";
+    if (/already_cancelled/i.test(message)) {
+      const mapped = new Error("already_cancelled");
+      mapped.name = "EscrowTxError";
+      throw mapped;
+    }
+    if (/not_payer/i.test(message)) {
+      const mapped = new Error("not_payer");
+      mapped.name = "EscrowTxError";
+      throw mapped;
+    }
+    await sendEscrowPayerTx(chainId, escrow, idBytes32, "cancel");
   }
 }
 

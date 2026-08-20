@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { ethers } from "ethers";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
@@ -22,6 +23,15 @@ type WaitSession = {
   txHash?: string;
 };
 
+type Phase = "work" | "done" | "ready";
+
+const fade = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+  transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const },
+};
+
 export function CryptoWaitPage() {
   const { t, lang: uiLang } = useLanguage();
   const copy = t.crypto;
@@ -33,8 +43,8 @@ export function CryptoWaitPage() {
   const chainId = Number(params.get("chain") || parsed?.chainId || 0) as CryptoChainId;
   const lang = params.get("lang") === "he" || uiLang === "he" ? "he" : "en";
   const txHash = parsed?.txHash || "";
-  const [message, setMessage] = useState(copy.waitPending);
-  const [ready, setReady] = useState(false);
+  const [phase, setPhase] = useState<Phase>("work");
+  const [paid, setPaid] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [signing, setSigning] = useState(false);
   const [escrow, setEscrow] = useState(parsed?.escrow || "");
@@ -52,12 +62,12 @@ export function CryptoWaitPage() {
         if (cancelled) return;
         if (status.escrow) setEscrow(status.escrow);
         if (status.provisioned) {
-          setReady(true);
-          setMessage(copy.waitReady);
+          setPaid(true);
+          setPhase((current) => (current === "ready" ? "ready" : "done"));
           window.clearInterval(timer);
           return;
         }
-        setMessage(status.paid ? copy.waitPaid : copy.waitPending);
+        if (status.paid) setPaid(true);
       } catch (err) {
         if (cancelled) return;
         const status =
@@ -66,7 +76,7 @@ export function CryptoWaitPage() {
             : 0;
         if (status >= 500 || status === 0) {
           setError(null);
-          setMessage(copy.waitPaid);
+          setPaid(true);
           return;
         }
         setError(err instanceof Error ? err.message : "Status failed");
@@ -78,7 +88,13 @@ export function CryptoWaitPage() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [navigate, orderId, chainId, lang, copy.waitPaid, copy.waitPending, copy.waitReady]);
+  }, [navigate, orderId, chainId, lang]);
+
+  useEffect(() => {
+    if (phase !== "done") return;
+    const timer = window.setTimeout(() => setPhase("ready"), 1200);
+    return () => window.clearTimeout(timer);
+  }, [phase]);
 
   async function signAndActivate() {
     setSigning(true);
@@ -113,6 +129,30 @@ export function CryptoWaitPage() {
     }
   }
 
+  const working = phase === "work";
+  const title = phase === "ready"
+    ? copy.waitReadyTitle
+    : phase === "done"
+      ? copy.waitDoneTitle
+      : paid
+        ? copy.waitPrepTitle
+        : copy.waitWorkingTitle;
+  const lead = phase === "ready"
+    ? copy.waitReady
+    : phase === "done"
+      ? copy.waitDoneLead
+      : paid
+        ? copy.waitPaid
+        : copy.waitPending;
+  const steps = [
+    { label: copy.waitStepPay, state: paid || phase !== "work" ? "done" : "current" },
+    {
+      label: copy.waitStepPrep,
+      state: phase !== "work" ? "done" : paid ? "current" : "soon",
+    },
+    { label: copy.waitStepSign, state: phase === "ready" ? "current" : "soon" },
+  ] as const;
+
   return (
     <Layout hideAppStoreBadges>
       <section className="crypto-checkout">
@@ -121,21 +161,82 @@ export function CryptoWaitPage() {
             <Link to="/crypto">{copy.back}</Link>
           </p>
           <p className="crypto-checkout-kicker">{copy.kicker}</p>
-          <h1>{copy.waitTitle}</h1>
-          <p className="crypto-checkout-lead">{message}</p>
+
+          <AnimatePresence mode="wait">
+            <motion.div key={phase === "ready" ? "ready" : "work"} {...fade}>
+              <div className="crypto-wait-hero">
+                <div
+                  className={`crypto-wait-mark${phase === "work" ? "" : " is-done"}`}
+                  aria-hidden="true"
+                >
+                  {phase === "work" ? (
+                    <>
+                      <span className="crypto-wait-ring" />
+                      <span className="crypto-wait-orbit" />
+                      <span className="crypto-wait-core" />
+                    </>
+                  ) : (
+                    <>
+                      <span className="crypto-wait-ring" />
+                      <span className="crypto-wait-core" />
+                      <span className="crypto-wait-check">✓</span>
+                    </>
+                  )}
+                </div>
+                <div>
+                  <h1>{title}</h1>
+                  <p className="crypto-checkout-lead">{lead}</p>
+                </div>
+              </div>
+
+              {working ? (
+                <ol className="crypto-wait-steps" aria-label={copy.waitTitle}>
+                  {steps.map((step, index) => (
+                    <li key={step.label} className={`is-${step.state}`}>
+                      <span className="crypto-wait-num">
+                        {step.state === "done" ? "✓" : index + 1}
+                      </span>
+                      {step.label}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                phase === "ready" && (
+                  <div className="crypto-wait-how">
+                    <p>
+                      <span className="crypto-wait-num is-current">1</span>
+                      {copy.waitHow1}
+                    </p>
+                    <p>
+                      <span className="crypto-wait-num">2</span>
+                      {copy.waitHow2}
+                    </p>
+                    <p>
+                      <span className="crypto-wait-num">3</span>
+                      {copy.waitHow3}
+                    </p>
+                  </div>
+                )
+              )}
+            </motion.div>
+          </AnimatePresence>
+
           {error && (
             <p className="crypto-checkout-error" role="alert">
               {error}
             </p>
           )}
-          {ready && (
+
+          {phase === "ready" && (
             <Button onClick={() => void signAndActivate()} loading={signing} disabled={signing}>
               {signing ? copy.waitSigning : copy.waitSign}
             </Button>
           )}
-          {!ready && <p className="crypto-checkout-review-meta">{copy.waitKeepOpen(orderId)}</p>}
+
+          {working && <p className="crypto-wait-meta">{copy.waitKeepOpen}</p>}
+          <p className="crypto-wait-meta">{copy.waitOrder(orderId)}</p>
           {txHash && (chainId === 80002 || chainId === 11155111) && (
-            <p className="crypto-checkout-review-meta">
+            <p className="crypto-wait-meta">
               <a href={escrowTxUrl(chainId, txHash)} target="_blank" rel="noreferrer">
                 {copy.waitViewTx}
               </a>

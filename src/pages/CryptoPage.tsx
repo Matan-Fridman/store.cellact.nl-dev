@@ -19,6 +19,7 @@ import {
 } from "../hooks/useCryptoPurchase";
 
 const CHAINS: CryptoChainId[] = [80002, 11155111];
+export const PAYMYEMAIL_SITE = "https://paymyemail.com";
 
 const SUBSCRIBE_SNIPPET = `function subscribe(
     bytes32 orderId,
@@ -86,6 +87,7 @@ export function CryptoWalletPick({
     walletMetaMask: string;
     walletPayMyEmail: string;
     walletNotInstalled: string;
+    whatIsPayMyEmail: string;
   };
   onPick: (kind: WalletKind) => void;
 }) {
@@ -98,16 +100,27 @@ export function CryptoWalletPick({
       {rows.map((row) => {
         const available = Boolean(wallets.find((item) => item.kind === row.kind)?.available);
         return (
-          <button
-            key={row.kind}
-            type="button"
-            className="crypto-wallet-pick-btn"
-            disabled={connecting}
-            onClick={() => onPick(row.kind)}
-          >
-            <span>{row.label}</span>
-            {!available && <span className="crypto-wallet-pick-hint">{copy.walletNotInstalled}</span>}
-          </button>
+          <div key={row.kind} className="crypto-wallet-pick-item">
+            <button
+              type="button"
+              className="crypto-wallet-pick-btn"
+              disabled={connecting}
+              onClick={() => onPick(row.kind)}
+            >
+              <span>{row.label}</span>
+              {!available && <span className="crypto-wallet-pick-hint">{copy.walletNotInstalled}</span>}
+            </button>
+            {row.kind === "paymyemail" && !available && (
+              <a
+                className="crypto-wallet-what"
+                href={PAYMYEMAIL_SITE}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {copy.whatIsPayMyEmail}
+              </a>
+            )}
+          </div>
         );
       })}
     </div>
@@ -406,16 +419,23 @@ export function CryptoPage() {
           )}
 
           {(pickError || crypto.error) && (
-            <button
-              type="button"
-              className="crypto-checkout-error"
-              onClick={() => {
-                setPickError(null);
-                crypto.reset();
-              }}
-            >
-              {pickError || cryptoErrorCopy(copy, crypto.error)}
-            </button>
+            <p className="crypto-checkout-error" role="alert">
+              <button
+                type="button"
+                className="crypto-checkout-error-text"
+                onClick={() => {
+                  setPickError(null);
+                  crypto.reset();
+                }}
+              >
+                {pickError || cryptoErrorCopy(copy, crypto.error)}
+              </button>
+              {pickError === copy.installPayMyEmail && (
+                <a href={PAYMYEMAIL_SITE} target="_blank" rel="noreferrer">
+                  {copy.whatIsPayMyEmail}
+                </a>
+              )}
+            </p>
           )}
 
           <label className="crypto-checkout-label" htmlFor="crypto-network-amoy">

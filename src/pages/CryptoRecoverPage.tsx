@@ -32,7 +32,7 @@ import {
   type DiscoveredWallet,
   type WalletKind,
 } from "../hooks/useCryptoPurchase";
-import { CryptoWalletPick } from "./CryptoPage";
+import { CryptoWalletPick, PAYMYEMAIL_SITE } from "./CryptoPage";
 
 const CLAIM_TYPES = {
   ClaimActivation: [
@@ -601,7 +601,12 @@ export function CryptoRecoverPage() {
 
           {error && (
             <p className="crypto-checkout-error" role="alert">
-              {error}
+              <span>{error}</span>
+              {error === copy.installPayMyEmail && (
+                <a href={PAYMYEMAIL_SITE} target="_blank" rel="noreferrer">
+                  {copy.whatIsPayMyEmail}
+                </a>
+              )}
             </p>
           )}
 

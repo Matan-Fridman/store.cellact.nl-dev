@@ -159,7 +159,8 @@ type TranslationsShape = {
     scanTitle: string;
     scanTitleB: string;
     scanDesc: (appName: string) => string;
-    steps: [string, string, string];
+    readyBadge: string;
+    scanHow: [string, string][];
     orDivider: string;
     installOnDevice: string;
     back: string;
@@ -185,6 +186,7 @@ type TranslationsShape = {
     walletNotInstalled: string;
     installMetaMask: string;
     installPayMyEmail: string;
+    whatIsPayMyEmail: string;
     changeWallet: string;
     walletRequired: string;
     walletMissing: string;
@@ -295,10 +297,22 @@ type TranslationsShape = {
     whyExampleNote: string;
     whyBack: string;
     waitTitle: string;
+    waitWorkingTitle: string;
+    waitPrepTitle: string;
+    waitDoneTitle: string;
+    waitReadyTitle: string;
     waitPending: string;
     waitPaid: string;
+    waitDoneLead: string;
     waitReady: string;
-    waitKeepOpen: (orderId: string) => string;
+    waitStepPay: string;
+    waitStepPrep: string;
+    waitStepSign: string;
+    waitHow1: string;
+    waitHow2: string;
+    waitHow3: string;
+    waitKeepOpen: string;
+    waitOrder: (orderId: string) => string;
     waitViewTx: string;
     waitLeft: string;
     waitSign: string;
@@ -643,6 +657,7 @@ export const translations: Record<Language, TranslationsShape> = {
       walletNotInstalled: "Not installed",
       installMetaMask: "Install MetaMask first.",
       installPayMyEmail: "Install PayMyEmail first.",
+      whatIsPayMyEmail: "What is that??",
       changeWallet: "Change",
       walletRequired: "Choose a wallet first.",
       walletMissing: "That wallet is not installed.",
@@ -757,10 +772,22 @@ export const translations: Record<Language, TranslationsShape> = {
         "Unused periods are zeroed and pushed back to you in the same call. cancelWithSig is the same refund; a relayer pays the gas.",
       whyBack: "Back to checkout",
       waitTitle: "Waiting on escrow",
-      waitPending: "Waiting for the subscribe transaction…",
-      waitPaid: "Paid. Provisioning your number…",
-      waitReady: "Payment confirmed. Sign with the paying wallet for the QR.",
-      waitKeepOpen: (orderId) => `Keep this page open. Order ${orderId}`,
+      waitWorkingTitle: "Confirming payment",
+      waitPrepTitle: "Preparing your number",
+      waitDoneTitle: "Payment confirmed",
+      waitReadyTitle: "Sign to get your QR",
+      waitPending: "Watching the escrow contract now.",
+      waitPaid: "Paid. Assigning your Israeli number.",
+      waitDoneLead: "Locked in escrow. Next is one signature.",
+      waitReady: "Use the wallet that paid. Then we show the QR.",
+      waitStepPay: "Confirm payment",
+      waitStepPrep: "Prepare number",
+      waitStepSign: "Sign for QR",
+      waitHow1: "Approve the claim in your wallet",
+      waitHow2: "We show your activation QR",
+      waitHow3: "Scan it in Arnacon",
+      waitKeepOpen: "Keep this page open.",
+      waitOrder: (orderId) => `Order ${orderId}`,
       waitViewTx: "View transaction",
       waitLeft: "Left by accident?",
       waitSign: "Sign and show QR",
@@ -814,8 +841,13 @@ export const translations: Record<Language, TranslationsShape> = {
       scanTitle: "Scan to activate",
       scanTitleB: "your number.",
       scanDesc: (app) =>
-        `Open the ${app} app on your phone and scan this code to activate your Israeli number.`,
-      steps: ["Open Arnacon", "Tap Scan", "Done"],
+        `Open ${app} on your phone and scan this code.`,
+      readyBadge: "Ready to activate",
+      scanHow: [
+        ["Open Arnacon", "On the phone that will hold the number."],
+        ["Scan this QR", "Use Scan in the app, not the camera roll."],
+        ["You're live", "Calls and SMS arrive in Arnacon."],
+      ],
       orDivider: "or",
       installOnDevice: "Activate on this device",
       back: "← Back to home",
@@ -1132,6 +1164,7 @@ export const translations: Record<Language, TranslationsShape> = {
       walletNotInstalled: "לא מותקן",
       installMetaMask: "התקינו MetaMask קודם.",
       installPayMyEmail: "התקינו PayMyEmail קודם.",
+      whatIsPayMyEmail: "מה זה??",
       changeWallet: "שינוי",
       walletRequired: "בחרו ארנק קודם.",
       walletMissing: "הארנק הזה לא מותקן.",
@@ -1246,10 +1279,22 @@ export const translations: Record<Language, TranslationsShape> = {
         "תקופות שלא נוצלו מתאפסות וחוזרות אליכם באותה קריאה. cancelWithSig הוא אותו החזר; רילייר משלם את הגז.",
       whyBack: "חזרה לתשלום",
       waitTitle: "ממתינים לאסקרו",
-      waitPending: "ממתינים לעסקת ה-subscribe…",
-      waitPaid: "שולם. מקצים את המספר…",
-      waitReady: "התשלום אושר. חתמו עם הארנק ששילם לקבלת QR.",
-      waitKeepOpen: (orderId) => `השאירו את הדף פתוח. הזמנה ${orderId}`,
+      waitWorkingTitle: "מאשרים את התשלום",
+      waitPrepTitle: "מכינים את המספר",
+      waitDoneTitle: "התשלום אושר",
+      waitReadyTitle: "חתמו לקבלת ה-QR",
+      waitPending: "עוקבים עכשיו אחרי חוזה האסקרו.",
+      waitPaid: "שולם. מקצים את המספר הישראלי.",
+      waitDoneLead: "נעול באסקרו. עכשיו חתימה אחת.",
+      waitReady: "השתמשו בארנק ששילם. אחר כך נציג את ה-QR.",
+      waitStepPay: "אישור תשלום",
+      waitStepPrep: "הכנת מספר",
+      waitStepSign: "חתימה ל-QR",
+      waitHow1: "אשרו את הבקשה בארנק",
+      waitHow2: "נציג את קוד ההפעלה",
+      waitHow3: "סרקו אותו ב-Arnacon",
+      waitKeepOpen: "השאירו את הדף פתוח.",
+      waitOrder: (orderId) => `הזמנה ${orderId}`,
       waitViewTx: "לעסקה",
       waitLeft: "יצאתם בטעות?",
       waitSign: "חתימה והצגת QR",
@@ -1303,8 +1348,13 @@ export const translations: Record<Language, TranslationsShape> = {
       scanTitle: "סרוק להפעלת",
       scanTitleB: "המספר שלך.",
       scanDesc: (app) =>
-        `פתח את אפליקציית ${app} בטלפון שלך וסרוק את הקוד להפעלת המספר הישראלי שלך.`,
-      steps: ["פתח Arnacon", "הקש סריקה", "סיום"],
+        `פתחו את ${app} בטלפון וסרקו את הקוד.`,
+      readyBadge: "מוכן להפעלה",
+      scanHow: [
+        ["פתחו את Arnacon", "בטלפון שבו המספר יישב."],
+        ["סרקו את ה-QR", "סריקה מתוך האפליקציה, לא מגלריית התמונות."],
+        ["המספר פעיל", "שיחות וסמס מגיעים ל-Arnacon."],
+      ],
       orDivider: "או",
       installOnDevice: "הפעל ב-Arnacon במכשיר זה",
       back: "→ חזרה לדף הבית",

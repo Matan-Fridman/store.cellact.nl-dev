@@ -309,7 +309,6 @@ type TranslationsShape = {
     waitStepPay: string;
     waitStepPrep: string;
     waitStepSign: string;
-    waitStepShow: string;
     waitStepScan: string;
     waitKeepOpen: string;
     waitOrder: (orderId: string) => string;
@@ -784,7 +783,6 @@ export const translations: Record<Language, TranslationsShape> = {
       waitStepPay: "Confirm payment",
       waitStepPrep: "Prepare number",
       waitStepSign: "Sign in wallet",
-      waitStepShow: "Show activation QR",
       waitStepScan: "Scan in Arnacon",
       waitKeepOpen: "Keep this page open.",
       waitOrder: (orderId) => `Order ${orderId}`,
@@ -1291,7 +1289,6 @@ export const translations: Record<Language, TranslationsShape> = {
       waitStepPay: "אישור תשלום",
       waitStepPrep: "הכנת מספר",
       waitStepSign: "חתימה בארנק",
-      waitStepShow: "הצגת QR להפעלה",
       waitStepScan: "סריקה ב-Arnacon",
       waitKeepOpen: "השאירו את הדף פתוח.",
       waitOrder: (orderId) => `הזמנה ${orderId}`,

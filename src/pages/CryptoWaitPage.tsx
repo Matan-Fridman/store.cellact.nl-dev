@@ -29,21 +29,14 @@ type FlowCopy = {
   waitStepPay: string;
   waitStepPrep: string;
   waitStepSign: string;
-  waitStepShow: string;
   waitStepScan: string;
   waitTitle: string;
 };
 
 export type FlowStepState = "done" | "current" | "soon";
 
-export function cryptoActivationSteps(copy: FlowCopy, current: 1 | 2 | 3 | 4 | 5) {
-  const labels = [
-    copy.waitStepPay,
-    copy.waitStepPrep,
-    copy.waitStepSign,
-    copy.waitStepShow,
-    copy.waitStepScan,
-  ];
+export function cryptoActivationSteps(copy: FlowCopy, current: 1 | 2 | 3 | 4) {
+  const labels = [copy.waitStepPay, copy.waitStepPrep, copy.waitStepSign, copy.waitStepScan];
   return labels.map((label, index) => {
     const n = index + 1;
     const state: FlowStepState = n < current ? "done" : n === current ? "current" : "soon";
@@ -56,7 +49,7 @@ export function CryptoFlowSteps({
   current,
 }: {
   copy: FlowCopy;
-  current: 1 | 2 | 3 | 4 | 5;
+  current: 1 | 2 | 3 | 4;
 }) {
   return (
     <ol className="crypto-wait-steps" aria-label={copy.waitTitle}>

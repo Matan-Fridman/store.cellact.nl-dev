@@ -256,7 +256,7 @@ export function CryptoRecoverPage() {
   const refresh = useCallback(async (address: string) => {
     setLoadingList(true);
     try {
-      const injected = await pickEthereum().catch(() => undefined);
+      const injected = await pickEthereum(address).catch(() => undefined);
       const next = await loadManaged(address, injected);
       if (payerRef.current?.toLowerCase() === address.toLowerCase()) {
         setOrders(next);
@@ -354,15 +354,22 @@ export function CryptoRecoverPage() {
     setAction({ orderId: order.orderId, kind: method === "cancel" ? "cancel" : "withdraw" });
     setError(null);
     try {
+      const payer = payerRef.current || undefined;
       if (method === "cancel") {
-        await signAndRelayCancel(order.chainId, order.escrow, order.orderId, order.idBytes32);
+        await signAndRelayCancel(
+          order.chainId,
+          order.escrow,
+          order.orderId,
+          order.idBytes32,
+          payer,
+        );
       } else {
-        await sendEscrowPayerTx(order.chainId, order.escrow, order.idBytes32, method);
+        await sendEscrowPayerTx(order.chainId, order.escrow, order.idBytes32, method, payer);
       }
       if (method === "cancel" && payerRef.current) {
         await listCryptoOrders(payerRef.current).catch(() => undefined);
       }
-      const injected = await pickEthereum().catch(() => undefined);
+      const injected = await pickEthereum(payerRef.current || undefined).catch(() => undefined);
       const settlement = await settlementFor(
         order.chainId,
         order.escrow,
@@ -386,7 +393,7 @@ export function CryptoRecoverPage() {
     setError(null);
     try {
       if (!order.escrow) throw new Error("Missing escrow for this order.");
-      const injected = await pickEthereum();
+      const injected = await pickEthereum(payerRef.current || undefined);
       const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
       const signer = web3.getSigner();
       const signerPayer = await signer.getAddress();

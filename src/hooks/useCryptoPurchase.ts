@@ -12,6 +12,7 @@ const ERC20_ABI = ["function approve(address spender, uint256 amount) returns (b
 export type EthereumProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
   isPayMyEmail?: boolean;
+  isMetaMask?: boolean;
   on?: (event: string, handler: (...args: unknown[]) => void) => void;
   removeListener?: (event: string, handler: (...args: unknown[]) => void) => void;
 };
@@ -51,27 +52,80 @@ export const CRYPTO_CHAINS: Record<
   },
 };
 
-export async function pickEthereum(): Promise<EthereumProvider> {
-  const announced: Array<{ info?: { rdns?: string }; provider: EthereumProvider }> = [];
+type AnnouncedWallet = { info?: { rdns?: string }; provider: EthereumProvider };
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(label)), ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        window.clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
+async function accountsOf(provider: EthereumProvider): Promise<string[]> {
+  try {
+    const accounts = await withTimeout(
+      provider.request({ method: "eth_accounts" }),
+      800,
+      "wallet_timeout",
+    );
+    if (!Array.isArray(accounts)) return [];
+    return accounts.filter((item): item is string => typeof item === "string");
+  } catch {
+    return [];
+  }
+}
+
+export async function pickEthereum(preferAddress?: string): Promise<EthereumProvider> {
+  const announced: AnnouncedWallet[] = [];
   const onAnnounce = (event: Event) => {
-    const detail = (event as CustomEvent).detail as {
-      info?: { rdns?: string };
-      provider: EthereumProvider;
-    };
+    const detail = (event as CustomEvent).detail as AnnouncedWallet;
     if (detail?.provider) announced.push(detail);
   };
   window.addEventListener("eip6963:announceProvider", onAnnounce);
   window.dispatchEvent(new Event("eip6963:requestProvider"));
   await new Promise((resolve) => window.setTimeout(resolve, 80));
   window.removeEventListener("eip6963:announceProvider", onAnnounce);
-  const pme = announced.find(
-    (item) => item.provider.isPayMyEmail || item.info?.rdns === "email.paymyemail.wallet",
-  );
-  const provider = pme?.provider || window.ethereum;
-  if (!provider) {
+
+  const seen = new Set<EthereumProvider>();
+  const candidates: AnnouncedWallet[] = [];
+  for (const item of announced) {
+    if (seen.has(item.provider)) continue;
+    seen.add(item.provider);
+    candidates.push(item);
+  }
+  if (window.ethereum && !seen.has(window.ethereum)) {
+    candidates.push({ provider: window.ethereum });
+  }
+  if (!candidates.length) {
     throw new Error("Install PayMyEmail or MetaMask to pay with crypto.");
   }
-  return provider;
+
+  const live = await Promise.all(
+    candidates.map(async (item) => ({ item, accounts: await accountsOf(item.provider) })),
+  );
+  const want = preferAddress?.toLowerCase();
+  if (want) {
+    const match = live.find((entry) =>
+      entry.accounts.some((account) => account.toLowerCase() === want),
+    );
+    if (match) return match.item.provider;
+  }
+  const connected = live.find((entry) => entry.accounts.length > 0);
+  if (connected) return connected.item.provider;
+  const metamask = live.find(
+    (entry) => entry.item.provider.isMetaMask || entry.item.info?.rdns === "io.metamask",
+  );
+  if (metamask) return metamask.item.provider;
+  return candidates[0].provider;
 }
 
 function providerErrorCode(err: unknown): number | undefined {
@@ -427,8 +481,9 @@ export async function sendEscrowPayerTx(
   escrow: string,
   idBytes32: string,
   method: "cancel" | "withdrawUnused",
+  payer?: string,
 ): Promise<void> {
-  const injected = await pickEthereum();
+  const injected = await pickEthereum(payer);
   await ensureChain(injected, chainId);
   const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
   const contract = new ethers.Contract(escrow, ESCROW_ACCOUNT_ABI, web3.getSigner());
@@ -458,8 +513,14 @@ export async function signAndRelayCancel(
   escrow: string,
   orderId: string,
   idBytes32: string,
+  payer?: string,
 ): Promise<void> {
-  const injected = await pickEthereum();
+  const canRelay = escrow.toLowerCase() === CRYPTO_ESCROW[chainId].toLowerCase();
+  if (!canRelay) {
+    await sendEscrowPayerTx(chainId, escrow, idBytes32, "cancel", payer);
+    return;
+  }
+  const injected = await pickEthereum(payer);
   await ensureChain(injected, chainId);
   const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
   const deadline = Math.floor(Date.now() / 1000) + 600;
@@ -482,7 +543,7 @@ export async function signAndRelayCancel(
       mapped.name = "EscrowTxError";
       throw mapped;
     }
-    await sendEscrowPayerTx(chainId, escrow, idBytes32, "cancel");
+    await sendEscrowPayerTx(chainId, escrow, idBytes32, "cancel", payer);
   }
 }
 

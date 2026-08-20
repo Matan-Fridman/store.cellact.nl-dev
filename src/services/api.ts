@@ -14,14 +14,19 @@ class ApiError extends Error {
 
 async function post<T>(url: string, body: Record<string, unknown>): Promise<T> {
   let res: Response;
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 20000);
   try {
     res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
   } catch {
     throw new ApiError("Failed to reach checkout server", 0);
+  } finally {
+    window.clearTimeout(timer);
   }
 
   const raw = await res.text();

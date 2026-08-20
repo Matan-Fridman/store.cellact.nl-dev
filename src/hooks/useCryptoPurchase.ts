@@ -270,6 +270,9 @@ export function classifyCryptoError(err: unknown): string {
   const revert = revertCode(err);
   if (revert) return revert;
   const text = errorText(err);
+  if (/not connected|call eth_requestaccounts|paymyemail is locked|origin not allowed/i.test(text)) {
+    return "wallet_required";
+  }
   if (
     hasNumericCode(err, 4001) ||
     /user denied|user rejected|rejected the request|denied transaction signature|action_rejected/i.test(

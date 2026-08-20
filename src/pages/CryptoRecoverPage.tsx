@@ -18,6 +18,7 @@ import {
   signAndRelayCancel,
   settlementFromOnchain,
   ensureChain,
+  escrowTxUrl,
   type CryptoChainId,
   type EscrowSettlement,
   type EthereumProvider,
@@ -45,6 +46,7 @@ type ManagedOrder = {
   label: string | null;
   status: string;
   settlement: EscrowSettlement | null;
+  cancelTxHash?: string | null;
 };
 
 type ActionKind = "cancel" | "withdraw" | "claim";
@@ -152,6 +154,19 @@ async function settlementFor(
   snap: CryptoOrderStatus["escrowState"],
   injected?: EthereumProvider,
 ): Promise<EscrowSettlement | null> {
+  try {
+    const live = await readEscrowSettlement(chainId, escrow, idBytes32);
+    if (live) return live;
+  } catch {
+    // Public RPC can be busy; fall through.
+  }
+  if (snap) {
+    try {
+      return settlementFromOnchain(chainId, snap);
+    } catch {
+      // Fall through to the wallet RPC.
+    }
+  }
   if (injected) {
     try {
       await ensureChain(injected, chainId);
@@ -159,21 +174,39 @@ async function settlementFor(
       const live = await readEscrowSettlement(chainId, escrow, idBytes32, runner);
       if (live) return live;
     } catch {
-      // Wallet RPC can fail on the wrong chain; fall through.
+      // Wallet RPC can fail on the wrong chain.
     }
   }
-  if (snap) {
-    try {
-      return settlementFromOnchain(chainId, snap);
-    } catch {
-      // Fall through to a public RPC read.
-    }
+  return null;
+}
+
+async function readCancelledSettlement(
+  chainId: CryptoChainId,
+  escrow: string,
+  idBytes32: string,
+): Promise<EscrowSettlement | null> {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const settlement = await readEscrowSettlement(chainId, escrow, idBytes32).catch(() => null);
+    if (settlement?.cancelAlreadySet) return settlement;
+    await new Promise((resolve) => window.setTimeout(resolve, 1200));
   }
-  try {
-    return await readEscrowSettlement(chainId, escrow, idBytes32);
-  } catch {
-    return null;
-  }
+  return readEscrowSettlement(chainId, escrow, idBytes32).catch(() => null);
+}
+
+function withCancelApplied(
+  settlement: EscrowSettlement | null,
+  cancelEffective?: number,
+): EscrowSettlement | null {
+  if (!settlement || !cancelEffective) return settlement;
+  if (settlement.cancelAlreadySet) return settlement;
+  return {
+    ...settlement,
+    cancelAlreadySet: true,
+    canCancel: false,
+    canWithdrawUnused: false,
+    cancelEffectiveAt: cancelEffective,
+    ifCancelEffectiveAt: cancelEffective,
+  };
 }
 
 async function loadManaged(address: string, injected?: EthereumProvider): Promise<ManagedOrder[]> {
@@ -342,10 +375,22 @@ export function CryptoRecoverPage() {
   }, [payer, orders]);
 
   async function runPayerTx(order: ManagedOrder, method: "cancel" | "withdrawUnused") {
-    if (method === "cancel" && order.settlement && !order.settlement.canCancel) {
-      setError(copy.alreadyCancelled);
-      setConfirmingId(null);
-      return;
+    if (method === "cancel") {
+      const live = await readEscrowSettlement(order.chainId, order.escrow, order.idBytes32).catch(
+        () => null,
+      );
+      if (live?.cancelAlreadySet || (order.settlement && !order.settlement.canCancel)) {
+        const settlement = withCancelApplied(
+          live || order.settlement,
+          live?.cancelEffectiveAt || order.settlement?.cancelEffectiveAt,
+        );
+        setOrders((current) =>
+          current.map((item) => (item.orderId === order.orderId ? { ...item, settlement } : item)),
+        );
+        setConfirmingId(null);
+        setError(null);
+        return;
+      }
     }
     if (method === "withdrawUnused" && order.settlement && !order.settlement.canWithdrawUnused) {
       setError(copy.nothingToWithdraw);
@@ -355,36 +400,58 @@ export function CryptoRecoverPage() {
     setError(null);
     try {
       const payer = payerRef.current || undefined;
+      let txHash: string | null = null;
+      let resultCancelEffective: number | undefined;
       if (method === "cancel") {
-        await signAndRelayCancel(
+        const result = await signAndRelayCancel(
           order.chainId,
           order.escrow,
           order.orderId,
           order.idBytes32,
           payer,
         );
+        txHash = result.txHash;
+        resultCancelEffective = result.cancelEffective;
       } else {
-        await sendEscrowPayerTx(order.chainId, order.escrow, order.idBytes32, method, payer);
+        txHash = await sendEscrowPayerTx(order.chainId, order.escrow, order.idBytes32, method, payer);
       }
-      if (method === "cancel" && payerRef.current) {
-        await listCryptoOrders(payerRef.current).catch(() => undefined);
-      }
-      const injected = await pickEthereum(payerRef.current || undefined).catch(() => undefined);
-      const settlement = await settlementFor(
-        order.chainId,
-        order.escrow,
-        order.idBytes32,
-        null,
-        injected,
-      );
-      setConfirmingId(null);
+      const live =
+        method === "cancel"
+          ? (await readEscrowSettlement(order.chainId, order.escrow, order.idBytes32).catch(
+              () => null,
+            )) ||
+            (resultCancelEffective
+              ? null
+              : await readCancelledSettlement(order.chainId, order.escrow, order.idBytes32))
+          : await settlementFor(order.chainId, order.escrow, order.idBytes32, null);
+      const settlement =
+        method === "cancel"
+          ? withCancelApplied(live || order.settlement, resultCancelEffective) || live
+          : live;
       setOrders((current) =>
-        current.map((item) => (item.orderId === order.orderId ? { ...item, settlement } : item)),
+        current.map((item) =>
+          item.orderId === order.orderId
+            ? { ...item, settlement, cancelTxHash: txHash || item.cancelTxHash }
+            : item,
+        ),
       );
     } catch (err) {
-      setError(escrowErrorCopy(copy, err));
+      if (method === "cancel") {
+        const live = await readCancelledSettlement(order.chainId, order.escrow, order.idBytes32);
+        const settlement = withCancelApplied(live || order.settlement, order.settlement?.cancelEffectiveAt);
+        if (settlement?.cancelAlreadySet) {
+          setOrders((current) =>
+            current.map((item) => (item.orderId === order.orderId ? { ...item, settlement } : item)),
+          );
+        } else {
+          setError(escrowErrorCopy(copy, err));
+        }
+      } else {
+        setError(escrowErrorCopy(copy, err));
+      }
     } finally {
       setAction(null);
+      setConfirmingId(null);
     }
   }
 
@@ -514,6 +581,7 @@ export function CryptoRecoverPage() {
               onCancel={() => void runPayerTx(selected, "cancel")}
               onWithdraw={() => void runPayerTx(selected, "withdrawUnused")}
               onClaim={() => void claim(selected)}
+              onBack={closeOrder}
             />
           )}
 
@@ -653,6 +721,7 @@ function OrderDetail({
   onCancel,
   onWithdraw,
   onClaim,
+  onBack,
 }: {
   order: ManagedOrder;
   copy: {
@@ -664,6 +733,9 @@ function OrderDetail({
     claimedDone: string;
     youCanWithdraw: (amount: string, symbol: string) => string;
     cancelledReturned: (date: string) => string;
+    fundsBack: (date: string) => string;
+    viewTx: string;
+    backToOrders: string;
     escrowUnread: string;
     cancelSummaryTitle: string;
     timePassed: (elapsed: string) => string;
@@ -685,12 +757,15 @@ function OrderDetail({
   onCancel: () => void;
   onWithdraw: () => void;
   onClaim: () => void;
+  onBack: () => void;
 }) {
   const settlement = order.settlement;
   const symbol = settlement?.symbol || CRYPTO_CHAINS[order.chainId].nativeCurrency.symbol;
   const acting = action?.orderId === order.orderId;
   const network = order.chainId === 80002 ? copy.amoy : copy.sepolia;
   const ends = untilTs(order);
+  const cancelled = Boolean(settlement?.cancelAlreadySet);
+  const txUrl = order.cancelTxHash ? escrowTxUrl(order.chainId, order.cancelTxHash) : null;
 
   return (
     <div className="crypto-order-focus">
@@ -702,26 +777,36 @@ function OrderDetail({
         </p>
       </div>
       {order.claimed && <p className="crypto-order-focus-note">{copy.claimedDone}</p>}
-      {settlement?.canWithdrawUnused || settlement?.cancelAlreadySet || !settlement ? (
+      {cancelled && settlement ? (
+        <div className="crypto-order-focus-done">
+          <p>
+            <span className="crypto-order-focus-check" aria-hidden="true">
+              ✓
+            </span>
+            {copy.fundsBack(formatWhen(settlement.cancelEffectiveAt, lang))}
+          </p>
+          {txUrl && (
+            <p>
+              <a href={txUrl} target="_blank" rel="noreferrer">
+                {copy.viewTx}
+              </a>
+            </p>
+          )}
+          <Button onClick={onBack}>{copy.backToOrders}</Button>
+        </div>
+      ) : settlement?.canWithdrawUnused || !settlement ? (
         <ul className="crypto-checkout-order-split">
           {settlement ? (
-            <>
-              {settlement.canWithdrawUnused && (
-                <li>
-                  {copy.youCanWithdraw(formatEscrowAmount(settlement.payerUnusedNow, symbol), symbol)}
-                </li>
-              )}
-              {settlement.cancelAlreadySet && (
-                <li>{copy.cancelledReturned(formatWhen(settlement.cancelEffectiveAt, lang))}</li>
-              )}
-            </>
+            <li>
+              {copy.youCanWithdraw(formatEscrowAmount(settlement.payerUnusedNow, symbol), symbol)}
+            </li>
           ) : (
             <li>{copy.escrowUnread}</li>
           )}
         </ul>
       ) : null}
       <div className="crypto-checkout-order-actions">
-        {settlement?.canCancel && confirming && (
+        {settlement?.canCancel && !cancelled && confirming && (
           <>
             <p className="crypto-checkout-order-status">{copy.cancelSummaryTitle}</p>
             <ul className="crypto-checkout-order-split">
@@ -747,7 +832,7 @@ function OrderDetail({
             </Button>
           </>
         )}
-        {settlement?.canCancel && !confirming && (
+        {settlement?.canCancel && !cancelled && !confirming && (
           <Button variant="secondary" onClick={onConfirm} disabled={busy}>
             {copy.cancelCta}
           </Button>

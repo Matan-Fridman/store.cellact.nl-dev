@@ -177,6 +177,11 @@ export function escrowExplorerUrl(chainId: CryptoChainId, address = CRYPTO_ESCRO
   return `${base}/address/${address}`;
 }
 
+export function escrowTxUrl(chainId: CryptoChainId, txHash: string): string {
+  const base = CRYPTO_CHAINS[chainId].blockExplorerUrls[0]?.replace(/\/$/, "") ?? "";
+  return `${base}/tx/${txHash}`;
+}
+
 export function shortHex(value: string): string {
   if (value.length < 12) return value;
   return `${value.slice(0, 6)}…${value.slice(-4)}`;
@@ -482,7 +487,7 @@ export async function sendEscrowPayerTx(
   idBytes32: string,
   method: "cancel" | "withdrawUnused",
   payer?: string,
-): Promise<void> {
+): Promise<string> {
   const injected = await pickEthereum(payer);
   await ensureChain(injected, chainId);
   const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
@@ -490,6 +495,7 @@ export async function sendEscrowPayerTx(
   try {
     const tx = (await contract[method](idBytes32)) as { hash: string };
     await waitOnPublicRpc(chainId, tx.hash);
+    return tx.hash;
   } catch (err) {
     const code = revertCode(err);
     if (code) {
@@ -514,11 +520,11 @@ export async function signAndRelayCancel(
   orderId: string,
   idBytes32: string,
   payer?: string,
-): Promise<void> {
+): Promise<{ txHash: string | null; cancelEffective?: number }> {
   const canRelay = escrow.toLowerCase() === CRYPTO_ESCROW[chainId].toLowerCase();
   if (!canRelay) {
-    await sendEscrowPayerTx(chainId, escrow, idBytes32, "cancel", payer);
-    return;
+    const txHash = await sendEscrowPayerTx(chainId, escrow, idBytes32, "cancel", payer);
+    return { txHash };
   }
   const injected = await pickEthereum(payer);
   await ensureChain(injected, chainId);
@@ -530,18 +536,21 @@ export async function signAndRelayCancel(
     { orderId: idBytes32, deadline },
   );
   try {
-    await relayCryptoCancel({ orderId, chainId, deadline, signature });
+    const result = await relayCryptoCancel({ orderId, chainId, deadline, signature });
+    return { txHash: result.txHash || null, cancelEffective: result.cancelEffective };
   } catch (err) {
     const message = err instanceof Error ? err.message : "";
-    if (/already_cancelled/i.test(message)) {
-      const mapped = new Error("already_cancelled");
-      mapped.name = "EscrowTxError";
-      throw mapped;
-    }
     if (/not_payer/i.test(message)) {
       const mapped = new Error("not_payer");
       mapped.name = "EscrowTxError";
       throw mapped;
+    }
+    const settlement = await readEscrowSettlement(chainId, escrow, idBytes32).catch(() => null);
+    if (settlement?.cancelAlreadySet || /already_cancelled/i.test(message)) {
+      return {
+        txHash: null,
+        cancelEffective: settlement?.cancelEffectiveAt || undefined,
+      };
     }
     throw err;
   }

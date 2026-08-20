@@ -289,9 +289,9 @@ export function relayCryptoCancel(params: {
   chainId: number;
   deadline: number;
   signature: string;
-}): Promise<{ txHash: string; cancelEffective: number }> {
+}): Promise<{ txHash: string | null; cancelEffective: number; already?: boolean }> {
   const { CRYPTO_URL } = getApiConfig();
-  return post<{ txHash: string; cancelEffective: number }>(
+  return post<{ txHash: string | null; cancelEffective: number; already?: boolean }>(
     `${CRYPTO_URL.replace(/\/$/, "")}/cancel`,
     params,
   );

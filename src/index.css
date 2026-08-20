@@ -2329,6 +2329,30 @@ html[data-fb-banner="1"] .landing-sticky {
   font-weight: 700;
 }
 
+.crypto-order-focus-done {
+  margin: 16px 0 0;
+  display: grid;
+  gap: 12px;
+}
+
+.crypto-order-focus-done p {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.crypto-order-focus-check {
+  display: inline-block;
+  margin-inline-end: 8px;
+  color: #15803d;
+}
+
+.crypto-order-focus-done a {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
 @media (max-width: 640px) {
   .crypto-order-table .is-desk {
     display: none;

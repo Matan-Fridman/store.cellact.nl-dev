@@ -222,6 +222,8 @@ type TranslationsShape = {
     youCanWithdraw: (amount: string, symbol: string) => string;
     youWithdrawOn: (amount: string, symbol: string, date: string) => string;
     cancelledReturned: (date: string) => string;
+    fundsBack: (date: string) => string;
+    viewTx: string;
     nothingBackYet: string;
     ifCancel: (date: string, you: string, symbol: string) => string;
     cancelScheduled: (date: string) => string;
@@ -655,6 +657,8 @@ export const translations: Record<Language, TranslationsShape> = {
       youWithdrawOn: (amount, symbol, date) =>
         `You withdraw ${amount} ${symbol} from ${date}`,
       cancelledReturned: (date) => `Cancelled. Unused funds are back. Number works until ${date}.`,
+      fundsBack: (date) => `Your unused funds are back. The number stays valid until ${date}.`,
+      viewTx: "View transaction",
       nothingBackYet: "Unused funds unlock after the current period ends.",
       ifCancel: (date, you, symbol) =>
         `Service until ${date}. Cancel returns ${you} ${symbol} now.`,
@@ -1128,6 +1132,8 @@ export const translations: Record<Language, TranslationsShape> = {
       youWithdrawOn: (amount, symbol, date) =>
         `תמשכו ${amount} ${symbol} מ-${date}`,
       cancelledReturned: (date) => `בוטל. היתרה חזרה. המספר פעיל עד ${date}.`,
+      fundsBack: (date) => `היתרה חזרה. המספר נשאר בתוקף עד ${date}.`,
+      viewTx: "לצפייה בעסקה",
       nothingBackYet: "היתרה נפתחת בסוף התקופה הנוכחית.",
       ifCancel: (date, you, symbol) =>
         `השירות עד ${date}. ביטול מחזיר ${you} ${symbol} עכשיו.`,

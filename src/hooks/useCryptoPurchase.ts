@@ -23,6 +23,7 @@ export type EthereumProvider = {
 declare global {
   interface Window {
     ethereum?: EthereumProvider;
+    paymyemail?: EthereumProvider;
   }
 }
 
@@ -55,7 +56,85 @@ export const CRYPTO_CHAINS: Record<
   },
 };
 
-type AnnouncedWallet = { info?: { rdns?: string }; provider: EthereumProvider };
+export type WalletKind = "metamask" | "paymyemail";
+
+type AnnouncedWallet = {
+  info?: { rdns?: string; name?: string };
+  provider: EthereumProvider;
+};
+
+export type DiscoveredWallet = {
+  kind: WalletKind;
+  name: string;
+  available: boolean;
+  provider?: EthereumProvider;
+};
+
+const WALLET_KEY = "secnum_crypto_wallet";
+
+export function storedWalletKind(): WalletKind | null {
+  const value = sessionStorage.getItem(WALLET_KEY);
+  return value === "metamask" || value === "paymyemail" ? value : null;
+}
+
+export function storeWalletKind(kind: WalletKind): void {
+  sessionStorage.setItem(WALLET_KEY, kind);
+}
+
+export function clearWalletKind(): void {
+  sessionStorage.removeItem(WALLET_KEY);
+}
+
+function kindOf(item: AnnouncedWallet): WalletKind | null {
+  const rdns = item.info?.rdns || "";
+  if (rdns === "email.paymyemail.wallet" || item.provider.isPayMyEmail) return "paymyemail";
+  if (rdns === "io.metamask" || item.provider.isMetaMask) return "metamask";
+  return null;
+}
+
+async function collectAnnounced(): Promise<AnnouncedWallet[]> {
+  const announced: AnnouncedWallet[] = [];
+  const onAnnounce = (event: Event) => {
+    const detail = (event as CustomEvent).detail as AnnouncedWallet;
+    if (detail?.provider) announced.push(detail);
+  };
+  window.addEventListener("eip6963:announceProvider", onAnnounce);
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+  await new Promise((resolve) => window.setTimeout(resolve, 120));
+  window.removeEventListener("eip6963:announceProvider", onAnnounce);
+  return announced;
+}
+
+export async function discoverWallets(): Promise<DiscoveredWallet[]> {
+  const announced = await collectAnnounced();
+  const byKind = new Map<WalletKind, EthereumProvider>();
+  for (const item of announced) {
+    const kind = kindOf(item);
+    if (kind && !byKind.has(kind)) byKind.set(kind, item.provider);
+  }
+  if (window.paymyemail && !byKind.has("paymyemail")) {
+    byKind.set("paymyemail", window.paymyemail);
+  }
+  const fallback = window.ethereum;
+  if (fallback) {
+    if (fallback.isPayMyEmail && !byKind.has("paymyemail")) byKind.set("paymyemail", fallback);
+    else if (fallback.isMetaMask && !byKind.has("metamask")) byKind.set("metamask", fallback);
+  }
+  return [
+    {
+      kind: "metamask",
+      name: "MetaMask",
+      available: byKind.has("metamask"),
+      provider: byKind.get("metamask"),
+    },
+    {
+      kind: "paymyemail",
+      name: "PayMyEmail",
+      available: byKind.has("paymyemail"),
+      provider: byKind.get("paymyemail"),
+    },
+  ];
+}
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -87,48 +166,35 @@ async function accountsOf(provider: EthereumProvider): Promise<string[]> {
   }
 }
 
-export async function pickEthereum(preferAddress?: string): Promise<EthereumProvider> {
-  const announced: AnnouncedWallet[] = [];
-  const onAnnounce = (event: Event) => {
-    const detail = (event as CustomEvent).detail as AnnouncedWallet;
-    if (detail?.provider) announced.push(detail);
-  };
-  window.addEventListener("eip6963:announceProvider", onAnnounce);
-  window.dispatchEvent(new Event("eip6963:requestProvider"));
-  await new Promise((resolve) => window.setTimeout(resolve, 80));
-  window.removeEventListener("eip6963:announceProvider", onAnnounce);
-
-  const seen = new Set<EthereumProvider>();
-  const candidates: AnnouncedWallet[] = [];
-  for (const item of announced) {
-    if (seen.has(item.provider)) continue;
-    seen.add(item.provider);
-    candidates.push(item);
-  }
-  if (window.ethereum && !seen.has(window.ethereum)) {
-    candidates.push({ provider: window.ethereum });
-  }
-  if (!candidates.length) {
-    throw new Error("Install PayMyEmail or MetaMask to pay with crypto.");
-  }
-
-  const live = await Promise.all(
-    candidates.map(async (item) => ({ item, accounts: await accountsOf(item.provider) })),
-  );
+export async function pickEthereum(
+  preferAddress?: string,
+  preferKind?: WalletKind,
+): Promise<EthereumProvider> {
+  const wallets = await discoverWallets();
+  const kind = preferKind || storedWalletKind();
   const want = preferAddress?.toLowerCase();
+  if (kind) {
+    const chosen = wallets.find((item) => item.kind === kind)?.provider;
+    if (chosen) {
+      if (!want) return chosen;
+      const accounts = await accountsOf(chosen);
+      if (accounts.some((account) => account.toLowerCase() === want)) return chosen;
+    } else if (preferKind) {
+      throw new Error("wallet_missing");
+    }
+  }
   if (want) {
+    const live = await Promise.all(
+      wallets
+        .filter((item) => item.provider)
+        .map(async (item) => ({ item, accounts: await accountsOf(item.provider as EthereumProvider) })),
+    );
     const match = live.find((entry) =>
       entry.accounts.some((account) => account.toLowerCase() === want),
     );
-    if (match) return match.item.provider;
+    if (match?.item.provider) return match.item.provider;
   }
-  const connected = live.find((entry) => entry.accounts.length > 0);
-  if (connected) return connected.item.provider;
-  const metamask = live.find(
-    (entry) => entry.item.provider.isMetaMask || entry.item.info?.rdns === "io.metamask",
-  );
-  if (metamask) return metamask.item.provider;
-  return candidates[0].provider;
+  throw new Error("wallet_required");
 }
 
 function providerErrorCode(err: unknown): number | undefined {
@@ -190,7 +256,9 @@ export function classifyCryptoError(err: unknown): string {
     known === "already_paid" ||
     known === "already_cancelled" ||
     known === "nothing_to_withdraw" ||
-    known === "not_payer"
+    known === "not_payer" ||
+    known === "wallet_required" ||
+    known === "wallet_missing"
   ) {
     return known;
   }
@@ -228,6 +296,8 @@ export function cryptoErrorCopy(
     alreadyCancelled?: string;
     nothingToWithdraw?: string;
     notPayer?: string;
+    walletRequired?: string;
+    walletMissing?: string;
   },
   err: unknown,
 ): string {
@@ -236,6 +306,8 @@ export function cryptoErrorCopy(
   if (code === "rpc_busy") return copy.rpcBusy;
   if (code === "user_rejected") return copy.userRejected;
   if (code === "insufficient_funds") return copy.insufficientFunds;
+  if (code === "wallet_required" && copy.walletRequired) return copy.walletRequired;
+  if (code === "wallet_missing" && copy.walletMissing) return copy.walletMissing;
   if (code === "already_cancelled" && copy.alreadyCancelled) return copy.alreadyCancelled;
   if (code === "nothing_to_withdraw" && copy.nothingToWithdraw) return copy.nothingToWithdraw;
   if (code === "not_payer" && copy.notPayer) return copy.notPayer;
@@ -718,7 +790,9 @@ function shortenAddress(address: string): string {
 }
 
 function describeWallet(injected: EthereumProvider): string {
-  return injected.isPayMyEmail ? "PayMyEmail" : "Wallet";
+  if (injected.isPayMyEmail) return "PayMyEmail";
+  if (injected.isMetaMask) return "MetaMask";
+  return storedWalletKind() === "paymyemail" ? "PayMyEmail" : "Wallet";
 }
 
 function firstAccount(value: unknown): string | null {
@@ -743,12 +817,15 @@ export function useCryptoPurchase() {
     setError(null);
   }, []);
 
-  const rememberWallet = useCallback((injected: EthereumProvider, accounts: unknown) => {
+  const rememberWallet = useCallback((injected: EthereumProvider, accounts: unknown, kind?: WalletKind) => {
+    if (kind) storeWalletKind(kind);
     setAccount(firstAccount(accounts));
     setWalletName(describeWallet(injected));
   }, []);
 
   useEffect(() => {
+    const kind = storedWalletKind();
+    if (!kind) return;
     let cancelled = false;
     let injected: EthereumProvider | undefined;
     const onAccountsChanged = (...args: unknown[]) => {
@@ -757,12 +834,12 @@ export function useCryptoPurchase() {
 
     void (async () => {
       try {
-        const provider = await pickEthereum();
+        const provider = await pickEthereum(undefined, kind);
         if (cancelled) return;
         injected = provider;
         injected.on?.("accountsChanged", onAccountsChanged);
         const accounts = await injected.request({ method: "eth_accounts" });
-        if (!cancelled) rememberWallet(injected, accounts);
+        if (!cancelled) rememberWallet(injected, accounts, kind);
       } catch {
         if (!cancelled) {
           setAccount(null);
@@ -795,20 +872,33 @@ export function useCryptoPurchase() {
     }
   }, []);
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (kind: WalletKind) => {
     setConnecting(true);
     setError(null);
     try {
-      const injected = await pickEthereum();
+      storeWalletKind(kind);
+      const injected = await pickEthereum(undefined, kind);
+      injected.on?.("accountsChanged", (...args: unknown[]) => {
+        setAccount(firstAccount(args[0]));
+      });
       const accounts = await injected.request({ method: "eth_requestAccounts" });
-      rememberWallet(injected, accounts);
+      rememberWallet(injected, accounts, kind);
+      return true;
     } catch (err) {
       setError(logCryptoError("connect", err));
       setStatus("error");
+      return false;
     } finally {
       setConnecting(false);
     }
   }, [rememberWallet]);
+
+  const disconnect = useCallback(() => {
+    clearWalletKind();
+    setAccount(null);
+    setWalletName(null);
+    setError(null);
+  }, []);
 
   const initiate = useCallback(
     async (chainId: CryptoChainId, token: CryptoAsset) => {
@@ -817,7 +907,7 @@ export function useCryptoPurchase() {
       try {
         const injected = await pickEthereum();
         const accounts = await injected.request({ method: "eth_requestAccounts" });
-        rememberWallet(injected, accounts);
+        rememberWallet(injected, accounts, storedWalletKind() || undefined);
         await ensureChain(injected, chainId);
         const web3 = new ethers.providers.Web3Provider(
           injected as ethers.providers.ExternalProvider,
@@ -920,6 +1010,7 @@ export function useCryptoPurchase() {
     initiate,
     reset,
     connect,
+    disconnect,
     connecting,
     loadQuote,
     quote,

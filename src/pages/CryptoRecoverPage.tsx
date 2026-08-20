@@ -21,10 +21,17 @@ import {
   escrowTxUrl,
   cryptoErrorCopy,
   logCryptoError,
+  discoverWallets,
+  storedWalletKind,
+  storeWalletKind,
+  clearWalletKind,
   type CryptoChainId,
   type EscrowSettlement,
   type EthereumProvider,
+  type DiscoveredWallet,
+  type WalletKind,
 } from "../hooks/useCryptoPurchase";
+import { CryptoWalletPick } from "./CryptoPage";
 
 const CLAIM_TYPES = {
   ClaimActivation: [
@@ -265,6 +272,8 @@ export function CryptoRecoverPage() {
   const [loadingList, setLoadingList] = useState(false);
   const [action, setAction] = useState<{ orderId: string; kind: ActionKind } | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
+  const [wallets, setWallets] = useState<DiscoveredWallet[]>([]);
   const payerRef = useRef<string | null>(null);
   const focusKey = params.get("o");
   const selected = orders.find((order) => orderKey(order) === focusKey) ?? null;
@@ -286,35 +295,62 @@ export function CryptoRecoverPage() {
     }
   }, []);
 
-  const connect = useCallback(async (request = true) => {
+  const connectSilent = useCallback(async () => {
+    const kind = storedWalletKind();
+    if (!kind) return;
     setConnecting(true);
-    setError(null);
     try {
-      const injected = await pickEthereum();
-      const accounts = await injected.request({
-        method: request ? "eth_requestAccounts" : "eth_accounts",
-      });
+      const injected = await pickEthereum(undefined, kind);
+      const accounts = await injected.request({ method: "eth_accounts" });
       const address = Array.isArray(accounts) && typeof accounts[0] === "string" ? accounts[0] : null;
-      if (!address) {
-        if (!request) return;
-        throw new Error("No wallet account");
-      }
+      if (!address) return;
       payerRef.current = address;
       setPayer(address);
       await refresh(address);
-    } catch (err) {
-      if (request) {
-        logCryptoError("recover-connect", err);
-        setError(cryptoErrorCopy(copy, err));
-      }
+    } catch {
+      // Stay disconnected until the user picks a wallet.
     } finally {
       setConnecting(false);
     }
   }, [refresh]);
 
+  const connectKind = useCallback(async (kind: WalletKind) => {
+    setConnecting(true);
+    setError(null);
+    try {
+      const list = await discoverWallets();
+      setWallets(list);
+      if (!list.find((item) => item.kind === kind)?.available) {
+        setError(kind === "paymyemail" ? copy.installPayMyEmail : copy.installMetaMask);
+        return;
+      }
+      storeWalletKind(kind);
+      const injected = await pickEthereum(undefined, kind);
+      injected.on?.("accountsChanged", (...args: unknown[]) => {
+        const next = Array.isArray(args[0]) && typeof args[0][0] === "string" ? args[0][0] : null;
+        payerRef.current = next;
+        setPayer(next);
+        if (next) void refresh(next);
+        else setOrders([]);
+      });
+      const accounts = await injected.request({ method: "eth_requestAccounts" });
+      const address = Array.isArray(accounts) && typeof accounts[0] === "string" ? accounts[0] : null;
+      if (!address) throw new Error("No wallet account");
+      payerRef.current = address;
+      setPayer(address);
+      setPicking(false);
+      await refresh(address);
+    } catch (err) {
+      logCryptoError("recover-connect", err);
+      setError(cryptoErrorCopy(copy, err));
+    } finally {
+      setConnecting(false);
+    }
+  }, [copy, refresh]);
+
   useEffect(() => {
-    void connect(false);
-  }, [connect]);
+    void connectSilent();
+  }, [connectSilent]);
 
   useEffect(() => {
     if (!payer || !needsProvisionPoll(orders)) return;
@@ -528,11 +564,38 @@ export function CryptoRecoverPage() {
             <p className="crypto-checkout-wallet-copy">
               {connected && payer ? (
                 <strong>{copy.manageConnected(shortAddress(payer))}</strong>
+              ) : picking ? (
+                copy.chooseWallet
               ) : (
                 copy.walletOff
               )}
             </p>
+            {connected ? (
+              <button
+                type="button"
+                className="crypto-checkout-wallet-action"
+                onClick={() => {
+                  clearWalletKind();
+                  setPayer(null);
+                  payerRef.current = null;
+                  setOrders([]);
+                  setPicking(true);
+                  void discoverWallets().then(setWallets);
+                }}
+              >
+                {copy.changeWallet}
+              </button>
+            ) : null}
           </div>
+
+          {picking && !connected && (
+            <CryptoWalletPick
+              wallets={wallets}
+              connecting={connecting}
+              copy={copy}
+              onPick={(kind) => void connectKind(kind)}
+            />
+          )}
 
           {error && (
             <p className="crypto-checkout-error" role="alert">
@@ -540,8 +603,15 @@ export function CryptoRecoverPage() {
             </p>
           )}
 
-          {!connected && (
-            <Button onClick={() => void connect(true)} loading={connecting} disabled={connecting}>
+          {!connected && !picking && (
+            <Button
+              onClick={() => {
+                setPicking(true);
+                void discoverWallets().then(setWallets);
+              }}
+              loading={connecting}
+              disabled={connecting}
+            >
               {connecting ? copy.connecting : copy.connect}
             </Button>
           )}

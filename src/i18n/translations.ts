@@ -179,6 +179,15 @@ type TranslationsShape = {
     walletOff: string;
     connect: string;
     connecting: string;
+    chooseWallet: string;
+    walletMetaMask: string;
+    walletPayMyEmail: string;
+    walletNotInstalled: string;
+    installMetaMask: string;
+    installPayMyEmail: string;
+    changeWallet: string;
+    walletRequired: string;
+    walletMissing: string;
     stepReview: string;
     continue: string;
     reviewTitle: string;
@@ -626,6 +635,15 @@ export const translations: Record<Language, TranslationsShape> = {
       walletOff: "No wallet connected",
       connect: "Connect",
       connecting: "Connecting…",
+      chooseWallet: "Choose a wallet",
+      walletMetaMask: "MetaMask",
+      walletPayMyEmail: "PayMyEmail",
+      walletNotInstalled: "Not installed",
+      installMetaMask: "Install MetaMask first.",
+      installPayMyEmail: "Install PayMyEmail first.",
+      changeWallet: "Change",
+      walletRequired: "Choose a wallet first.",
+      walletMissing: "That wallet is not installed.",
       pay: (amount, symbol) => `Pay ${amount} ${symbol}`,
       paying: "Confirm in your wallet",
       quoteLoading: "Getting the total…",
@@ -1104,6 +1122,15 @@ export const translations: Record<Language, TranslationsShape> = {
       walletOff: "אין ארנק מחובר",
       connect: "חיבור",
       connecting: "מתחברים…",
+      chooseWallet: "בחרו ארנק",
+      walletMetaMask: "MetaMask",
+      walletPayMyEmail: "PayMyEmail",
+      walletNotInstalled: "לא מותקן",
+      installMetaMask: "התקינו MetaMask קודם.",
+      installPayMyEmail: "התקינו PayMyEmail קודם.",
+      changeWallet: "שינוי",
+      walletRequired: "בחרו ארנק קודם.",
+      walletMissing: "הארנק הזה לא מותקן.",
       pay: (amount, symbol) => `תשלום ${amount} ${symbol}`,
       paying: "אשרו בארנק",
       quoteLoading: "מחשבים את הסכום…",

@@ -11,8 +11,11 @@ import {
   shortHex,
   useCryptoPurchase,
   cryptoErrorCopy,
+  discoverWallets,
   type CryptoAsset,
   type CryptoChainId,
+  type DiscoveredWallet,
+  type WalletKind,
 } from "../hooks/useCryptoPurchase";
 
 const CHAINS: CryptoChainId[] = [80002, 11155111];
@@ -69,6 +72,47 @@ const CANCEL_SNIPPET = `function cancel(bytes32 orderId) external {
 }`;
 
 type CryptoCopy = ReturnType<typeof useLanguage>["t"]["crypto"];
+
+export function CryptoWalletPick({
+  wallets,
+  connecting,
+  copy,
+  onPick,
+}: {
+  wallets: DiscoveredWallet[];
+  connecting: boolean;
+  copy: {
+    chooseWallet: string;
+    walletMetaMask: string;
+    walletPayMyEmail: string;
+    walletNotInstalled: string;
+  };
+  onPick: (kind: WalletKind) => void;
+}) {
+  const rows: { kind: WalletKind; label: string }[] = [
+    { kind: "metamask", label: copy.walletMetaMask },
+    { kind: "paymyemail", label: copy.walletPayMyEmail },
+  ];
+  return (
+    <div className="crypto-wallet-pick" role="group" aria-label={copy.chooseWallet}>
+      {rows.map((row) => {
+        const available = Boolean(wallets.find((item) => item.kind === row.kind)?.available);
+        return (
+          <button
+            key={row.kind}
+            type="button"
+            className="crypto-wallet-pick-btn"
+            disabled={connecting}
+            onClick={() => onPick(row.kind)}
+          >
+            <span>{row.label}</span>
+            {!available && <span className="crypto-wallet-pick-hint">{copy.walletNotInstalled}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function EscrowContracts({ copy }: { copy: CryptoCopy }) {
   const [copied, setCopied] = useState<CryptoChainId | null>(null);
@@ -259,6 +303,9 @@ export function CryptoPage() {
   const crypto = useCryptoPurchase();
   const [chainId, setChainId] = useState<CryptoChainId>(80002);
   const [asset, setAsset] = useState<CryptoAsset>("usdc");
+  const [picking, setPicking] = useState(false);
+  const [wallets, setWallets] = useState<DiscoveredWallet[]>([]);
+  const [pickError, setPickError] = useState<string | null>(null);
   const loading = crypto.status === "loading";
   const connected = Boolean(crypto.account);
   const nativeSymbol = chainId === 80002 ? "POL" : "ETH";
@@ -275,6 +322,25 @@ export function CryptoPage() {
     if (isWhy) return;
     void crypto.loadQuote(chainId, asset).catch(() => undefined);
   }, [chainId, asset, crypto.loadQuote, isWhy]);
+
+  async function openPicker() {
+    setPickError(null);
+    setPicking(true);
+    crypto.reset();
+    setWallets(await discoverWallets());
+  }
+
+  async function pickWallet(kind: WalletKind) {
+    setPickError(null);
+    const list = await discoverWallets();
+    setWallets(list);
+    if (!list.find((item) => item.kind === kind)?.available) {
+      setPickError(kind === "paymyemail" ? copy.installPayMyEmail : copy.installMetaMask);
+      return;
+    }
+    const ok = await crypto.connect(kind);
+    if (ok) setPicking(false);
+  }
 
   if (isWhy) {
     return <WhyArticle copy={copy} />;
@@ -300,21 +366,57 @@ export function CryptoPage() {
                   <strong>{crypto.walletName}</strong>
                   <span className="crypto-checkout-wallet-id">{crypto.accountShort}</span>
                 </>
+              ) : picking ? (
+                copy.chooseWallet
               ) : (
                 copy.walletOff
               )}
             </p>
-            {!connected && (
+            {connected ? (
               <button
                 type="button"
                 className="crypto-checkout-wallet-action"
-                onClick={() => void crypto.connect()}
+                onClick={() => {
+                  crypto.disconnect();
+                  void openPicker();
+                }}
+                disabled={crypto.connecting || loading}
+              >
+                {copy.changeWallet}
+              </button>
+            ) : !picking ? (
+              <button
+                type="button"
+                className="crypto-checkout-wallet-action"
+                onClick={() => void openPicker()}
                 disabled={crypto.connecting || loading}
               >
                 {crypto.connecting ? copy.connecting : copy.connect}
               </button>
-            )}
+            ) : null}
           </div>
+
+          {picking && !connected && (
+            <CryptoWalletPick
+              wallets={wallets}
+              connecting={crypto.connecting}
+              copy={copy}
+              onPick={(kind) => void pickWallet(kind)}
+            />
+          )}
+
+          {(pickError || crypto.error) && (
+            <button
+              type="button"
+              className="crypto-checkout-error"
+              onClick={() => {
+                setPickError(null);
+                crypto.reset();
+              }}
+            >
+              {pickError || cryptoErrorCopy(copy, crypto.error)}
+            </button>
+          )}
 
           <label className="crypto-checkout-label" htmlFor="crypto-network-amoy">
             {copy.network}
@@ -382,14 +484,14 @@ export function CryptoPage() {
             </p>
           </div>
 
-          {crypto.error && (
-            <button type="button" className="crypto-checkout-error" onClick={crypto.reset}>
-              {cryptoErrorCopy(copy, crypto.error)}
-            </button>
-          )}
-
           <Button
-            onClick={() => void crypto.initiate(chainId, asset)}
+            onClick={() => {
+              if (!connected) {
+                void openPicker();
+                return;
+              }
+              void crypto.initiate(chainId, asset);
+            }}
             loading={loading}
             disabled={loading || !total}
           >

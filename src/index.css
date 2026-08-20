@@ -1984,6 +1984,40 @@ html[data-fb-banner="1"] .landing-sticky {
   cursor: not-allowed;
 }
 
+.crypto-wallet-pick {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.crypto-wallet-pick-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.crypto-wallet-pick-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.crypto-wallet-pick-hint {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
 .crypto-checkout-label {
   display: block;
   margin: 18px 0 8px;

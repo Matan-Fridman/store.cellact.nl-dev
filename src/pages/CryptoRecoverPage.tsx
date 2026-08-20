@@ -25,6 +25,7 @@ import {
   storedWalletKind,
   storeWalletKind,
   clearWalletKind,
+  signerFromInjected,
   type CryptoChainId,
   type EscrowSettlement,
   type EthereumProvider,
@@ -485,9 +486,10 @@ export function CryptoRecoverPage() {
     try {
       if (!order.escrow) throw new Error("Missing escrow for this order.");
       const injected = await pickEthereum(payerRef.current || undefined);
-      const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
-      const signer = web3.getSigner();
-      const signerPayer = await signer.getAddress();
+      const { signer, address: signerPayer } = await signerFromInjected(
+        injected,
+        payerRef.current || undefined,
+      );
       const issuedAt = Math.floor(Date.now() / 1000);
       const signature = await signer._signTypedData(
         {

@@ -178,7 +178,12 @@ export async function pickEthereum(
     if (chosen) {
       if (!want) return chosen;
       const accounts = await accountsOf(chosen);
-      if (accounts.some((account) => account.toLowerCase() === want)) return chosen;
+      if (
+        accounts.length === 0 ||
+        accounts.some((account) => account.toLowerCase() === want)
+      ) {
+        return chosen;
+      }
     } else if (preferKind) {
       throw new Error("wallet_missing");
     }
@@ -275,6 +280,9 @@ export function classifyCryptoError(err: unknown): string {
   }
   if (/insufficient funds|insufficient balance|exceeds the balance|gas required exceeds/i.test(text)) {
     return "insufficient_funds";
+  }
+  if (/unknown account #0|unsupported_operation/i.test(text) && /getAddress/i.test(text)) {
+    return "wallet_required";
   }
   if (isRpcBusy(err) || /429|too many requests/i.test(text)) return "rpc_busy";
   return "tx_failed";
@@ -700,6 +708,29 @@ export function quoteMonthly(quote: {
   };
 }
 
+function firstAccount(value: unknown): string | null {
+  if (!Array.isArray(value) || typeof value[0] !== "string" || value[0].length === 0) {
+    return null;
+  }
+  return value[0];
+}
+
+export async function signerFromInjected(
+  injected: EthereumProvider,
+  preferAddress?: string,
+): Promise<{ signer: ethers.providers.JsonRpcSigner; address: string }> {
+  const requested = await injected.request({ method: "eth_requestAccounts" });
+  const listed = await injected.request({ method: "eth_accounts" }).catch(() => []);
+  const raw = firstAccount(requested) || firstAccount(listed) || preferAddress || null;
+  if (!raw) throw new Error("wallet_required");
+  const address = ethers.utils.getAddress(raw);
+  const web3 = new ethers.providers.Web3Provider(
+    injected as ethers.providers.ExternalProvider,
+    "any",
+  );
+  return { signer: web3.getSigner(address), address };
+}
+
 export async function sendEscrowPayerTx(
   chainId: CryptoChainId,
   escrow: string,
@@ -709,8 +740,8 @@ export async function sendEscrowPayerTx(
 ): Promise<string> {
   const injected = await pickEthereum(payer);
   await ensureChain(injected, chainId);
-  const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
-  const contract = new ethers.Contract(escrow, ESCROW_ACCOUNT_ABI, web3.getSigner());
+  const { signer } = await signerFromInjected(injected, payer);
+  const contract = new ethers.Contract(escrow, ESCROW_ACCOUNT_ABI, signer);
   try {
     const tx = (await contract[method](idBytes32)) as { hash: string };
     await waitOnPublicRpc(chainId, tx.hash);
@@ -741,11 +772,11 @@ export async function signAndRelayCancel(
   }
   const injected = await pickEthereum(payer);
   await ensureChain(injected, chainId);
-  const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
+  const { signer } = await signerFromInjected(injected, payer);
   const deadline = Math.floor(Date.now() / 1000) + 600;
   let signature: string;
   try {
-    signature = await web3.getSigner()._signTypedData(
+    signature = await signer._signTypedData(
       { name: "SubscriptionEscrow", version: "1", chainId, verifyingContract: escrow },
       CANCEL_TYPES,
       { orderId: idBytes32, deadline },
@@ -793,13 +824,6 @@ function describeWallet(injected: EthereumProvider): string {
   if (injected.isPayMyEmail) return "PayMyEmail";
   if (injected.isMetaMask) return "MetaMask";
   return storedWalletKind() === "paymyemail" ? "PayMyEmail" : "Wallet";
-}
-
-function firstAccount(value: unknown): string | null {
-  if (!Array.isArray(value) || typeof value[0] !== "string" || value[0].length === 0) {
-    return null;
-  }
-  return value[0];
 }
 
 export function useCryptoPurchase() {
@@ -906,19 +930,16 @@ export function useCryptoPurchase() {
       setError(null);
       try {
         const injected = await pickEthereum();
-        const accounts = await injected.request({ method: "eth_requestAccounts" });
-        rememberWallet(injected, accounts, storedWalletKind() || undefined);
+        await injected.request({ method: "eth_requestAccounts" });
         await ensureChain(injected, chainId);
-        const web3 = new ethers.providers.Web3Provider(
-          injected as ethers.providers.ExternalProvider,
-        );
-        const signer = web3.getSigner();
+        const { signer, address } = await signerFromInjected(injected);
+        rememberWallet(injected, [address], storedWalletKind() || undefined);
         const freshEnough = quote && quote.chainId === chainId && quote.expiry > Math.floor(Date.now() / 1000) + 30;
         const paidQuote = freshEnough ? quote : await loadQuote(chainId, token);
         try {
           await assertCanPay({
             chainId,
-            payer: await signer.getAddress(),
+            payer: address,
             token: paidQuote.token,
             totalAmount: paidQuote.totalAmount,
           });
@@ -946,7 +967,9 @@ export function useCryptoPurchase() {
         const escrow = new ethers.Contract(paidQuote.escrow, SUBSCRIBE_ABI, signer);
         if (paidQuote.token !== ethers.constants.AddressZero) {
           const erc20 = new ethers.Contract(paidQuote.token, ERC20_ABI, signer);
-          const approve = await erc20.approve(paidQuote.escrow, paidQuote.totalAmount);
+          const approve = await erc20.approve(paidQuote.escrow, paidQuote.totalAmount, {
+            from: address,
+          });
           try {
             await waitOnPublicRpc(chainId, approve.hash);
           } catch {
@@ -965,7 +988,10 @@ export function useCryptoPurchase() {
             paidQuote.expiry,
             paidQuote.signature,
             paidQuote.orderId,
-            { value: paidQuote.token === ethers.constants.AddressZero ? paidQuote.totalAmount : 0 },
+            {
+              from: address,
+              value: paidQuote.token === ethers.constants.AddressZero ? paidQuote.totalAmount : 0,
+            },
           )) as { hash: string };
         } catch (err) {
           if (revertCode(err) === "already_paid") {

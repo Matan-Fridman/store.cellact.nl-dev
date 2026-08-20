@@ -5,7 +5,7 @@ import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
 import { useLanguage } from "../contexts/LanguageContext";
 import { claimCryptoActivation, getCryptoStatus } from "../services/api";
-import { pickEthereum, cryptoErrorCopy, logCryptoError, type CryptoChainId } from "../hooks/useCryptoPurchase";
+import { pickEthereum, cryptoErrorCopy, logCryptoError, signerFromInjected, type CryptoChainId } from "../hooks/useCryptoPurchase";
 
 const CLAIM_TYPES = {
   ClaimActivation: [
@@ -84,10 +84,7 @@ export function CryptoWaitPage() {
     try {
       if (!orderId || !escrow) throw new Error("Reconnect your wallet.");
       const injected = await pickEthereum();
-      const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
-      await web3.send("eth_requestAccounts", []);
-      const signer = web3.getSigner();
-      const payer = await signer.getAddress();
+      const { signer, address: payer } = await signerFromInjected(injected);
       const issuedAt = Math.floor(Date.now() / 1000);
       const orderIdBytes32 = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(orderId));
       const signature = await signer._signTypedData(

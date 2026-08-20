@@ -239,6 +239,9 @@ type TranslationsShape = {
     notPayer: string;
     expiredQuote: string;
     rpcBusy: string;
+    userRejected: string;
+    insufficientFunds: string;
+    txFailed: string;
     withdrawCta: string;
     claimCta: string;
     waitWallet: string;
@@ -677,7 +680,10 @@ export const translations: Record<Language, TranslationsShape> = {
       nothingToWithdraw: "Nothing left to withdraw. Cancel already sent unused funds back.",
       notPayer: "This wallet did not pay this order.",
       expiredQuote: "Price expired. Tap pay once more.",
-      rpcBusy: "Wallet RPC is busy. If you already confirmed in MetaMask, find your order.",
+      rpcBusy: "Network is busy. If you already confirmed, find your order.",
+      userRejected: "You cancelled in the wallet.",
+      insufficientFunds: "Not enough funds in this wallet.",
+      txFailed: "Payment did not go through. Try again.",
       withdrawCta: "Withdraw unused",
       claimCta: "Sign and show QR",
       waitWallet: "Confirm in your wallet",
@@ -1152,7 +1158,10 @@ export const translations: Record<Language, TranslationsShape> = {
       nothingToWithdraw: "אין מה למשוך. הביטול כבר החזיר את היתרה.",
       notPayer: "הארנק הזה לא שילם על ההזמנה.",
       expiredQuote: "המחיר פג. לחצו תשלום פעם אחת שוב.",
-      rpcBusy: "הארנק עמוס. אם כבר אישרתם ב-MetaMask, איתרו את ההזמנה.",
+      rpcBusy: "הרשת עמוסה. אם כבר אישרתם, איתרו את ההזמנה.",
+      userRejected: "ביטלתם בארנק.",
+      insufficientFunds: "אין מספיק יתרה בארנק.",
+      txFailed: "התשלום לא עבר. נסו שוב.",
       withdrawCta: "משיכת יתרה",
       claimCta: "חתימה והצגת QR",
       waitWallet: "אשרו בארנק",

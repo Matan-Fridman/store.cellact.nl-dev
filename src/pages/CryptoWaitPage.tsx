@@ -5,7 +5,7 @@ import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
 import { useLanguage } from "../contexts/LanguageContext";
 import { claimCryptoActivation, getCryptoStatus } from "../services/api";
-import { pickEthereum, type CryptoChainId } from "../hooks/useCryptoPurchase";
+import { pickEthereum, cryptoErrorCopy, logCryptoError, type CryptoChainId } from "../hooks/useCryptoPurchase";
 
 const CLAIM_TYPES = {
   ClaimActivation: [
@@ -107,7 +107,8 @@ export function CryptoWaitPage() {
       });
       navigate(`/activate?token=${encodeURIComponent(token)}`, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Claim failed");
+      logCryptoError("wait-claim", err);
+      setError(cryptoErrorCopy(copy, err));
     } finally {
       setSigning(false);
     }

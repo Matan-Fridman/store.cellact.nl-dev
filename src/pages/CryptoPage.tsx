@@ -10,6 +10,7 @@ import {
   quoteMonthly,
   shortHex,
   useCryptoPurchase,
+  cryptoErrorCopy,
   type CryptoAsset,
   type CryptoChainId,
 } from "../hooks/useCryptoPurchase";
@@ -383,11 +384,7 @@ export function CryptoPage() {
 
           {crypto.error && (
             <button type="button" className="crypto-checkout-error" onClick={crypto.reset}>
-              {crypto.error === "expired_quote"
-                ? copy.expiredQuote
-                : crypto.error === "rpc_busy"
-                  ? copy.rpcBusy
-                  : crypto.error}
+              {cryptoErrorCopy(copy, crypto.error)}
             </button>
           )}
 

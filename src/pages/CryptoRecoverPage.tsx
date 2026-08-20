@@ -19,6 +19,8 @@ import {
   settlementFromOnchain,
   ensureChain,
   escrowTxUrl,
+  cryptoErrorCopy,
+  logCryptoError,
   type CryptoChainId,
   type EscrowSettlement,
   type EthereumProvider,
@@ -126,21 +128,6 @@ function formatElapsed(seconds: number, lang: "en" | "he"): string {
   if (days === 0) return "less than a day";
   if (days === 1) return "1 day";
   return `${days} days`;
-}
-
-function escrowErrorCopy(
-  copy: {
-    alreadyCancelled: string;
-    nothingToWithdraw: string;
-    notPayer: string;
-  },
-  err: unknown,
-): string {
-  const code = err instanceof Error ? err.message : "";
-  if (code === "already_cancelled") return copy.alreadyCancelled;
-  if (code === "nothing_to_withdraw") return copy.nothingToWithdraw;
-  if (code === "not_payer") return copy.notPayer;
-  return err instanceof Error ? err.message : "Transaction failed";
 }
 
 function needsProvisionPoll(orders: ManagedOrder[]) {
@@ -317,7 +304,8 @@ export function CryptoRecoverPage() {
       await refresh(address);
     } catch (err) {
       if (request) {
-        setError(err instanceof Error ? err.message : "Connect failed");
+        logCryptoError("recover-connect", err);
+        setError(cryptoErrorCopy(copy, err));
       }
     } finally {
       setConnecting(false);
@@ -444,10 +432,10 @@ export function CryptoRecoverPage() {
             current.map((item) => (item.orderId === order.orderId ? { ...item, settlement } : item)),
           );
         } else {
-          setError(escrowErrorCopy(copy, err));
+          setError(cryptoErrorCopy(copy, err));
         }
       } else {
-        setError(escrowErrorCopy(copy, err));
+        setError(cryptoErrorCopy(copy, err));
       }
     } finally {
       setAction(null);
@@ -482,7 +470,8 @@ export function CryptoRecoverPage() {
       });
       navigate(`/activate?token=${encodeURIComponent(token)}`, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Claim failed");
+      logCryptoError("claim", err);
+      setError(cryptoErrorCopy(copy, err));
     } finally {
       setAction(null);
     }

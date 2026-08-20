@@ -7,7 +7,10 @@ import type { AsyncStatus } from "../types";
 const SUBSCRIBE_ABI = [
   "function subscribe(bytes32 orderId, uint256 serviceId, address token, uint256 setupAmount, uint256[] periodAmounts, uint256 totalAmount, uint256 expiry, bytes signature, string orderRef) payable",
 ];
-const ERC20_ABI = ["function approve(address spender, uint256 amount) returns (bool)"];
+const ERC20_ABI = [
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function balanceOf(address owner) view returns (uint256)",
+];
 
 export type EthereumProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
@@ -40,14 +43,14 @@ export const CRYPTO_CHAINS: Record<
     chainId: "0x13882",
     chainName: "Polygon Amoy",
     nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 },
-    rpcUrls: ["https://polygon-amoy.gateway.tenderly.co", "https://rpc-amoy.polygon.technology"],
+    rpcUrls: ["https://polygon-amoy-bor-rpc.publicnode.com", "https://rpc-amoy.polygon.technology"],
     blockExplorerUrls: ["https://amoy.polygonscan.com"],
   },
   11155111: {
     chainId: "0xaa36a7",
     chainName: "Sepolia",
     nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
-    rpcUrls: ["https://sepolia.gateway.tenderly.co", "https://rpc.sepolia.org"],
+    rpcUrls: ["https://ethereum-sepolia-rpc.publicnode.com", "https://rpc.sepolia.org"],
     blockExplorerUrls: ["https://sepolia.etherscan.io"],
   },
 };
@@ -132,6 +135,114 @@ function providerErrorCode(err: unknown): number | undefined {
   if (!err || typeof err !== "object") return undefined;
   const code = (err as { code?: unknown }).code;
   return typeof code === "number" ? code : undefined;
+}
+
+function errorText(err: unknown): string {
+  const parts: string[] = [];
+  const seen = new Set<unknown>();
+  let current: unknown = err;
+  for (let i = 0; i < 6 && current; i += 1) {
+    if (seen.has(current)) break;
+    seen.add(current);
+    if (typeof current === "string") {
+      parts.push(current);
+      break;
+    }
+    if (typeof current !== "object") break;
+    const obj = current as {
+      message?: unknown;
+      reason?: unknown;
+      code?: unknown;
+      error?: unknown;
+      data?: unknown;
+    };
+    if (typeof obj.message === "string") parts.push(obj.message);
+    if (typeof obj.reason === "string") parts.push(obj.reason);
+    if (obj.code !== undefined) parts.push(String(obj.code));
+    if (typeof obj.data === "string") parts.push(obj.data);
+    current =
+      obj.error ||
+      (obj.data && typeof obj.data === "object" ? obj.data : undefined);
+  }
+  return parts.join(" ");
+}
+
+function hasNumericCode(err: unknown, want: number): boolean {
+  const seen = new Set<unknown>();
+  let current: unknown = err;
+  while (current && typeof current === "object" && !seen.has(current)) {
+    seen.add(current);
+    const obj = current as { code?: unknown; error?: unknown; data?: unknown };
+    if (obj.code === want || obj.code === String(want)) return true;
+    current = obj.error || (obj.data && typeof obj.data === "object" ? obj.data : undefined);
+  }
+  return false;
+}
+
+export function classifyCryptoError(err: unknown): string {
+  const known = err instanceof Error ? err.message : "";
+  if (
+    known === "expired_quote" ||
+    known === "rpc_busy" ||
+    known === "user_rejected" ||
+    known === "insufficient_funds" ||
+    known === "tx_failed" ||
+    known === "already_paid" ||
+    known === "already_cancelled" ||
+    known === "nothing_to_withdraw" ||
+    known === "not_payer"
+  ) {
+    return known;
+  }
+  const revert = revertCode(err);
+  if (revert) return revert;
+  const text = errorText(err);
+  if (
+    hasNumericCode(err, 4001) ||
+    /user denied|user rejected|rejected the request|denied transaction signature|action_rejected/i.test(
+      text,
+    )
+  ) {
+    return "user_rejected";
+  }
+  if (/insufficient funds|insufficient balance|exceeds the balance|gas required exceeds/i.test(text)) {
+    return "insufficient_funds";
+  }
+  if (isRpcBusy(err) || /429|too many requests/i.test(text)) return "rpc_busy";
+  return "tx_failed";
+}
+
+export function logCryptoError(action: string, err: unknown): string {
+  const code = classifyCryptoError(err);
+  console.error("[crypto]", action, code, err);
+  return code;
+}
+
+export function cryptoErrorCopy(
+  copy: {
+    expiredQuote: string;
+    rpcBusy: string;
+    userRejected: string;
+    insufficientFunds: string;
+    txFailed: string;
+    alreadyCancelled?: string;
+    nothingToWithdraw?: string;
+    notPayer?: string;
+  },
+  err: unknown,
+): string {
+  const code = typeof err === "string" ? err : classifyCryptoError(err);
+  if (code === "expired_quote") return copy.expiredQuote;
+  if (code === "rpc_busy") return copy.rpcBusy;
+  if (code === "user_rejected") return copy.userRejected;
+  if (code === "insufficient_funds") return copy.insufficientFunds;
+  if (code === "already_cancelled" && copy.alreadyCancelled) return copy.alreadyCancelled;
+  if (code === "nothing_to_withdraw" && copy.nothingToWithdraw) return copy.nothingToWithdraw;
+  if (code === "not_payer" && copy.notPayer) return copy.notPayer;
+  if (code === "tx_failed" || !code || code.length > 80 || /\{|json-rpc|internal json/i.test(code)) {
+    return copy.txFailed;
+  }
+  return code;
 }
 
 export async function ensureChain(injected: EthereumProvider, chainId: CryptoChainId): Promise<void> {
@@ -390,7 +501,7 @@ export async function readEscrowSettlement(
   idBytes32: string,
   runner?: ethers.providers.Provider,
 ): Promise<EscrowSettlement | null> {
-  const provider = runner ?? new ethers.providers.JsonRpcProvider(CRYPTO_CHAINS[chainId].rpcUrls[0]);
+  const provider = runner ?? jsonRpc(chainId);
   const contract = new ethers.Contract(escrow, ESCROW_ACCOUNT_ABI, provider);
   const [sub, periodsRaw, block] = await Promise.all([
     contract.subscriptions(idBytes32),
@@ -423,7 +534,7 @@ const ESCROW_REVERT: Record<string, string> = {
 };
 
 function revertCode(err: unknown): string | null {
-  const blob = err instanceof Error ? `${err.message}\n${JSON.stringify(err)}` : JSON.stringify(err);
+  const blob = errorText(err);
   for (const match of blob.matchAll(/0x([0-9a-f]{8})\b/gi)) {
     const mapped = ESCROW_REVERT[`0x${match[1].toLowerCase()}`];
     if (mapped) return mapped;
@@ -432,8 +543,9 @@ function revertCode(err: unknown): string | null {
 }
 
 function isRpcBusy(err: unknown): boolean {
-  const blob = err instanceof Error ? `${err.message}\n${JSON.stringify(err)}` : JSON.stringify(err);
-  return /rate limited|timeout|missing revert data|could not detect network/i.test(blob);
+  return /rate limited|timeout|missing revert data|could not detect network|429|too many requests/i.test(
+    errorText(err),
+  );
 }
 
 function persistWait(params: {
@@ -445,9 +557,44 @@ function persistWait(params: {
   sessionStorage.setItem("secnum_crypto_wait", JSON.stringify(params));
 }
 
+function jsonRpc(chainId: CryptoChainId, index = 0): ethers.providers.JsonRpcProvider {
+  const urls = CRYPTO_CHAINS[chainId].rpcUrls;
+  return new ethers.providers.JsonRpcProvider(urls[Math.min(index, urls.length - 1)]);
+}
+
 async function waitOnPublicRpc(chainId: CryptoChainId, hash: string): Promise<void> {
-  const provider = new ethers.providers.JsonRpcProvider(CRYPTO_CHAINS[chainId].rpcUrls[0]);
-  await provider.waitForTransaction(hash, 1, 120000);
+  let lastErr: unknown;
+  for (let i = 0; i < CRYPTO_CHAINS[chainId].rpcUrls.length; i += 1) {
+    try {
+      await jsonRpc(chainId, i).waitForTransaction(hash, 1, 60000);
+      return;
+    } catch (err) {
+      lastErr = err;
+      if (!isRpcBusy(err) && classifyCryptoError(err) !== "rpc_busy") throw err;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("rpc_busy");
+}
+
+const GAS_FLOOR = ethers.utils.parseEther("0.0005");
+
+async function assertCanPay(params: {
+  chainId: CryptoChainId;
+  payer: string;
+  token: string;
+  totalAmount: string;
+}): Promise<void> {
+  const provider = jsonRpc(params.chainId);
+  const eth = await provider.getBalance(params.payer);
+  if (params.token === ethers.constants.AddressZero) {
+    const need = ethers.BigNumber.from(params.totalAmount).add(GAS_FLOOR);
+    if (eth.lt(need)) throw new Error("insufficient_funds");
+    return;
+  }
+  if (eth.lt(GAS_FLOOR)) throw new Error("insufficient_funds");
+  const erc20 = new ethers.Contract(params.token, ERC20_ABI, provider);
+  const tokenBal = (await erc20.balanceOf(params.payer)) as ethers.BigNumber;
+  if (tokenBal.lt(params.totalAmount)) throw new Error("insufficient_funds");
 }
 
 async function isOrderUsed(
@@ -455,7 +602,7 @@ async function isOrderUsed(
   escrow: string,
   orderIdBytes32: string,
 ): Promise<boolean> {
-  const provider = new ethers.providers.JsonRpcProvider(CRYPTO_CHAINS[chainId].rpcUrls[0]);
+  const provider = jsonRpc(chainId);
   const contract = new ethers.Contract(escrow, ["function orderUsed(bytes32) view returns (bool)"], provider);
   return Boolean(await contract.orderUsed(orderIdBytes32));
 }
@@ -497,13 +644,7 @@ export async function sendEscrowPayerTx(
     await waitOnPublicRpc(chainId, tx.hash);
     return tx.hash;
   } catch (err) {
-    const code = revertCode(err);
-    if (code) {
-      const mapped = new Error(code);
-      mapped.name = "EscrowTxError";
-      throw mapped;
-    }
-    throw err;
+    throw new Error(logCryptoError("escrow-tx", err));
   }
 }
 
@@ -530,11 +671,16 @@ export async function signAndRelayCancel(
   await ensureChain(injected, chainId);
   const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
   const deadline = Math.floor(Date.now() / 1000) + 600;
-  const signature = await web3.getSigner()._signTypedData(
-    { name: "SubscriptionEscrow", version: "1", chainId, verifyingContract: escrow },
-    CANCEL_TYPES,
-    { orderId: idBytes32, deadline },
-  );
+  let signature: string;
+  try {
+    signature = await web3.getSigner()._signTypedData(
+      { name: "SubscriptionEscrow", version: "1", chainId, verifyingContract: escrow },
+      CANCEL_TYPES,
+      { orderId: idBytes32, deadline },
+    );
+  } catch (err) {
+    throw new Error(logCryptoError("cancel-sign", err));
+  }
   try {
     const result = await relayCryptoCancel({ orderId, chainId, deadline, signature });
     return { txHash: result.txHash || null, cancelEffective: result.cancelEffective };
@@ -561,7 +707,7 @@ export async function listOnchainOrderIds(
   escrow: string,
   payer: string,
 ): Promise<string[]> {
-  const provider = new ethers.providers.JsonRpcProvider(CRYPTO_CHAINS[chainId].rpcUrls[0]);
+  const provider = jsonRpc(chainId);
   const contract = new ethers.Contract(escrow, ESCROW_ACCOUNT_ABI, provider);
   const ids = (await contract.ordersOf(payer)) as string[];
   return ids.map((id) => String(id));
@@ -657,8 +803,7 @@ export function useCryptoPurchase() {
       const accounts = await injected.request({ method: "eth_requestAccounts" });
       rememberWallet(injected, accounts);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Wallet connect failed";
-      setError(message);
+      setError(logCryptoError("connect", err));
       setStatus("error");
     } finally {
       setConnecting(false);
@@ -680,6 +825,18 @@ export function useCryptoPurchase() {
         const signer = web3.getSigner();
         const freshEnough = quote && quote.chainId === chainId && quote.expiry > Math.floor(Date.now() / 1000) + 30;
         const paidQuote = freshEnough ? quote : await loadQuote(chainId, token);
+        try {
+          await assertCanPay({
+            chainId,
+            payer: await signer.getAddress(),
+            token: paidQuote.token,
+            totalAmount: paidQuote.totalAmount,
+          });
+        } catch (err) {
+          if (classifyCryptoError(err) === "insufficient_funds") {
+            throw new Error("insufficient_funds");
+          }
+        }
         const uiLang = lang === "he" ? "he" : "en";
         const finish = async (txHash?: string) => {
           persistWait({
@@ -735,11 +892,7 @@ export function useCryptoPurchase() {
             await finish();
             return;
           }
-          if (isRpcBusy(err)) {
-            throw new Error("rpc_busy");
-          }
-          const code = revertCode(err);
-          throw code ? new Error(code) : err;
+          throw err;
         }
         persistWait({
           orderId: paidQuote.orderId,
@@ -754,8 +907,7 @@ export function useCryptoPurchase() {
         }
         await finish(tx.hash);
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Crypto checkout failed";
-        setError(message);
+        setError(logCryptoError("pay", err));
         setStatus("error");
       }
     },

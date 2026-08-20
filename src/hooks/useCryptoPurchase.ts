@@ -650,23 +650,6 @@ function jsonRpc(chainId: CryptoChainId, index = 0): ethers.providers.JsonRpcPro
   return new ethers.providers.JsonRpcProvider(urls[Math.min(index, urls.length - 1)]);
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
-}
-
-async function assertTxBroadcast(chainId: CryptoChainId, hash: string): Promise<void> {
-  const urls = CRYPTO_CHAINS[chainId].rpcUrls;
-  const deadline = Date.now() + 20_000;
-  while (Date.now() < deadline) {
-    for (let i = 0; i < urls.length; i += 1) {
-      const tx = await jsonRpc(chainId, i).getTransaction(hash).catch(() => null);
-      if (tx) return;
-    }
-    await sleep(1000);
-  }
-  throw new Error("tx_not_broadcast");
-}
-
 async function waitOnPublicRpc(chainId: CryptoChainId, hash: string): Promise<void> {
   let lastErr: unknown;
   for (let i = 0; i < CRYPTO_CHAINS[chainId].rpcUrls.length; i += 1) {
@@ -1035,7 +1018,6 @@ export function useCryptoPurchase() {
           }
           throw err;
         }
-        await assertTxBroadcast(chainId, tx.hash);
         await finish(tx.hash);
       } catch (err) {
         setError(logCryptoError("pay", err));

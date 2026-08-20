@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ethers } from "ethers";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
@@ -71,6 +71,46 @@ function formatWhen(ts: number, lang: "en" | "he"): string {
     month: "short",
     year: "numeric",
   });
+}
+
+type OrderTone = "live" | "provisioning" | "cancelled";
+
+function orderKey(order: ManagedOrder): string {
+  return `${order.chainId}:${order.idBytes32.toLowerCase()}`;
+}
+
+function toneOf(order: ManagedOrder): OrderTone {
+  if (order.settlement?.cancelAlreadySet) return "cancelled";
+  if (order.provisioned) return "live";
+  return "provisioning";
+}
+
+function markLetter(order: ManagedOrder): string {
+  const digits = (order.label || "").replace(/\D/g, "");
+  if (digits.length > 0) return digits[0];
+  if (order.label) return order.label[0].toUpperCase();
+  return "P";
+}
+
+function shortRef(orderId: string): string {
+  if (orderId.startsWith("0x") && orderId.length === 66) {
+    return `${orderId.slice(0, 6)}…${orderId.slice(-4)}`;
+  }
+  if (orderId.length > 12) return `${orderId.slice(0, 8)}…`;
+  return orderId;
+}
+
+function untilTs(order: ManagedOrder): number | null {
+  const settlement = order.settlement;
+  if (!settlement) return null;
+  if (settlement.cancelAlreadySet && settlement.cancelEffectiveAt) {
+    return settlement.cancelEffectiveAt;
+  }
+  const period =
+    settlement.elapsedPeriods > 0
+      ? Math.floor(settlement.elapsedSeconds / settlement.elapsedPeriods)
+      : 2_592_000;
+  return settlement.startAt + settlement.termPeriods * period;
 }
 
 function formatElapsed(seconds: number, lang: "en" | "he"): string {
@@ -194,6 +234,7 @@ async function loadManaged(address: string, injected?: EthereumProvider): Promis
 
 export function CryptoRecoverPage() {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const { t, lang } = useLanguage();
   const copy = t.crypto;
   const [orders, setOrders] = useState<ManagedOrder[]>([]);
@@ -204,6 +245,8 @@ export function CryptoRecoverPage() {
   const [action, setAction] = useState<{ orderId: string; kind: ActionKind } | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const payerRef = useRef<string | null>(null);
+  const focusKey = params.get("o");
+  const selected = orders.find((order) => orderKey(order) === focusKey) ?? null;
 
   useEffect(() => {
     payerRef.current = payer;
@@ -369,16 +412,45 @@ export function CryptoRecoverPage() {
   const connected = Boolean(payer);
   const busy = connecting || Boolean(action);
 
+  function openOrder(order: ManagedOrder) {
+    setError(null);
+    setConfirmingId(null);
+    setParams((current) => {
+      const next = new URLSearchParams();
+      const langParam = current.get("lang");
+      if (langParam === "he" || langParam === "en") next.set("lang", langParam);
+      next.set("o", orderKey(order));
+      return next;
+    });
+  }
+
+  function closeOrder() {
+    setError(null);
+    setConfirmingId(null);
+    setParams((current) => {
+      const next = new URLSearchParams();
+      const langParam = current.get("lang");
+      if (langParam === "he" || langParam === "en") next.set("lang", langParam);
+      return next;
+    });
+  }
+
   return (
     <Layout hideAppStoreBadges>
-      <section className="crypto-checkout">
-        <div className="crypto-checkout-frame">
+      <section className={`crypto-checkout${orders.length > 0 ? " is-orders" : ""}`}>
+        <div className={`crypto-checkout-frame${orders.length > 0 ? " is-orders" : ""}`}>
           <p className="crypto-checkout-back">
-            <Link to="/crypto">{copy.back}</Link>
+            {selected ? (
+              <button type="button" onClick={closeOrder}>
+                {copy.backToOrders}
+              </button>
+            ) : (
+              <Link to="/crypto">{copy.back}</Link>
+            )}
           </p>
           <p className="crypto-checkout-kicker">{copy.kicker}</p>
-          <h1>{copy.manageTitle}</h1>
-          <p className="crypto-checkout-lead">{copy.manageLead}</p>
+          <h1>{selected ? orderTitle(selected, copy) : copy.manageTitle}</h1>
+          {!selected && <p className="crypto-checkout-lead">{copy.manageLead}</p>}
 
           <div className="crypto-checkout-wallet">
             <span
@@ -414,121 +486,280 @@ export function CryptoRecoverPage() {
             <p className="crypto-checkout-amount">{copy.noOrders}</p>
           )}
 
-          {orders.length > 0 && (
-            <ul className="crypto-checkout-orders">
-              {orders.map((order) => {
-                const settlement = order.settlement;
-                const symbol = settlement?.symbol || CRYPTO_CHAINS[order.chainId].nativeCurrency.symbol;
-                const acting = action?.orderId === order.orderId;
-                const statusLabel = order.provisioned
-                  ? copy.statusReady
-                  : order.paid
-                    ? copy.statusProvisioning
-                    : order.status;
-                return (
-                  <li key={`${order.chainId}:${order.idBytes32}`} className="crypto-checkout-order">
-                    <p className="crypto-checkout-order-status">
-                      {order.label ? copy.numberLabel(order.label) : statusLabel}
-                    </p>
-                    <p className="crypto-checkout-order-id">
-                      {order.chainId === 80002 ? copy.amoy : copy.sepolia}
-                      {" · "}
-                      {order.label ? statusLabel : order.orderId}
-                    </p>
-                    {order.claimed && (
-                      <p className="crypto-checkout-order-status">{copy.claimedDone}</p>
-                    )}
-                    <ul className="crypto-checkout-order-split">
-                      {settlement ? (
-                        <>
-                          {settlement.canWithdrawUnused && (
-                            <li>
-                              {copy.youCanWithdraw(
-                                formatEscrowAmount(settlement.payerUnusedNow, symbol),
-                                symbol,
-                              )}
-                            </li>
-                          )}
-                          {settlement.cancelAlreadySet && (
-                            <li>
-                              {copy.cancelledReturned(formatWhen(settlement.cancelEffectiveAt, lang))}
-                            </li>
-                          )}
-                        </>
-                      ) : (
-                        <li>{copy.escrowUnread}</li>
-                      )}
-                    </ul>
-                    <div className="crypto-checkout-order-actions">
-                      {settlement?.canCancel && confirmingId === order.orderId && (
-                        <>
-                          <p className="crypto-checkout-order-status">{copy.cancelSummaryTitle}</p>
-                          <ul className="crypto-checkout-order-split">
-                            <li>{copy.timePassed(formatElapsed(settlement.elapsedSeconds, lang))}</li>
-                            <li>{copy.timePaid(formatWhen(settlement.ifCancelEffectiveAt, lang))}</li>
-                            <li>
-                              {copy.refundNow(
-                                formatEscrowAmount(settlement.payerUnusedIfCancel, symbol),
-                                symbol,
-                                settlement.unusedPeriodsIfCancel,
-                              )}
-                            </li>
-                          </ul>
-                          <Button
-                            onClick={() => void runPayerTx(order, "cancel")}
-                            loading={acting && action?.kind === "cancel"}
-                            disabled={busy}
-                          >
-                            {acting && action?.kind === "cancel" ? copy.waitWallet : copy.confirmCancel}
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            onClick={() => setConfirmingId(null)}
-                            disabled={busy}
-                          >
-                            {copy.keepNumber}
-                          </Button>
-                        </>
-                      )}
-                      {settlement?.canCancel && confirmingId !== order.orderId && (
-                        <Button
-                          variant="secondary"
-                          onClick={() => {
-                            setError(null);
-                            setConfirmingId(order.orderId);
-                          }}
-                          disabled={busy}
-                        >
-                          {copy.cancelCta}
-                        </Button>
-                      )}
-                      {settlement?.canWithdrawUnused && (
-                        <Button
-                          variant="secondary"
-                          onClick={() => void runPayerTx(order, "withdrawUnused")}
-                          loading={acting && action?.kind === "withdraw"}
-                          disabled={busy}
-                        >
-                          {acting && action?.kind === "withdraw" ? copy.waitWallet : copy.withdrawCta}
-                        </Button>
-                      )}
-                      {order.canClaim && (
-                        <Button
-                          onClick={() => void claim(order)}
-                          loading={acting && action?.kind === "claim"}
-                          disabled={busy}
-                        >
-                          {acting && action?.kind === "claim" ? copy.waitWallet : copy.claimCta}
-                        </Button>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+          {orders.length > 0 && selected && (
+            <OrderDetail
+              order={selected}
+              copy={copy}
+              lang={lang}
+              busy={busy}
+              action={action}
+              confirming={confirmingId === selected.orderId}
+              onConfirm={() => {
+                setError(null);
+                setConfirmingId(selected.orderId);
+              }}
+              onKeep={() => setConfirmingId(null)}
+              onCancel={() => void runPayerTx(selected, "cancel")}
+              onWithdraw={() => void runPayerTx(selected, "withdrawUnused")}
+              onClaim={() => void claim(selected)}
+            />
+          )}
+
+          {orders.length > 0 && !selected && (
+            <OrderTable orders={orders} copy={copy} lang={lang} onOpen={openOrder} />
           )}
         </div>
       </section>
     </Layout>
+  );
+}
+
+function orderTitle(
+  order: ManagedOrder,
+  copy: { numberLabel: (label: string) => string; statusProvisioning: string },
+): string {
+  return order.label ? copy.numberLabel(order.label) : copy.statusProvisioning;
+}
+
+function toneLabel(
+  tone: OrderTone,
+  copy: { statusLive: string; statusProvisioning: string; statusCancelled: string },
+): string {
+  if (tone === "cancelled") return copy.statusCancelled;
+  if (tone === "live") return copy.statusLive;
+  return copy.statusProvisioning;
+}
+
+function StatusPill({
+  order,
+  copy,
+}: {
+  order: ManagedOrder;
+  copy: { statusLive: string; statusProvisioning: string; statusCancelled: string };
+}) {
+  const tone = toneOf(order);
+  return <span className={`crypto-status is-${tone}`}>{toneLabel(tone, copy)}</span>;
+}
+
+function OrderTable({
+  orders,
+  copy,
+  lang,
+  onOpen,
+}: {
+  orders: ManagedOrder[];
+  copy: {
+    colNumber: string;
+    network: string;
+    colStatus: string;
+    colUntil: string;
+    untilEmpty: string;
+    amoy: string;
+    sepolia: string;
+    numberLabel: (label: string) => string;
+    statusProvisioning: string;
+    statusLive: string;
+    statusCancelled: string;
+  };
+  lang: "en" | "he";
+  onOpen: (order: ManagedOrder) => void;
+}) {
+  return (
+    <div className="crypto-order-table-wrap">
+      <table className="crypto-order-table">
+        <thead>
+          <tr>
+            <th>{copy.colNumber}</th>
+            <th className="is-desk">{copy.network}</th>
+            <th>{copy.colStatus}</th>
+            <th className="is-desk">{copy.colUntil}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[...orders]
+            .sort((a, b) => {
+              const rank = { live: 0, provisioning: 1, cancelled: 2 };
+              return rank[toneOf(a)] - rank[toneOf(b)];
+            })
+            .map((order) => {
+            const ends = untilTs(order);
+            const network = order.chainId === 80002 ? copy.amoy : copy.sepolia;
+            return (
+              <tr
+                key={orderKey(order)}
+                tabIndex={0}
+                role="button"
+                onClick={() => onOpen(order)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onOpen(order);
+                  }
+                }}
+              >
+                <td>
+                  <span className="crypto-order-cell">
+                    <span
+                      className={`crypto-order-mark is-${order.chainId === 80002 ? "amoy" : "sepolia"}`}
+                      aria-hidden="true"
+                    >
+                      {markLetter(order)}
+                    </span>
+                    <span className="crypto-order-name">
+                      <strong>{orderTitle(order, copy)}</strong>
+                      <small>
+                        {network}
+                        {" · "}
+                        {shortRef(order.orderId)}
+                      </small>
+                    </span>
+                  </span>
+                </td>
+                <td className="is-desk">{network}</td>
+                <td>
+                  <StatusPill order={order} copy={copy} />
+                </td>
+                <td className="is-desk">{ends ? formatWhen(ends, lang) : copy.untilEmpty}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function OrderDetail({
+  order,
+  copy,
+  lang,
+  busy,
+  action,
+  confirming,
+  onConfirm,
+  onKeep,
+  onCancel,
+  onWithdraw,
+  onClaim,
+}: {
+  order: ManagedOrder;
+  copy: {
+    amoy: string;
+    sepolia: string;
+    statusLive: string;
+    statusProvisioning: string;
+    statusCancelled: string;
+    claimedDone: string;
+    youCanWithdraw: (amount: string, symbol: string) => string;
+    cancelledReturned: (date: string) => string;
+    escrowUnread: string;
+    cancelSummaryTitle: string;
+    timePassed: (elapsed: string) => string;
+    timePaid: (date: string) => string;
+    refundNow: (amount: string, symbol: string, months: number) => string;
+    waitWallet: string;
+    confirmCancel: string;
+    keepNumber: string;
+    cancelCta: string;
+    withdrawCta: string;
+    claimCta: string;
+  };
+  lang: "en" | "he";
+  busy: boolean;
+  action: { orderId: string; kind: ActionKind } | null;
+  confirming: boolean;
+  onConfirm: () => void;
+  onKeep: () => void;
+  onCancel: () => void;
+  onWithdraw: () => void;
+  onClaim: () => void;
+}) {
+  const settlement = order.settlement;
+  const symbol = settlement?.symbol || CRYPTO_CHAINS[order.chainId].nativeCurrency.symbol;
+  const acting = action?.orderId === order.orderId;
+  const network = order.chainId === 80002 ? copy.amoy : copy.sepolia;
+  const ends = untilTs(order);
+
+  return (
+    <div className="crypto-order-focus">
+      <div className="crypto-order-focus-head">
+        <StatusPill order={order} copy={copy} />
+        <p className="crypto-order-focus-meta">
+          {network}
+          {ends ? ` · ${formatWhen(ends, lang)}` : ""}
+        </p>
+      </div>
+      {order.claimed && <p className="crypto-order-focus-note">{copy.claimedDone}</p>}
+      {settlement?.canWithdrawUnused || settlement?.cancelAlreadySet || !settlement ? (
+        <ul className="crypto-checkout-order-split">
+          {settlement ? (
+            <>
+              {settlement.canWithdrawUnused && (
+                <li>
+                  {copy.youCanWithdraw(formatEscrowAmount(settlement.payerUnusedNow, symbol), symbol)}
+                </li>
+              )}
+              {settlement.cancelAlreadySet && (
+                <li>{copy.cancelledReturned(formatWhen(settlement.cancelEffectiveAt, lang))}</li>
+              )}
+            </>
+          ) : (
+            <li>{copy.escrowUnread}</li>
+          )}
+        </ul>
+      ) : null}
+      <div className="crypto-checkout-order-actions">
+        {settlement?.canCancel && confirming && (
+          <>
+            <p className="crypto-checkout-order-status">{copy.cancelSummaryTitle}</p>
+            <ul className="crypto-checkout-order-split">
+              <li>{copy.timePassed(formatElapsed(settlement.elapsedSeconds, lang))}</li>
+              <li>{copy.timePaid(formatWhen(settlement.ifCancelEffectiveAt, lang))}</li>
+              <li>
+                {copy.refundNow(
+                  formatEscrowAmount(settlement.payerUnusedIfCancel, symbol),
+                  symbol,
+                  settlement.unusedPeriodsIfCancel,
+                )}
+              </li>
+            </ul>
+            <Button
+              onClick={onCancel}
+              loading={acting && action?.kind === "cancel"}
+              disabled={busy}
+            >
+              {acting && action?.kind === "cancel" ? copy.waitWallet : copy.confirmCancel}
+            </Button>
+            <Button variant="secondary" onClick={onKeep} disabled={busy}>
+              {copy.keepNumber}
+            </Button>
+          </>
+        )}
+        {settlement?.canCancel && !confirming && (
+          <Button variant="secondary" onClick={onConfirm} disabled={busy}>
+            {copy.cancelCta}
+          </Button>
+        )}
+        {settlement?.canWithdrawUnused && (
+          <Button
+            variant="secondary"
+            onClick={onWithdraw}
+            loading={acting && action?.kind === "withdraw"}
+            disabled={busy}
+          >
+            {acting && action?.kind === "withdraw" ? copy.waitWallet : copy.withdrawCta}
+          </Button>
+        )}
+        {order.canClaim && (
+          <Button
+            onClick={onClaim}
+            loading={acting && action?.kind === "claim"}
+            disabled={busy}
+          >
+            {acting && action?.kind === "claim" ? copy.waitWallet : copy.claimCta}
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }

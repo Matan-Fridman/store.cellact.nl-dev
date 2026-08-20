@@ -205,8 +205,15 @@ type TranslationsShape = {
     manageLead: string;
     manageConnected: (short: string) => string;
     noOrders: string;
+    colNumber: string;
+    colStatus: string;
+    colUntil: string;
+    statusLive: string;
+    statusCancelled: string;
     statusReady: string;
     statusProvisioning: string;
+    backToOrders: string;
+    untilEmpty: string;
     youCanWithdraw: (amount: string, symbol: string) => string;
     youWithdrawOn: (amount: string, symbol: string, date: string) => string;
     cancelledReturned: (date: string) => string;
@@ -614,11 +621,18 @@ export const translations: Record<Language, TranslationsShape> = {
       sepolia: "Sepolia",
       usdc: "USDC",
       manageTitle: "Your crypto orders",
-      manageLead: "The wallet that paid can cancel.",
+      manageLead: "Tap an order to cancel or claim.",
       manageConnected: (short) => `Connected ${short}`,
       noOrders: "No prepaid orders on this wallet.",
+      colNumber: "Number",
+      colStatus: "Status",
+      colUntil: "Until",
+      statusLive: "Live",
+      statusCancelled: "Cancelled",
       statusReady: "Number ready",
       statusProvisioning: "Provisioning",
+      backToOrders: "All orders",
+      untilEmpty: "—",
       youCanWithdraw: (amount, symbol) => `You can withdraw ${amount} ${symbol}`,
       youWithdrawOn: (amount, symbol, date) =>
         `You withdraw ${amount} ${symbol} from ${date}`,
@@ -1062,11 +1076,18 @@ export const translations: Record<Language, TranslationsShape> = {
       sepolia: "Sepolia",
       usdc: "USDC",
       manageTitle: "ההזמנות בקריפטו",
-      manageLead: "הארנק ששילם יכול לבטל.",
+      manageLead: "לחצו על הזמנה לביטול או להפעלה.",
       manageConnected: (short) => `מחובר ${short}`,
       noOrders: "אין הזמנות ממולאות מראש בארנק הזה.",
+      colNumber: "מספר",
+      colStatus: "סטטוס",
+      colUntil: "עד",
+      statusLive: "פעיל",
+      statusCancelled: "בוטל",
       statusReady: "המספר מוכן",
       statusProvisioning: "בהקצאה",
+      backToOrders: "כל ההזמנות",
+      untilEmpty: "—",
       youCanWithdraw: (amount, symbol) => `אפשר למשוך ${amount} ${symbol}`,
       youWithdrawOn: (amount, symbol, date) =>
         `תמשכו ${amount} ${symbol} מ-${date}`,

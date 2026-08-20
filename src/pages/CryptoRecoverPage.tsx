@@ -55,6 +55,7 @@ type ManagedOrder = {
   canClaim: boolean;
   label: string | null;
   status: string;
+  tokenSymbol: string | null;
   settlement: EscrowSettlement | null;
   cancelTxHash?: string | null;
 };
@@ -111,6 +112,17 @@ function shortRef(orderId: string): string {
   }
   if (orderId.length > 12) return `${orderId.slice(0, 8)}…`;
   return orderId;
+}
+
+function paidLine(order: ManagedOrder): string | null {
+  const symbol =
+    order.settlement?.symbol ||
+    order.tokenSymbol ||
+    CRYPTO_CHAINS[order.chainId].nativeCurrency.symbol;
+  if (order.settlement) {
+    return `${formatEscrowAmount(order.settlement.paidTotal, symbol)} ${symbol}`;
+  }
+  return symbol || null;
 }
 
 function untilTs(order: ManagedOrder): number | null {
@@ -226,6 +238,7 @@ async function loadManaged(address: string, injected?: EthereumProvider): Promis
       canClaim: order.provisioned && isUuidOrder(order.orderId) && !claimed,
       label: order.label || null,
       status: order.status,
+      tokenSymbol: order.tokenSymbol || null,
       settlement,
     });
   }
@@ -251,6 +264,7 @@ async function loadManaged(address: string, injected?: EthereumProvider): Promis
             canClaim: false,
             label: null,
             status: "onchain",
+            tokenSymbol: settlement.symbol,
             settlement,
           });
         }
@@ -696,6 +710,7 @@ function OrderTable({
   orders: ManagedOrder[];
   copy: {
     colNumber: string;
+    colPaid: string;
     network: string;
     colStatus: string;
     colUntil: string;
@@ -716,7 +731,7 @@ function OrderTable({
         <thead>
           <tr>
             <th>{copy.colNumber}</th>
-            <th className="is-desk">{copy.network}</th>
+            <th>{copy.colPaid}</th>
             <th>{copy.colStatus}</th>
             <th className="is-desk">{copy.colUntil}</th>
           </tr>
@@ -730,6 +745,7 @@ function OrderTable({
             .map((order) => {
             const ends = untilTs(order);
             const network = order.chainId === 80002 ? copy.amoy : copy.sepolia;
+            const paid = paidLine(order);
             return (
               <tr
                 key={orderKey(order)}
@@ -761,7 +777,9 @@ function OrderTable({
                     </span>
                   </span>
                 </td>
-                <td className="is-desk">{network}</td>
+                <td className="crypto-order-paid">
+                  {paid || copy.untilEmpty}
+                </td>
                 <td>
                   <StatusPill order={order} copy={copy} />
                 </td>
@@ -825,6 +843,7 @@ function OrderDetail({
   onClaim: () => void;
   onBack: () => void;
 }) {
+  const paid = paidLine(order);
   const settlement = order.settlement;
   const symbol = settlement?.symbol || CRYPTO_CHAINS[order.chainId].nativeCurrency.symbol;
   const acting = action?.orderId === order.orderId;
@@ -839,6 +858,7 @@ function OrderDetail({
         <StatusPill order={order} copy={copy} />
         <p className="crypto-order-focus-meta">
           {network}
+          {paid ? ` · ${paid}` : ""}
           {ends ? ` · ${formatWhen(ends, lang)}` : ""}
         </p>
       </div>

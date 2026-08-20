@@ -503,6 +503,7 @@ export type EscrowSettlement = {
   providerKeepsIfCancel: bigint;
   payerUnusedNow: bigint;
   payerUnusedIfCancel: bigint;
+  paidTotal: bigint;
 };
 
 function tokenMeta(chainId: CryptoChainId, token: string): { symbol: string } {
@@ -580,6 +581,7 @@ export function settlementFromOnchain(
     providerKeepsIfCancel: setupAmount + sumPeriods(periods, 0n, vestedIfCancel),
     payerUnusedNow: unusedNow,
     payerUnusedIfCancel: sumPeriods(periods, vestedIfCancel, BigInt(periods.length)),
+    paidTotal: setupAmount + sumPeriods(periods, 0n, BigInt(periods.length)),
   };
 }
 

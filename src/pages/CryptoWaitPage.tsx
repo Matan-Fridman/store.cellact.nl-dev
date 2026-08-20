@@ -25,6 +25,51 @@ type WaitSession = {
 
 type Phase = "work" | "done" | "ready";
 
+type FlowCopy = {
+  waitStepPay: string;
+  waitStepPrep: string;
+  waitStepSign: string;
+  waitStepShow: string;
+  waitStepScan: string;
+  waitTitle: string;
+};
+
+export type FlowStepState = "done" | "current" | "soon";
+
+export function cryptoActivationSteps(copy: FlowCopy, current: 1 | 2 | 3 | 4 | 5) {
+  const labels = [
+    copy.waitStepPay,
+    copy.waitStepPrep,
+    copy.waitStepSign,
+    copy.waitStepShow,
+    copy.waitStepScan,
+  ];
+  return labels.map((label, index) => {
+    const n = index + 1;
+    const state: FlowStepState = n < current ? "done" : n === current ? "current" : "soon";
+    return { label, state };
+  });
+}
+
+export function CryptoFlowSteps({
+  copy,
+  current,
+}: {
+  copy: FlowCopy;
+  current: 1 | 2 | 3 | 4 | 5;
+}) {
+  return (
+    <ol className="crypto-wait-steps" aria-label={copy.waitTitle}>
+      {cryptoActivationSteps(copy, current).map((step, index) => (
+        <li key={step.label} className={`is-${step.state}`}>
+          <span className="crypto-wait-num">{step.state === "done" ? "✓" : index + 1}</span>
+          {step.label}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 const fade = {
   initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0 },
@@ -129,6 +174,7 @@ export function CryptoWaitPage() {
     }
   }
 
+  const current: 1 | 2 | 3 = phase === "ready" || phase === "done" ? 3 : paid ? 2 : 1;
   const working = phase === "work";
   const title = phase === "ready"
     ? copy.waitReadyTitle
@@ -144,14 +190,6 @@ export function CryptoWaitPage() {
       : paid
         ? copy.waitPaid
         : copy.waitPending;
-  const steps = [
-    { label: copy.waitStepPay, state: paid || phase !== "work" ? "done" : "current" },
-    {
-      label: copy.waitStepPrep,
-      state: phase !== "work" ? "done" : paid ? "current" : "soon",
-    },
-    { label: copy.waitStepSign, state: phase === "ready" ? "current" : "soon" },
-  ] as const;
 
   return (
     <Layout hideAppStoreBadges>
@@ -163,13 +201,13 @@ export function CryptoWaitPage() {
           <p className="crypto-checkout-kicker">{copy.kicker}</p>
 
           <AnimatePresence mode="wait">
-            <motion.div key={phase === "ready" ? "ready" : "work"} {...fade}>
+            <motion.div key={title} {...fade}>
               <div className="crypto-wait-hero">
                 <div
-                  className={`crypto-wait-mark${phase === "work" ? "" : " is-done"}`}
+                  className={`crypto-wait-mark${working ? "" : " is-done"}`}
                   aria-hidden="true"
                 >
-                  {phase === "work" ? (
+                  {working ? (
                     <>
                       <span className="crypto-wait-ring" />
                       <span className="crypto-wait-orbit" />
@@ -188,38 +226,10 @@ export function CryptoWaitPage() {
                   <p className="crypto-checkout-lead">{lead}</p>
                 </div>
               </div>
-
-              {working ? (
-                <ol className="crypto-wait-steps" aria-label={copy.waitTitle}>
-                  {steps.map((step, index) => (
-                    <li key={step.label} className={`is-${step.state}`}>
-                      <span className="crypto-wait-num">
-                        {step.state === "done" ? "✓" : index + 1}
-                      </span>
-                      {step.label}
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                phase === "ready" && (
-                  <div className="crypto-wait-how">
-                    <p>
-                      <span className="crypto-wait-num is-current">1</span>
-                      {copy.waitHow1}
-                    </p>
-                    <p>
-                      <span className="crypto-wait-num">2</span>
-                      {copy.waitHow2}
-                    </p>
-                    <p>
-                      <span className="crypto-wait-num">3</span>
-                      {copy.waitHow3}
-                    </p>
-                  </div>
-                )
-              )}
             </motion.div>
           </AnimatePresence>
+
+          <CryptoFlowSteps copy={copy} current={current} />
 
           {error && (
             <p className="crypto-checkout-error" role="alert">

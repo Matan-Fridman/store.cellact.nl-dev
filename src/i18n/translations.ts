@@ -222,6 +222,7 @@ type TranslationsShape = {
     manageConnected: (short: string) => string;
     noOrders: string;
     colNumber: string;
+    colPaid: string;
     colStatus: string;
     colUntil: string;
     statusLive: string;
@@ -308,9 +309,8 @@ type TranslationsShape = {
     waitStepPay: string;
     waitStepPrep: string;
     waitStepSign: string;
-    waitHow1: string;
-    waitHow2: string;
-    waitHow3: string;
+    waitStepShow: string;
+    waitStepScan: string;
     waitKeepOpen: string;
     waitOrder: (orderId: string) => string;
     waitViewTx: string;
@@ -683,6 +683,7 @@ export const translations: Record<Language, TranslationsShape> = {
       manageConnected: (short) => `Connected ${short}`,
       noOrders: "No prepaid orders on this wallet.",
       colNumber: "Number",
+      colPaid: "Paid",
       colStatus: "Status",
       colUntil: "Until",
       statusLive: "Live",
@@ -782,10 +783,9 @@ export const translations: Record<Language, TranslationsShape> = {
       waitReady: "Use the wallet that paid. Then we show the QR.",
       waitStepPay: "Confirm payment",
       waitStepPrep: "Prepare number",
-      waitStepSign: "Sign for QR",
-      waitHow1: "Approve the claim in your wallet",
-      waitHow2: "We show your activation QR",
-      waitHow3: "Scan it in Arnacon",
+      waitStepSign: "Sign in wallet",
+      waitStepShow: "Show activation QR",
+      waitStepScan: "Scan in Arnacon",
       waitKeepOpen: "Keep this page open.",
       waitOrder: (orderId) => `Order ${orderId}`,
       waitViewTx: "View transaction",
@@ -1190,6 +1190,7 @@ export const translations: Record<Language, TranslationsShape> = {
       manageConnected: (short) => `מחובר ${short}`,
       noOrders: "אין הזמנות ממולאות מראש בארנק הזה.",
       colNumber: "מספר",
+      colPaid: "שולם",
       colStatus: "סטטוס",
       colUntil: "עד",
       statusLive: "פעיל",
@@ -1289,10 +1290,9 @@ export const translations: Record<Language, TranslationsShape> = {
       waitReady: "השתמשו בארנק ששילם. אחר כך נציג את ה-QR.",
       waitStepPay: "אישור תשלום",
       waitStepPrep: "הכנת מספר",
-      waitStepSign: "חתימה ל-QR",
-      waitHow1: "אשרו את הבקשה בארנק",
-      waitHow2: "נציג את קוד ההפעלה",
-      waitHow3: "סרקו אותו ב-Arnacon",
+      waitStepSign: "חתימה בארנק",
+      waitStepShow: "הצגת QR להפעלה",
+      waitStepScan: "סריקה ב-Arnacon",
       waitKeepOpen: "השאירו את הדף פתוח.",
       waitOrder: (orderId) => `הזמנה ${orderId}`,
       waitViewTx: "לעסקה",

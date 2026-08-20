@@ -2328,13 +2328,16 @@ html[data-fb-banner="1"] .landing-sticky {
 .crypto-wait-num {
   display: grid;
   place-items: center;
+  box-sizing: border-box;
   width: 28px;
   height: 28px;
+  flex: 0 0 28px;
   border-radius: 50%;
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   font-size: 0.72rem;
   font-weight: 800;
+  line-height: 1;
 }
 
 .crypto-wait-steps li.is-current {
@@ -2437,9 +2440,11 @@ html[data-fb-banner="1"] .landing-sticky {
 }
 
 .crypto-activate-qr {
-  width: fit-content;
-  margin: 0 auto 18px;
-  padding: 14px;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  margin: 0 0 20px;
+  padding: 16px;
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 0 0 1px rgba(143, 212, 255, 0.55), 0 12px 32px rgba(20, 32, 51, 0.08);
@@ -2451,34 +2456,37 @@ html[data-fb-banner="1"] .landing-sticky {
 
 .crypto-activate-how {
   display: grid;
-  gap: 0;
-  margin: 0 0 16px;
+  gap: 16px;
+  width: 100%;
+  margin: 0 0 18px;
   padding: 0;
+  list-style: none;
 }
 
 .crypto-activate-how li {
   display: grid;
   grid-template-columns: 28px 1fr;
-  gap: 10px;
-  align-items: start;
-  padding: 10px 0;
-  list-style: none;
+  gap: 12px;
+  align-items: center;
 }
 
-.crypto-activate-how li + li {
-  border-top: 1px solid var(--color-border);
+.crypto-activate-copy {
+  min-width: 0;
 }
 
-.crypto-activate-how strong {
+.crypto-activate-copy strong {
   display: block;
   font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.25;
   color: var(--color-text);
 }
 
-.crypto-activate-how span {
+.crypto-activate-copy span {
   display: block;
   margin-top: 2px;
   font-size: 0.8rem;
+  line-height: 1.35;
   color: var(--color-text-muted);
 }
 
@@ -2570,6 +2578,11 @@ html[data-fb-banner="1"] .landing-sticky {
   font-size: 0.88rem;
   font-weight: 600;
   border-bottom: 1px solid var(--color-border);
+}
+
+.crypto-order-paid {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .crypto-order-table tbody tr {

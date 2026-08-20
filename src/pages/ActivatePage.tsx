@@ -6,6 +6,7 @@ import { Button } from "../components/Button";
 import { redeemActivationToken } from "../services/api";
 import { buildQrUrl, ensureClaimUrlDevParam, formatIsraeliLocal } from "../utils/format";
 import { useLanguage } from "../contexts/LanguageContext";
+import { CryptoFlowSteps } from "./CryptoWaitPage";
 
 type State =
   | { phase: "loading" }
@@ -113,6 +114,7 @@ function QRState({
   t: ReturnType<typeof useLanguage>["t"];
 }) {
   const qrUrl = buildQrUrl(claimUrl, 220);
+  const fromCrypto = Boolean(sessionStorage.getItem("secnum_crypto_wait"));
 
   return (
     <motion.div {...fade}>
@@ -143,17 +145,21 @@ function QRState({
         <img src={qrUrl} alt={t.success.scanTitle} width={220} height={220} />
       </motion.div>
 
-      <ol className="crypto-activate-how">
-        {t.success.scanHow.map(([title, body], index) => (
-          <li key={title}>
-            <span className={`crypto-wait-num${index === 1 ? " is-current" : ""}`}>{index + 1}</span>
-            <div>
-              <strong>{title}</strong>
-              <span>{body}</span>
-            </div>
-          </li>
-        ))}
-      </ol>
+      {fromCrypto ? (
+        <CryptoFlowSteps copy={t.crypto} current={4} />
+      ) : (
+        <ol className="crypto-activate-how">
+          {t.success.scanHow.map(([title, body], index) => (
+            <li key={title}>
+              <span className="crypto-wait-num">{index + 1}</span>
+              <div className="crypto-activate-copy">
+                <strong>{title}</strong>
+                <span>{body}</span>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
 
       <p className="crypto-activate-or">{t.success.orDivider}</p>
       <Button onClick={() => { window.location.href = claimUrl; }}>

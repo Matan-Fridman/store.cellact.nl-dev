@@ -543,7 +543,7 @@ export async function signAndRelayCancel(
       mapped.name = "EscrowTxError";
       throw mapped;
     }
-    await sendEscrowPayerTx(chainId, escrow, idBytes32, "cancel", payer);
+    throw err;
   }
 }
 

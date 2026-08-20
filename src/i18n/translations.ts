@@ -251,6 +251,7 @@ type TranslationsShape = {
     userRejected: string;
     insufficientFunds: string;
     txFailed: string;
+    txNotBroadcast?: string;
     withdrawCta: string;
     claimCta: string;
     waitWallet: string;
@@ -298,6 +299,7 @@ type TranslationsShape = {
     waitPaid: string;
     waitReady: string;
     waitKeepOpen: (orderId: string) => string;
+    waitViewTx: string;
     waitLeft: string;
     waitSign: string;
     waitSigning: string;
@@ -702,6 +704,7 @@ export const translations: Record<Language, TranslationsShape> = {
       userRejected: "You cancelled in the wallet.",
       insufficientFunds: "Not enough funds in this wallet.",
       txFailed: "Payment did not go through. Try again.",
+      txNotBroadcast: "The wallet returned a hash, but the network never saw the transaction. Nothing was charged. Try again.",
       withdrawCta: "Withdraw unused",
       claimCta: "Sign and show QR",
       waitWallet: "Confirm in your wallet",
@@ -758,6 +761,7 @@ export const translations: Record<Language, TranslationsShape> = {
       waitPaid: "Paid. Provisioning your number…",
       waitReady: "Payment confirmed. Sign with the paying wallet for the QR.",
       waitKeepOpen: (orderId) => `Keep this page open. Order ${orderId}`,
+      waitViewTx: "View transaction",
       waitLeft: "Left by accident?",
       waitSign: "Sign and show QR",
       waitSigning: "Waiting for signature…",
@@ -1189,6 +1193,7 @@ export const translations: Record<Language, TranslationsShape> = {
       userRejected: "ביטלתם בארנק.",
       insufficientFunds: "אין מספיק יתרה בארנק.",
       txFailed: "התשלום לא עבר. נסו שוב.",
+      txNotBroadcast: "הארנק החזיר מזהה עסקה, אבל הרשת לא ראתה אותה. לא חויבתם. נסו שוב.",
       withdrawCta: "משיכת יתרה",
       claimCta: "חתימה והצגת QR",
       waitWallet: "אשרו בארנק",
@@ -1245,6 +1250,7 @@ export const translations: Record<Language, TranslationsShape> = {
       waitPaid: "שולם. מקצים את המספר…",
       waitReady: "התשלום אושר. חתמו עם הארנק ששילם לקבלת QR.",
       waitKeepOpen: (orderId) => `השאירו את הדף פתוח. הזמנה ${orderId}`,
+      waitViewTx: "לעסקה",
       waitLeft: "יצאתם בטעות?",
       waitSign: "חתימה והצגת QR",
       waitSigning: "ממתינים לחתימה…",

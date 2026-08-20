@@ -51,7 +51,7 @@ export const CRYPTO_CHAINS: Record<
     chainId: "0xaa36a7",
     chainName: "Sepolia",
     nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
-    rpcUrls: ["https://ethereum-sepolia-rpc.publicnode.com", "https://rpc.sepolia.org"],
+    rpcUrls: ["https://rpc.sepolia.org", "https://ethereum-sepolia-rpc.publicnode.com"],
     blockExplorerUrls: ["https://sepolia.etherscan.io"],
   },
 };
@@ -287,6 +287,9 @@ export function classifyCryptoError(err: unknown): string {
   if (/unknown account #0|unsupported_operation/i.test(text) && /getAddress/i.test(text)) {
     return "wallet_required";
   }
+  if (/tx_not_broadcast|never saw this transaction|not accepted by the network/i.test(text)) {
+    return "tx_not_broadcast";
+  }
   if (isRpcBusy(err) || /429|too many requests/i.test(text)) return "rpc_busy";
   return "tx_failed";
 }
@@ -309,6 +312,7 @@ export function cryptoErrorCopy(
     notPayer?: string;
     walletRequired?: string;
     walletMissing?: string;
+    txNotBroadcast?: string;
   },
   err: unknown,
 ): string {
@@ -317,6 +321,7 @@ export function cryptoErrorCopy(
   if (code === "rpc_busy") return copy.rpcBusy;
   if (code === "user_rejected") return copy.userRejected;
   if (code === "insufficient_funds") return copy.insufficientFunds;
+  if (code === "tx_not_broadcast" && copy.txNotBroadcast) return copy.txNotBroadcast;
   if (code === "wallet_required" && copy.walletRequired) return copy.walletRequired;
   if (code === "wallet_missing" && copy.walletMissing) return copy.walletMissing;
   if (code === "already_cancelled" && copy.alreadyCancelled) return copy.alreadyCancelled;
@@ -643,6 +648,23 @@ function persistWait(params: {
 function jsonRpc(chainId: CryptoChainId, index = 0): ethers.providers.JsonRpcProvider {
   const urls = CRYPTO_CHAINS[chainId].rpcUrls;
   return new ethers.providers.JsonRpcProvider(urls[Math.min(index, urls.length - 1)]);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function assertTxBroadcast(chainId: CryptoChainId, hash: string): Promise<void> {
+  const urls = CRYPTO_CHAINS[chainId].rpcUrls;
+  const deadline = Date.now() + 20_000;
+  while (Date.now() < deadline) {
+    for (let i = 0; i < urls.length; i += 1) {
+      const tx = await jsonRpc(chainId, i).getTransaction(hash).catch(() => null);
+      if (tx) return;
+    }
+    await sleep(1000);
+  }
+  throw new Error("tx_not_broadcast");
 }
 
 async function waitOnPublicRpc(chainId: CryptoChainId, hash: string): Promise<void> {
@@ -1013,17 +1035,7 @@ export function useCryptoPurchase() {
           }
           throw err;
         }
-        persistWait({
-          orderId: paidQuote.orderId,
-          chainId: paidQuote.chainId as CryptoChainId,
-          escrow: paidQuote.escrow,
-          txHash: tx.hash,
-        });
-        try {
-          await waitOnPublicRpc(chainId, tx.hash);
-        } catch {
-          // Public RPC can lag. Wait page polls /status independently of MetaMask.
-        }
+        await assertTxBroadcast(chainId, tx.hash);
         await finish(tx.hash);
       } catch (err) {
         setError(logCryptoError("pay", err));

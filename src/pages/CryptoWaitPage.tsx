@@ -5,7 +5,7 @@ import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
 import { useLanguage } from "../contexts/LanguageContext";
 import { claimCryptoActivation, getCryptoStatus } from "../services/api";
-import { pickEthereum, cryptoErrorCopy, logCryptoError, signerFromInjected, type CryptoChainId } from "../hooks/useCryptoPurchase";
+import { pickEthereum, cryptoErrorCopy, escrowTxUrl, logCryptoError, signerFromInjected, type CryptoChainId } from "../hooks/useCryptoPurchase";
 
 const CLAIM_TYPES = {
   ClaimActivation: [
@@ -19,6 +19,7 @@ type WaitSession = {
   orderId?: string;
   chainId?: number;
   escrow?: string;
+  txHash?: string;
 };
 
 export function CryptoWaitPage() {
@@ -31,6 +32,7 @@ export function CryptoWaitPage() {
   const orderId = params.get("order") || parsed?.orderId || "";
   const chainId = Number(params.get("chain") || parsed?.chainId || 0) as CryptoChainId;
   const lang = params.get("lang") === "he" || uiLang === "he" ? "he" : "en";
+  const txHash = parsed?.txHash || "";
   const [message, setMessage] = useState(copy.waitPending);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -132,6 +134,13 @@ export function CryptoWaitPage() {
             </Button>
           )}
           {!ready && <p className="crypto-checkout-review-meta">{copy.waitKeepOpen(orderId)}</p>}
+          {txHash && (chainId === 80002 || chainId === 11155111) && (
+            <p className="crypto-checkout-review-meta">
+              <a href={escrowTxUrl(chainId, txHash)} target="_blank" rel="noreferrer">
+                {copy.waitViewTx}
+              </a>
+            </p>
+          )}
           <p className="crypto-checkout-recover">
             {copy.waitLeft} <Link to="/crypto/recover">{copy.recoverLink}</Link>
           </p>

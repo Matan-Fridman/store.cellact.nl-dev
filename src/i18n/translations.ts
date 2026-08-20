@@ -223,6 +223,8 @@ type TranslationsShape = {
     alreadyCancelled: string;
     nothingToWithdraw: string;
     notPayer: string;
+    expiredQuote: string;
+    rpcBusy: string;
     withdrawCta: string;
     claimCta: string;
     waitWallet: string;
@@ -638,6 +640,8 @@ export const translations: Record<Language, TranslationsShape> = {
       alreadyCancelled: "Already cancelled. Unused funds came back in that transaction.",
       nothingToWithdraw: "Nothing left to withdraw. Cancel already sent unused funds back.",
       notPayer: "This wallet did not pay this order.",
+      expiredQuote: "Price expired. Tap pay once more.",
+      rpcBusy: "Wallet RPC is busy. If you already confirmed in MetaMask, find your order.",
       withdrawCta: "Withdraw unused",
       claimCta: "Sign and show QR",
       waitWallet: "Confirm in your wallet",
@@ -1084,6 +1088,8 @@ export const translations: Record<Language, TranslationsShape> = {
       alreadyCancelled: "כבר בוטל. היתרה חזרה באותה עסקה.",
       nothingToWithdraw: "אין מה למשוך. הביטול כבר החזיר את היתרה.",
       notPayer: "הארנק הזה לא שילם על ההזמנה.",
+      expiredQuote: "המחיר פג. לחצו תשלום פעם אחת שוב.",
+      rpcBusy: "הארנק עמוס. אם כבר אישרתם ב-MetaMask, איתרו את ההזמנה.",
       withdrawCta: "משיכת יתרה",
       claimCta: "חתימה והצגת QR",
       waitWallet: "אשרו בארנק",

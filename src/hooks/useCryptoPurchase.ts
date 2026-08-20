@@ -359,13 +359,46 @@ const ESCROW_REVERT: Record<string, string> = {
   [ethers.utils.id("NothingToWithdraw()").slice(0, 10)]: "nothing_to_withdraw",
   [ethers.utils.id("CancelNotEffective()").slice(0, 10)]: "nothing_to_withdraw",
   [ethers.utils.id("NotPayer()").slice(0, 10)]: "not_payer",
+  [ethers.utils.id("OrderUsed()").slice(0, 10)]: "already_paid",
+  [ethers.utils.id("ExpiredQuote()").slice(0, 10)]: "expired_quote",
 };
 
 function revertCode(err: unknown): string | null {
   const blob = err instanceof Error ? `${err.message}\n${JSON.stringify(err)}` : JSON.stringify(err);
-  const match = blob.match(/0x([0-9a-f]{8})\b/i);
-  if (!match) return null;
-  return ESCROW_REVERT[`0x${match[1].toLowerCase()}`] ?? null;
+  for (const match of blob.matchAll(/0x([0-9a-f]{8})\b/gi)) {
+    const mapped = ESCROW_REVERT[`0x${match[1].toLowerCase()}`];
+    if (mapped) return mapped;
+  }
+  return null;
+}
+
+function isRpcBusy(err: unknown): boolean {
+  const blob = err instanceof Error ? `${err.message}\n${JSON.stringify(err)}` : JSON.stringify(err);
+  return /rate limited|timeout|missing revert data|could not detect network/i.test(blob);
+}
+
+function persistWait(params: {
+  orderId: string;
+  chainId: CryptoChainId;
+  escrow: string;
+  txHash?: string;
+}): void {
+  sessionStorage.setItem("secnum_crypto_wait", JSON.stringify(params));
+}
+
+async function waitOnPublicRpc(chainId: CryptoChainId, hash: string): Promise<void> {
+  const provider = new ethers.providers.JsonRpcProvider(CRYPTO_CHAINS[chainId].rpcUrls[0]);
+  await provider.waitForTransaction(hash, 1, 120000);
+}
+
+async function isOrderUsed(
+  chainId: CryptoChainId,
+  escrow: string,
+  orderIdBytes32: string,
+): Promise<boolean> {
+  const provider = new ethers.providers.JsonRpcProvider(CRYPTO_CHAINS[chainId].rpcUrls[0]);
+  const contract = new ethers.Contract(escrow, ["function orderUsed(bytes32) view returns (bool)"], provider);
+  return Boolean(await contract.orderUsed(orderIdBytes32));
 }
 
 export function quoteMonthly(quote: {
@@ -400,8 +433,8 @@ export async function sendEscrowPayerTx(
   const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
   const contract = new ethers.Contract(escrow, ESCROW_ACCOUNT_ABI, web3.getSigner());
   try {
-    const tx = (await contract[method](idBytes32)) as { wait: () => Promise<unknown> };
-    await tx.wait();
+    const tx = (await contract[method](idBytes32)) as { hash: string };
+    await waitOnPublicRpc(chainId, tx.hash);
   } catch (err) {
     const code = revertCode(err);
     if (code) {
@@ -537,40 +570,79 @@ export function useCryptoPurchase() {
         const signer = web3.getSigner();
         const freshEnough = quote && quote.chainId === chainId && quote.expiry > Math.floor(Date.now() / 1000) + 30;
         const paidQuote = freshEnough ? quote : await loadQuote(chainId, token);
+        const uiLang = lang === "he" ? "he" : "en";
+        const finish = async (txHash?: string) => {
+          persistWait({
+            orderId: paidQuote.orderId,
+            chainId: paidQuote.chainId as CryptoChainId,
+            escrow: paidQuote.escrow,
+            txHash,
+          });
+          await getCryptoStatus({
+            orderId: paidQuote.orderId,
+            chainId: paidQuote.chainId,
+            lang: uiLang,
+          }).catch(() => undefined);
+          window.location.assign(waitPath(paidQuote.orderId, chainId, uiLang));
+        };
+
         const escrow = new ethers.Contract(paidQuote.escrow, SUBSCRIBE_ABI, signer);
         if (paidQuote.token !== ethers.constants.AddressZero) {
           const erc20 = new ethers.Contract(paidQuote.token, ERC20_ABI, signer);
           const approve = await erc20.approve(paidQuote.escrow, paidQuote.totalAmount);
-          await approve.wait();
+          try {
+            await waitOnPublicRpc(chainId, approve.hash);
+          } catch {
+            // Approve may already be mined; subscribe will fail loudly if not.
+          }
         }
-        const tx = await escrow.subscribe(
-          paidQuote.orderIdBytes32,
-          paidQuote.serviceId,
-          paidQuote.token,
-          paidQuote.setupAmount,
-          paidQuote.periodAmounts,
-          paidQuote.totalAmount,
-          paidQuote.expiry,
-          paidQuote.signature,
-          paidQuote.orderId,
-          { value: paidQuote.token === ethers.constants.AddressZero ? paidQuote.totalAmount : 0 },
-        );
-        await tx.wait();
-        await getCryptoStatus({
+        let tx: { hash: string };
+        try {
+          tx = (await escrow.subscribe(
+            paidQuote.orderIdBytes32,
+            paidQuote.serviceId,
+            paidQuote.token,
+            paidQuote.setupAmount,
+            paidQuote.periodAmounts,
+            paidQuote.totalAmount,
+            paidQuote.expiry,
+            paidQuote.signature,
+            paidQuote.orderId,
+            { value: paidQuote.token === ethers.constants.AddressZero ? paidQuote.totalAmount : 0 },
+          )) as { hash: string };
+        } catch (err) {
+          if (revertCode(err) === "already_paid") {
+            await finish();
+            return;
+          }
+          if (revertCode(err) === "expired_quote") {
+            throw new Error("expired_quote");
+          }
+          const used = await isOrderUsed(chainId, paidQuote.escrow, paidQuote.orderIdBytes32).catch(
+            () => false,
+          );
+          if (used) {
+            await finish();
+            return;
+          }
+          if (isRpcBusy(err)) {
+            throw new Error("rpc_busy");
+          }
+          const code = revertCode(err);
+          throw code ? new Error(code) : err;
+        }
+        persistWait({
           orderId: paidQuote.orderId,
-          chainId: paidQuote.chainId,
-          lang: lang === "he" ? "he" : "en",
-        }).catch(() => undefined);
-        sessionStorage.setItem(
-          "secnum_crypto_wait",
-          JSON.stringify({
-            orderId: paidQuote.orderId,
-            chainId: paidQuote.chainId,
-            escrow: paidQuote.escrow,
-            txHash: tx.hash,
-          }),
-        );
-        window.location.assign(waitPath(paidQuote.orderId, chainId, lang === "he" ? "he" : "en"));
+          chainId: paidQuote.chainId as CryptoChainId,
+          escrow: paidQuote.escrow,
+          txHash: tx.hash,
+        });
+        try {
+          await waitOnPublicRpc(chainId, tx.hash);
+        } catch {
+          // Public RPC can lag. Wait page polls /status independently of MetaMask.
+        }
+        await finish(tx.hash);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Crypto checkout failed";
         setError(message);

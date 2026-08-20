@@ -231,7 +231,11 @@ export function CryptoPage() {
 
           {crypto.error && (
             <button type="button" className="crypto-checkout-error" onClick={crypto.reset}>
-              {crypto.error}
+              {crypto.error === "expired_quote"
+                ? copy.expiredQuote
+                : crypto.error === "rpc_busy"
+                  ? copy.rpcBusy
+                  : crypto.error}
             </button>
           )}
 

@@ -232,6 +232,13 @@ export type EscrowSettlement = {
   cancelIsEffective: boolean;
   canCancel: boolean;
   canWithdrawUnused: boolean;
+  startAt: number;
+  nowAt: number;
+  elapsedSeconds: number;
+  elapsedPeriods: number;
+  termPeriods: number;
+  paidPeriodsIfCancel: number;
+  unusedPeriodsIfCancel: number;
   cancelEffectiveAt: number;
   ifCancelEffectiveAt: number;
   providerWithdrawable: bigint;
@@ -289,6 +296,11 @@ export function settlementFromOnchain(
     cancelEffective !== 0n && now >= cancelEffective
       ? sumPeriods(periods, vestedNow, BigInt(periods.length))
       : 0n;
+  const elapsedCount = elapsedPeriods(clock);
+  let paidIfCancel = (ifCancelAt - start) / periodSeconds;
+  if (paidIfCancel > termPeriods) paidIfCancel = termPeriods;
+  if (paidIfCancel < 0n) paidIfCancel = 0n;
+  const unusedCount = termPeriods > paidIfCancel ? termPeriods - paidIfCancel : 0n;
   const meta = tokenMeta(chainId, String(snap.token));
   return {
     symbol: meta.symbol,
@@ -296,6 +308,13 @@ export function settlementFromOnchain(
     cancelIsEffective: cancelEffective !== 0n && now >= cancelEffective,
     canCancel: cancelEffective === 0n,
     canWithdrawUnused: unusedNow > 0n,
+    startAt: Number(start),
+    nowAt: Number(now),
+    elapsedSeconds: Number(now > start ? now - start : 0n),
+    elapsedPeriods: Number(elapsedCount),
+    termPeriods: Number(termPeriods),
+    paidPeriodsIfCancel: Number(paidIfCancel),
+    unusedPeriodsIfCancel: Number(unusedCount),
     cancelEffectiveAt: Number(cancelEffective),
     ifCancelEffectiveAt: Number(ifCancelAt),
     providerWithdrawable:
@@ -335,6 +354,41 @@ export async function readEscrowSettlement(
   });
 }
 
+const ESCROW_REVERT: Record<string, string> = {
+  [ethers.utils.id("CancelAlreadySet()").slice(0, 10)]: "already_cancelled",
+  [ethers.utils.id("NothingToWithdraw()").slice(0, 10)]: "nothing_to_withdraw",
+  [ethers.utils.id("CancelNotEffective()").slice(0, 10)]: "nothing_to_withdraw",
+  [ethers.utils.id("NotPayer()").slice(0, 10)]: "not_payer",
+};
+
+function revertCode(err: unknown): string | null {
+  const blob = err instanceof Error ? `${err.message}\n${JSON.stringify(err)}` : JSON.stringify(err);
+  const match = blob.match(/0x([0-9a-f]{8})\b/i);
+  if (!match) return null;
+  return ESCROW_REVERT[`0x${match[1].toLowerCase()}`] ?? null;
+}
+
+export function quoteMonthly(quote: {
+  periodAmounts: string[];
+  tokenSymbol: string;
+}): { monthly: string; intro: string | null; introCount: number } {
+  const periods = quote.periodAmounts;
+  const last = periods[periods.length - 1] || "0";
+  const first = periods[0] || last;
+  let introCount = 0;
+  if (first !== last) {
+    for (const amount of periods) {
+      if (amount !== first) break;
+      introCount += 1;
+    }
+  }
+  return {
+    monthly: formatLockAmount(last, quote.tokenSymbol),
+    intro: introCount > 0 ? formatLockAmount(first, quote.tokenSymbol) : null,
+    introCount,
+  };
+}
+
 export async function sendEscrowPayerTx(
   chainId: CryptoChainId,
   escrow: string,
@@ -345,8 +399,18 @@ export async function sendEscrowPayerTx(
   await ensureChain(injected, chainId);
   const web3 = new ethers.providers.Web3Provider(injected as ethers.providers.ExternalProvider);
   const contract = new ethers.Contract(escrow, ESCROW_ACCOUNT_ABI, web3.getSigner());
-  const tx = (await contract[method](idBytes32)) as { wait: () => Promise<unknown> };
-  await tx.wait();
+  try {
+    const tx = (await contract[method](idBytes32)) as { wait: () => Promise<unknown> };
+    await tx.wait();
+  } catch (err) {
+    const code = revertCode(err);
+    if (code) {
+      const mapped = new Error(code);
+      mapped.name = "EscrowTxError";
+      throw mapped;
+    }
+    throw err;
+  }
 }
 
 export async function listOnchainOrderIds(

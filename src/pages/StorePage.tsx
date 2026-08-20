@@ -112,6 +112,12 @@ export function StorePage() {
         </Link>
       </section>
 
+      <section className="crypto-explain-landing">
+        <h2>{t.crypto.landingExplainTitle}</h2>
+        <p>{t.crypto.landingExplainLead}</p>
+        <Link to="/crypto/why">{t.crypto.landingExplainCta}</Link>
+      </section>
+
       {showSticky && (
         <div className="landing-sticky">
           <p>{t.landing.stickyTag}</p>

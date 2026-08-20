@@ -6,7 +6,7 @@ import { useLanguage } from "../contexts/LanguageContext";
 import {
   CRYPTO_ESCROW,
   escrowExplorerUrl,
-  formatLockAmount,
+  quoteMonthly,
   shortHex,
   useCryptoPurchase,
   type CryptoAsset,
@@ -35,19 +35,16 @@ const ESCROW_CANCEL_CODE = `function cancel(bytes32 orderId) external whenNotPau
 function EscrowContract({
   chainId,
   copy,
-  compact,
 }: {
   chainId: CryptoChainId;
   copy: {
     contractLabel: string;
     copyAddress: string;
     copied: string;
-    openExplorer: string;
     amoy: string;
     sepolia: string;
     whySameAddress: string;
   };
-  compact: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const address = CRYPTO_ESCROW[chainId];
@@ -62,28 +59,23 @@ function EscrowContract({
     <div className="crypto-checkout-contract">
       <p className="crypto-checkout-contract-label">{copy.contractLabel}</p>
       <p className="crypto-checkout-contract-addr" dir="ltr">
-        {compact ? shortHex(address) : address}
+        {shortHex(address)}
+      </p>
+      <p className="crypto-checkout-contract-addr is-full" dir="ltr">
+        {address}
       </p>
       <div className="crypto-checkout-contract-actions">
         <button type="button" onClick={() => void copyAddress()}>
           {copied ? copy.copied : copy.copyAddress}
         </button>
-        {compact ? (
-          <a href={escrowExplorerUrl(chainId)} target="_blank" rel="noreferrer">
-            {copy.openExplorer}
-          </a>
-        ) : (
-          <>
-            <a href={escrowExplorerUrl(80002)} target="_blank" rel="noreferrer">
-              {copy.amoy}
-            </a>
-            <a href={escrowExplorerUrl(11155111)} target="_blank" rel="noreferrer">
-              {copy.sepolia}
-            </a>
-          </>
-        )}
+        <a href={escrowExplorerUrl(80002)} target="_blank" rel="noreferrer">
+          {copy.amoy}
+        </a>
+        <a href={escrowExplorerUrl(11155111)} target="_blank" rel="noreferrer">
+          {copy.sepolia}
+        </a>
       </div>
-      {!compact && <p className="crypto-checkout-contract-note">{copy.whySameAddress}</p>}
+      <p className="crypto-checkout-contract-note">{copy.whySameAddress}</p>
     </div>
   );
 }
@@ -96,35 +88,26 @@ export function CryptoPage() {
   const crypto = useCryptoPurchase();
   const [chainId, setChainId] = useState<CryptoChainId>(80002);
   const [asset, setAsset] = useState<CryptoAsset>("usdc");
-  const [view, setView] = useState<"setup" | "review">("setup");
   const loading = crypto.status === "loading";
   const connected = Boolean(crypto.account);
   const nativeSymbol = chainId === 80002 ? "POL" : "ETH";
   const paySymbol = asset === "usdc" ? copy.usdc : nativeSymbol;
   const expectedSymbol = asset === "usdc" ? "USDC" : nativeSymbol;
-  const lockAmount =
+  const quoteReady =
     crypto.quote && crypto.quote.chainId === chainId && crypto.quote.tokenSymbol === expectedSymbol
-      ? formatLockAmount(crypto.quote.totalAmount, crypto.quote.tokenSymbol)
+      ? crypto.quote
       : null;
-  const reviewing = view === "review";
-  const stepChooseClass = reviewing || loading ? "is-done" : "is-current";
-  const stepReviewClass = loading ? "is-done" : reviewing ? "is-current" : "";
-  const stepPayClass = loading ? "is-current" : "";
+  const monthly = quoteReady ? quoteMonthly(quoteReady) : null;
 
   useEffect(() => {
     if (isWhy) return;
     void crypto.loadQuote(chainId, asset).catch(() => undefined);
   }, [chainId, asset, crypto.loadQuote, isWhy]);
 
-  function openReview() {
-    if (!lockAmount) return;
-    setView("review");
-  }
-
   if (isWhy) {
     return (
       <Layout hideAppStoreBadges>
-        <section className="crypto-checkout">
+        <section className="crypto-explain-page">
           <div className="crypto-checkout-frame is-doc">
             <p className="crypto-checkout-back">
               <Link to="/crypto">{copy.whyBack}</Link>
@@ -132,7 +115,6 @@ export function CryptoPage() {
             <p className="crypto-checkout-kicker">{copy.kicker}</p>
             <h1>{copy.whyTitle}</h1>
             <p className="crypto-checkout-lead">{copy.whyLead}</p>
-
             <article className="crypto-why">
               <h2>{copy.whyRefuseTitle}</h2>
               <p>{copy.whyRefuse}</p>
@@ -143,7 +125,7 @@ export function CryptoPage() {
               <h2>{copy.whyTrustTitle}</h2>
               <p>{copy.whyTrust}</p>
               <h2>{copy.whyContractTitle}</h2>
-              <EscrowContract chainId={chainId} copy={copy} compact={false} />
+              <EscrowContract chainId={chainId} copy={copy} />
               <h2>{copy.whyCodeTitle}</h2>
               <p>{copy.whyCodeLead}</p>
               <pre dir="ltr">
@@ -161,138 +143,91 @@ export function CryptoPage() {
       <section className="crypto-checkout">
         <div className="crypto-checkout-frame">
           <p className="crypto-checkout-back">
-            {reviewing ? (
-              <button type="button" onClick={() => setView("setup")}>
-                {copy.changeSelection}
-              </button>
-            ) : (
-              <Link to="/">{copy.back}</Link>
-            )}
+            <Link to="/">{copy.back}</Link>
           </p>
-          <p className="crypto-checkout-kicker">{copy.kicker}</p>
-          <h1>{reviewing ? copy.reviewTitle : copy.title}</h1>
-          <p className="crypto-checkout-lead">{reviewing ? copy.reviewLead : copy.lead}</p>
+          <h1>{copy.title}</h1>
 
-          {!reviewing && (
-            <>
-              <ul className="crypto-checkout-how crypto-checkout-how--facts">
-                <li>{copy.factLock}</li>
-                <li>{copy.factCancel}</li>
-                <li>{copy.factLive}</li>
-              </ul>
-              <EscrowContract chainId={chainId} copy={copy} compact />
-              <p className="crypto-checkout-why-link">
-                <Link to="/crypto/why">{copy.whyCta}</Link>
-              </p>
-            </>
+          <p className="crypto-checkout-amount">
+            {crypto.quoteLoading && !monthly
+              ? copy.quoteLoading
+              : monthly
+                ? copy.perMonth(monthly.monthly, paySymbol)
+                : "\u00a0"}
+          </p>
+          {monthly?.intro && (
+            <p className="crypto-checkout-review-meta">
+              {copy.introMonths(monthly.intro, paySymbol, monthly.introCount)}
+            </p>
           )}
 
-          <ol className="crypto-checkout-steps" aria-label={`${copy.stepChoose}, ${copy.stepReview}, ${copy.stepPay}`}>
-            <li className={stepChooseClass}>{copy.stepChoose}</li>
-            <li className={stepReviewClass}>{copy.stepReview}</li>
-            <li className={stepPayClass}>{copy.stepPay}</li>
-          </ol>
+          <div className="crypto-checkout-wallet">
+            <span
+              className={`crypto-checkout-wallet-dot${connected ? " is-on" : ""}`}
+              aria-hidden="true"
+            />
+            <p className="crypto-checkout-wallet-copy">
+              {connected ? (
+                <>
+                  <strong>{crypto.walletName}</strong>
+                  <span className="crypto-checkout-wallet-id">{crypto.accountShort}</span>
+                </>
+              ) : (
+                copy.walletOff
+              )}
+            </p>
+            {!connected && (
+              <button
+                type="button"
+                className="crypto-checkout-wallet-action"
+                onClick={() => void crypto.connect()}
+                disabled={crypto.connecting || loading}
+              >
+                {crypto.connecting ? copy.connecting : copy.connect}
+              </button>
+            )}
+          </div>
 
-          {reviewing ? (
-            <>
-              <p className="crypto-checkout-amount is-review">
-                {lockAmount ? copy.lock(lockAmount, paySymbol) : copy.quoteLoading}
-              </p>
-              <p className="crypto-checkout-review-meta">
-                {chainId === 80002 ? copy.amoy : copy.sepolia}
-                {connected && crypto.accountShort ? ` · ${crypto.accountShort}` : ""}
-              </p>
-              <ul className="crypto-checkout-how">
-                <li>{copy.reviewEscrow}</li>
-                <li>{copy.reviewTerm}</li>
-                <li>{asset === "usdc" ? copy.reviewFxUsdc : copy.reviewFxNative}</li>
-                <li>{copy.reviewAfter}</li>
-                <li>{copy.reviewClaim}</li>
-              </ul>
-              <p className="crypto-checkout-why-link">
-                <Link to="/crypto/why">{copy.whyCta}</Link>
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="crypto-checkout-wallet">
-                <span
-                  className={`crypto-checkout-wallet-dot${connected ? " is-on" : ""}`}
-                  aria-hidden="true"
-                />
-                <p className="crypto-checkout-wallet-copy">
-                  {connected ? (
-                    <>
-                      <strong>{crypto.walletName}</strong>
-                      <span className="crypto-checkout-wallet-id">{crypto.accountShort}</span>
-                    </>
-                  ) : (
-                    copy.walletOff
-                  )}
-                </p>
-                {!connected && (
-                  <button
-                    type="button"
-                    className="crypto-checkout-wallet-action"
-                    onClick={() => void crypto.connect()}
-                    disabled={crypto.connecting || loading}
-                  >
-                    {crypto.connecting ? copy.connecting : copy.connect}
-                  </button>
-                )}
-              </div>
+          <label className="crypto-checkout-label" htmlFor="crypto-network-amoy">
+            {copy.network}
+          </label>
+          <div className="crypto-checkout-seg" role="radiogroup" aria-label={copy.network}>
+            <button
+              id="crypto-network-amoy"
+              type="button"
+              aria-pressed={chainId === 80002}
+              onClick={() => setChainId(80002)}
+            >
+              {copy.amoy}
+            </button>
+            <button
+              type="button"
+              aria-pressed={chainId === 11155111}
+              onClick={() => setChainId(11155111)}
+            >
+              {copy.sepolia}
+            </button>
+          </div>
 
-              <label className="crypto-checkout-label" htmlFor="crypto-network-amoy">
-                {copy.network}
-              </label>
-              <div className="crypto-checkout-seg" role="radiogroup" aria-label={copy.network}>
-                <button
-                  id="crypto-network-amoy"
-                  type="button"
-                  aria-pressed={chainId === 80002}
-                  onClick={() => setChainId(80002)}
-                >
-                  {copy.amoy}
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={chainId === 11155111}
-                  onClick={() => setChainId(11155111)}
-                >
-                  {copy.sepolia}
-                </button>
-              </div>
-
-              <label className="crypto-checkout-label" htmlFor="crypto-token-usdc">
-                {copy.token}
-              </label>
-              <div className="crypto-checkout-seg" role="radiogroup" aria-label={copy.token}>
-                <button
-                  id="crypto-token-usdc"
-                  type="button"
-                  aria-pressed={asset === "usdc"}
-                  onClick={() => setAsset("usdc")}
-                >
-                  {copy.usdc}
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={asset === "native"}
-                  onClick={() => setAsset("native")}
-                >
-                  {nativeSymbol}
-                </button>
-              </div>
-
-              <p className="crypto-checkout-amount">
-                {crypto.quoteLoading && !lockAmount
-                  ? copy.quoteLoading
-                  : lockAmount
-                    ? copy.lock(lockAmount, paySymbol)
-                    : "\u00a0"}
-              </p>
-            </>
-          )}
+          <label className="crypto-checkout-label" htmlFor="crypto-token-usdc">
+            {copy.token}
+          </label>
+          <div className="crypto-checkout-seg" role="radiogroup" aria-label={copy.token}>
+            <button
+              id="crypto-token-usdc"
+              type="button"
+              aria-pressed={asset === "usdc"}
+              onClick={() => setAsset("usdc")}
+            >
+              {copy.usdc}
+            </button>
+            <button
+              type="button"
+              aria-pressed={asset === "native"}
+              onClick={() => setAsset("native")}
+            >
+              {nativeSymbol}
+            </button>
+          </div>
 
           {crypto.error && (
             <button type="button" className="crypto-checkout-error" onClick={crypto.reset}>
@@ -300,22 +235,13 @@ export function CryptoPage() {
             </button>
           )}
 
-          {reviewing ? (
-            <Button
-              onClick={() => void crypto.initiate(chainId, asset)}
-              loading={loading}
-              disabled={loading || !lockAmount}
-            >
-              {loading ? copy.paying : copy.pay(paySymbol)}
-            </Button>
-          ) : (
-            <Button
-              onClick={openReview}
-              disabled={!lockAmount || crypto.quoteLoading}
-            >
-              {copy.continue}
-            </Button>
-          )}
+          <Button
+            onClick={() => void crypto.initiate(chainId, asset)}
+            loading={loading}
+            disabled={loading || !monthly}
+          >
+            {loading ? copy.paying : copy.pay(paySymbol)}
+          </Button>
 
           <p className="crypto-checkout-recover">
             {copy.recover} <Link to="/crypto/recover">{copy.recoverLink}</Link>

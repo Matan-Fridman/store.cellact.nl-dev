@@ -2140,8 +2140,46 @@ html[data-fb-banner="1"] .landing-sticky {
   margin-top: 0;
 }
 
+.crypto-explain-page {
+  min-height: 100svh;
+  display: flex;
+  justify-content: center;
+  padding: calc(88px + env(safe-area-inset-top, 0px)) 20px 40px;
+}
+
+.crypto-explain-landing {
+  max-width: 36rem;
+  margin: 0 auto;
+  padding: 8px 24px 88px;
+  border-top: 1px solid var(--color-border);
+}
+
+.crypto-explain-landing h2 {
+  margin: 32px 0 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.crypto-explain-landing p {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.crypto-explain-landing a {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
 .crypto-checkout-frame.is-doc {
   width: min(38rem, 100%);
+}
+
+.crypto-checkout-contract-addr.is-full {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
 .crypto-checkout-how--facts {

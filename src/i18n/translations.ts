@@ -195,6 +195,8 @@ type TranslationsShape = {
     recover: string;
     recoverLink: string;
     quoteLoading: string;
+    perMonth: (amount: string, symbol: string) => string;
+    introMonths: (amount: string, symbol: string, count: number) => string;
     lock: (amount: string, symbol: string) => string;
     amoy: string;
     sepolia: string;
@@ -212,6 +214,15 @@ type TranslationsShape = {
     ifCancel: (date: string, you: string, symbol: string) => string;
     cancelScheduled: (date: string) => string;
     cancelCta: string;
+    confirmCancel: string;
+    keepNumber: string;
+    cancelSummaryTitle: string;
+    timePassed: (elapsed: string) => string;
+    timePaid: (date: string) => string;
+    refundNow: (amount: string, symbol: string, months: number) => string;
+    alreadyCancelled: string;
+    nothingToWithdraw: string;
+    notPayer: string;
     withdrawCta: string;
     claimCta: string;
     waitWallet: string;
@@ -221,6 +232,9 @@ type TranslationsShape = {
     landingTitle: string;
     landingLead: string;
     landingCta: string;
+    landingExplainTitle: string;
+    landingExplainLead: string;
+    landingExplainCta: string;
     factLock: string;
     factCancel: string;
     factLive: string;
@@ -564,8 +578,8 @@ export const translations: Record<Language, TranslationsShape> = {
 
     crypto: {
       back: "Back to store",
-      kicker: "Testnet escrow",
-      title: "On-chain prepaid lock",
+      kicker: "Testnet",
+      title: "Pay with crypto",
       lead: "Pay twelve months once. No monthly pull.",
       stepChoose: "Choose",
       stepConnect: "Connect",
@@ -588,7 +602,9 @@ export const translations: Record<Language, TranslationsShape> = {
       connecting: "Connecting…",
       pay: (symbol) => `Pay with ${symbol}`,
       paying: "Confirm in your wallet",
-      quoteLoading: "Getting the lock amount…",
+      quoteLoading: "Getting the monthly price…",
+      perMonth: (amount, symbol) => `${amount} ${symbol} / month`,
+      introMonths: (amount, symbol, count) => `First ${count} months: ${amount} ${symbol} / month`,
       lock: (amount, symbol) => `Lock ${amount} ${symbol}`,
       recover: "Already paid?",
       recoverLink: "Find your order",
@@ -596,7 +612,7 @@ export const translations: Record<Language, TranslationsShape> = {
       sepolia: "Sepolia",
       usdc: "USDC",
       manageTitle: "Your crypto orders",
-      manageLead: "The wallet that paid can cancel. Unused funds come back now.",
+      manageLead: "The wallet that paid can cancel.",
       manageConnected: (short) => `Connected ${short}`,
       noOrders: "No prepaid orders on this wallet.",
       statusReady: "Number ready",
@@ -604,21 +620,37 @@ export const translations: Record<Language, TranslationsShape> = {
       youCanWithdraw: (amount, symbol) => `You can withdraw ${amount} ${symbol}`,
       youWithdrawOn: (amount, symbol, date) =>
         `You withdraw ${amount} ${symbol} from ${date}`,
-      cancelledReturned: (date) => `Remaining funds are back. Number works until ${date}.`,
+      cancelledReturned: (date) => `Cancelled. Unused funds are back. Number works until ${date}.`,
       nothingBackYet: "Unused funds unlock after the current period ends.",
       ifCancel: (date, you, symbol) =>
         `Service until ${date}. Cancel returns ${you} ${symbol} now.`,
       cancelScheduled: (date) => `Cancel takes effect ${date}`,
-      cancelCta: "Cancel and withdraw unused",
+      cancelCta: "Cancel",
+      confirmCancel: "Confirm cancel and refund",
+      keepNumber: "Keep the number",
+      cancelSummaryTitle: "Cancel summary",
+      timePassed: (elapsed) => `Time passed: ${elapsed}`,
+      timePaid: (date) => `This month stays paid until ${date}`,
+      refundNow: (amount, symbol, months) =>
+        months === 1
+          ? `Refund now: ${amount} ${symbol} for 1 unused month`
+          : `Refund now: ${amount} ${symbol} for ${months} unused months`,
+      alreadyCancelled: "Already cancelled. Unused funds came back in that transaction.",
+      nothingToWithdraw: "Nothing left to withdraw. Cancel already sent unused funds back.",
+      notPayer: "This wallet did not pay this order.",
       withdrawCta: "Withdraw unused",
       claimCta: "Sign and show QR",
       waitWallet: "Confirm in your wallet",
       claimedDone: "Already activated on a device",
       escrowUnread: "Could not read escrow. Cancel needs a live lock read.",
       numberLabel: (label) => `Number ${label}`,
-      landingTitle: "Pay on-chain",
-      landingLead: "Prepaid 12-month escrow. Cancel returns unused funds now.",
-      landingCta: "Open crypto checkout",
+      landingTitle: "Pay with crypto",
+      landingLead: "USDC or native on testnet.",
+      landingCta: "Pay",
+      landingExplainTitle: "Why prepaid, not monthly",
+      landingExplainLead:
+        "A monthly crypto charge fails. Empty wallet, missed tx, dead number. Escrow locks twelve months once. Cancel returns unused months now.",
+      landingExplainCta: "Read how the contract works",
       factLock: "Funds sit in the contract, not with us.",
       factCancel: "Cancel returns unused months in the same tx.",
       factLive: "This month stays paid. The number doesn't drop.",
@@ -992,8 +1024,8 @@ export const translations: Record<Language, TranslationsShape> = {
 
     crypto: {
       back: "חזרה לחנות",
-      kicker: "אסקרו ברשת בדיקה",
-      title: "נעילה מראש בחוזה",
+      kicker: "רשת בדיקה",
+      title: "תשלום בקריפטו",
       lead: "שניים-עשר חודשים בתשלום אחד. בלי חיוב חודשי.",
       stepChoose: "בחירה",
       stepConnect: "חיבור",
@@ -1016,7 +1048,9 @@ export const translations: Record<Language, TranslationsShape> = {
       connecting: "מתחברים…",
       pay: (symbol) => `תשלום ב-${symbol}`,
       paying: "אשרו בארנק",
-      quoteLoading: "מחשבים את הסכום…",
+      quoteLoading: "מחשבים מחיר לחודש…",
+      perMonth: (amount, symbol) => `${amount} ${symbol} לחודש`,
+      introMonths: (amount, symbol, count) => `${count} החודשים הראשונים: ${amount} ${symbol} לחודש`,
       lock: (amount, symbol) => `נעילה של ${amount} ${symbol}`,
       recover: "כבר שילמתם?",
       recoverLink: "איתור הזמנה",
@@ -1024,7 +1058,7 @@ export const translations: Record<Language, TranslationsShape> = {
       sepolia: "Sepolia",
       usdc: "USDC",
       manageTitle: "ההזמנות בקריפטו",
-      manageLead: "הארנק ששילם יכול לבטל. יתרה חוזרת עכשיו.",
+      manageLead: "הארנק ששילם יכול לבטל.",
       manageConnected: (short) => `מחובר ${short}`,
       noOrders: "אין הזמנות ממולאות מראש בארנק הזה.",
       statusReady: "המספר מוכן",
@@ -1032,21 +1066,37 @@ export const translations: Record<Language, TranslationsShape> = {
       youCanWithdraw: (amount, symbol) => `אפשר למשוך ${amount} ${symbol}`,
       youWithdrawOn: (amount, symbol, date) =>
         `תמשכו ${amount} ${symbol} מ-${date}`,
-      cancelledReturned: (date) => `היתרה חזרה. המספר פעיל עד ${date}.`,
+      cancelledReturned: (date) => `בוטל. היתרה חזרה. המספר פעיל עד ${date}.`,
       nothingBackYet: "היתרה נפתחת בסוף התקופה הנוכחית.",
       ifCancel: (date, you, symbol) =>
         `השירות עד ${date}. ביטול מחזיר ${you} ${symbol} עכשיו.`,
       cancelScheduled: (date) => `הביטול נכנס לתוקף ${date}`,
-      cancelCta: "ביטול ומשיכת יתרה",
+      cancelCta: "ביטול",
+      confirmCancel: "אישור ביטול והחזר",
+      keepNumber: "להשאיר את המספר",
+      cancelSummaryTitle: "סיכום ביטול",
+      timePassed: (elapsed) => `זמן שעבר: ${elapsed}`,
+      timePaid: (date) => `החודש הזה משולם עד ${date}`,
+      refundNow: (amount, symbol, months) =>
+        months === 1
+          ? `החזר עכשיו: ${amount} ${symbol} על חודש אחד שלא נוצל`
+          : `החזר עכשיו: ${amount} ${symbol} על ${months} חודשים שלא נוצלו`,
+      alreadyCancelled: "כבר בוטל. היתרה חזרה באותה עסקה.",
+      nothingToWithdraw: "אין מה למשוך. הביטול כבר החזיר את היתרה.",
+      notPayer: "הארנק הזה לא שילם על ההזמנה.",
       withdrawCta: "משיכת יתרה",
       claimCta: "חתימה והצגת QR",
       waitWallet: "אשרו בארנק",
       claimedDone: "כבר הופעל במכשיר",
       escrowUnread: "לא ניתן לקרוא את החוזה. הביטול דורש קריאה חיה.",
       numberLabel: (label) => `מספר ${label}`,
-      landingTitle: "תשלום בחוזה",
-      landingLead: "נעילה ל-12 חודשים. ביטול מחזיר יתרה עכשיו.",
-      landingCta: "לתשלום בחוזה",
+      landingTitle: "תשלום בקריפטו",
+      landingLead: "USDC או מטבע רשת, ברשת בדיקה.",
+      landingCta: "לתשלום",
+      landingExplainTitle: "למה מראש, לא כל חודש",
+      landingExplainLead:
+        "חיוב קריפטו כל חודש נכשל. ארנק ריק, עסקה שפספסתם, מספר מת. נועלים שניים-עשר חודשים פעם אחת. ביטול מחזיר חודשים שלא נוצלו עכשיו.",
+      landingExplainCta: "איך החוזה עובד",
       factLock: "הכסף בחוזה, לא אצלנו.",
       factCancel: "ביטול מחזיר חודשים שלא נוצלו באותה עסקה.",
       factLive: "החודש הנוכחי משולם. המספר לא נופל.",

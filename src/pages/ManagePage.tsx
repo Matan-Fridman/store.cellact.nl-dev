@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { doc, onSnapshot, type Unsubscribe } from "firebase/firestore";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
@@ -22,9 +22,10 @@ import { buildQrUrl, formatIsraeliLocal } from "../utils/format";
 type Step = "choose" | "qr" | "email" | "code" | "list";
 
 function formatWhen(ts: number, lang: "en" | "he"): string {
-  return new Date(ts * 1000).toLocaleString(lang === "he" ? "he-IL" : "en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
+  return new Date(ts * 1000).toLocaleDateString(lang === "he" ? "he-IL" : "en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
   });
 }
 
@@ -41,6 +42,7 @@ function buildManageQrPayload(sessionId: string): string {
 export function ManagePage() {
   const { t, lang } = useLanguage();
   const copy = t.manage;
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("choose");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -207,7 +209,7 @@ export function ManagePage() {
 
   return (
     <Layout>
-      <div style={{ ...pageWrap, alignItems: step === "list" ? "flex-start" : "center" }}>
+      <div className={`manage-page${step === "list" ? " is-list" : ""}`} style={{ ...pageWrap, alignItems: step === "list" ? "flex-start" : "center" }}>
         <div style={{ ...card, maxWidth: step === "list" ? "46rem" : "420px" }}>
           {step === "choose" ? (
             <>
@@ -332,14 +334,14 @@ export function ManagePage() {
                 </>
               ) : (
                 <>
-                  <div className="crypto-order-table-wrap" style={{ marginTop: 0 }}>
-                    <table className="crypto-order-table">
+                  <div className="crypto-order-table-wrap manage-list-wrap" style={{ marginTop: 0 }}>
+                    <table className="crypto-order-table manage-list-table">
                       <thead>
                         <tr>
                           <th>{copy.colNumber}</th>
-                          <th>{copy.colRail}</th>
+                          <th className="is-desk">{copy.colRail}</th>
                           <th>{copy.colStatus}</th>
-                          <th>{copy.colAction}</th>
+                          <th className="is-desk">{copy.colAction}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -354,66 +356,68 @@ export function ManagePage() {
                             : stopping
                               ? copy.statusStopping(formatWhen(until, lang === "he" ? "he" : "en"))
                               : copy.statusLive;
-                          const mark = (named.replace(/\D/g, "")[0] || named[0] || "N").toUpperCase();
                           const canStop = row.rail === "stripe" && row.canCancel && doneRef !== row.paymentRef;
+                          const canOpenCrypto = row.rail === "crypto" && isCryptoEnabled();
+                          const railLabel = row.rail === "crypto" ? copy.railCrypto : copy.railCard;
+                          const activateRow = () => {
+                            if (canStop) openCancelDialog(row.paymentRef);
+                            else if (canOpenCrypto) navigate("/crypto/recover");
+                          };
+                          const rowLive = canStop || canOpenCrypto;
                           return (
                             <tr
                               key={row.paymentRef}
-                              className={`is-static${canStop ? " is-actionable" : ""}`}
+                              className={rowLive ? "is-actionable" : "is-static"}
+                              tabIndex={rowLive ? 0 : undefined}
+                              role={rowLive ? "button" : undefined}
+                              onClick={rowLive ? activateRow : undefined}
+                              onKeyDown={
+                                rowLive
+                                  ? (event) => {
+                                      if (event.key === "Enter" || event.key === " ") {
+                                        event.preventDefault();
+                                        activateRow();
+                                      }
+                                    }
+                                  : undefined
+                              }
                             >
                               <td>
-                                {canStop ? (
-                                  <button
-                                    type="button"
-                                    className="crypto-order-cell manage-number-btn"
-                                    disabled={busy}
-                                    onClick={() => openCancelDialog(row.paymentRef)}
-                                  >
-                                    <span
-                                      className="crypto-order-mark is-card"
-                                      aria-hidden="true"
-                                    >
-                                      {mark}
-                                    </span>
-                                    <span className="crypto-order-name">
-                                      <strong dir="ltr">{named}</strong>
-                                    </span>
-                                  </button>
-                                ) : (
-                                  <span className="crypto-order-cell">
-                                    <span
-                                      className={`crypto-order-mark is-${row.rail === "crypto" ? "crypto" : "card"}`}
-                                      aria-hidden="true"
-                                    >
-                                      {mark}
-                                    </span>
-                                    <span className="crypto-order-name">
-                                      <strong dir="ltr">{named}</strong>
-                                    </span>
+                                <span className="crypto-order-cell">
+                                  <span className="crypto-order-name">
+                                    <strong dir="ltr">{named}</strong>
+                                    <small>
+                                      {railLabel}
+                                      {canStop ? ` · ${copy.cancelCta}` : null}
+                                      {canOpenCrypto ? ` · ${copy.cryptoCancel}` : null}
+                                    </small>
                                   </span>
-                                )}
+                                </span>
                               </td>
-                              <td>{row.rail === "crypto" ? copy.railCrypto : copy.railCard}</td>
+                              <td className="is-desk">{railLabel}</td>
                               <td>
                                 <span className={`crypto-status is-${stopping || cancelled ? "cancelled" : "live"}`}>
                                   {statusLabel}
                                 </span>
                               </td>
-                              <td>
-                                {row.rail === "crypto" ? (
-                                  isCryptoEnabled() ? (
-                                    <Link to="/crypto/recover" className="crypto-order-link">
-                                      {copy.cryptoCancel}
-                                    </Link>
-                                  ) : (
-                                    "—"
-                                  )
-                                ) : row.canCancel ? (
+                              <td className="is-desk">
+                                {canOpenCrypto ? (
+                                  <Link
+                                    to="/crypto/recover"
+                                    className="crypto-order-link"
+                                    onClick={(event) => event.stopPropagation()}
+                                  >
+                                    {copy.cryptoCancel}
+                                  </Link>
+                                ) : canStop ? (
                                   <button
                                     type="button"
                                     className="crypto-order-link"
                                     disabled={busy}
-                                    onClick={() => openCancelDialog(row.paymentRef)}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      openCancelDialog(row.paymentRef);
+                                    }}
                                   >
                                     {copy.cancelCta}
                                   </button>
@@ -502,7 +506,6 @@ const pageWrap: CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: "24px",
 };
 
 const card: CSSProperties = {

@@ -949,7 +949,7 @@ export const translations: Record<Language, TranslationsShape> = {
       statusStopping: (when) => `Stops ${when}`,
       statusCancelled: "Cancelled",
       activeUntil: (when) => `Active until ${when}`,
-      cancelCta: "Stop at period end",
+      cancelCta: "Stop",
       confirmTitle: "Stop this number?",
       confirmBody: (name) =>
         `Stop ${name} at the end of this billing period? You keep it until then. No refund for this period.`,
@@ -1530,7 +1530,7 @@ export const translations: Record<Language, TranslationsShape> = {
       statusStopping: (when) => `נעצר ${when}`,
       statusCancelled: "בוטל",
       activeUntil: (when) => `פעיל עד ${when}`,
-      cancelCta: "עצירה בסוף התקופה",
+      cancelCta: "עצור",
       confirmTitle: "לעצור את המספר?",
       confirmBody: (name) =>
         `לעצור את ${name} בסוף תקופת החיוב הזו? המספר נשאר עד אז. אין החזר על התקופה הזו.`,

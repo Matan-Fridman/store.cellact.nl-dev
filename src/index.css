@@ -2979,29 +2979,67 @@ html[data-fb-banner="1"] .landing-sticky {
   margin-top: 8px;
 }
 
-.manage-number-btn {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  text-align: inherit;
-  cursor: pointer;
-  color: inherit;
-  font: inherit;
+.manage-page {
+  padding: 24px;
 }
 
-.manage-number-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+.manage-list-table tbody tr.is-actionable {
+  cursor: pointer;
 }
 
-.crypto-order-table tr.is-actionable td:first-child {
-  cursor: pointer;
+.manage-list-table .crypto-order-name strong {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .manage-page {
+    padding: 16px 12px 24px;
+  }
+
+  .manage-page.is-list {
+    padding-top: 8px;
+  }
+
+  .manage-list-wrap {
+    overflow-x: hidden;
+  }
+
+  .manage-list-table thead {
+    display: none;
+  }
+
+  .manage-list-table,
+  .manage-list-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .manage-list-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 14px 14px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .manage-list-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .manage-list-table td {
+    padding: 0;
+    border-bottom: 0;
+  }
+
+  .manage-list-table .crypto-order-name strong {
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .manage-list-table .crypto-status {
+    white-space: nowrap;
+  }
 }
 
 @keyframes manage-dialog-in {

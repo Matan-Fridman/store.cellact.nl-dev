@@ -19,7 +19,7 @@ export function HeroSection(props: HeroSectionProps) {
   return (
     <section
       ref={containerRef}
-      className="landing-hero relative flex items-start md:items-center"
+      className="landing-hero relative flex items-center"
     >
       <div
         aria-hidden

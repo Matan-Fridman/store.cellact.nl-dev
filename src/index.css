@@ -502,6 +502,7 @@ body::after {
 
   .site-header-controls {
     justify-content: center;
+    flex-wrap: wrap;
     gap: 8px !important;
     direction: ltr;
   }
@@ -1100,6 +1101,11 @@ html[data-landing] main {
 .site-header {
   background: transparent;
   border-bottom: 1px solid transparent;
+}
+
+.site-header.is-flow {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .site-header.is-scrolled {

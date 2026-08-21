@@ -1,5 +1,5 @@
 import React, { useState, useEffect, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
 import type { Language } from "../i18n/translations";
 
@@ -21,6 +21,7 @@ export function Layout({
 }: LayoutProps) {
   const [scrolled, setScrolled] = useState(false);
   const { lang, setLang, t } = useLanguage();
+  const overlayHeader = useLocation().pathname === "/";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -35,7 +36,9 @@ export function Layout({
       data-hide-store-badges={hideAppStoreBadges ? "1" : undefined}
     >
       <header
-        className={`site-header fixed top-0 left-0 right-0 z-50 transition-all duration-300${scrolled ? " is-scrolled" : ""}`}
+        className={`site-header z-50 transition-all duration-300${
+          overlayHeader ? " is-overlay fixed top-0 left-0 right-0" : " is-flow sticky top-0"
+        }${scrolled ? " is-scrolled" : ""}`}
       >
         <div className="site-header-inner mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <a

@@ -80,7 +80,9 @@ export function ManagePage() {
 
   async function tryExchange(sessionId: string) {
     try {
-      applySession(await exchangeManageQr(sessionId));
+      const session = await exchangeManageQr(sessionId);
+      if (!session.token) return;
+      applySession(session);
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) return;
       if (appliedRef.current) return;

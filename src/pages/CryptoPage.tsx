@@ -354,10 +354,14 @@ export function CryptoPage() {
       ? crypto.quote
       : null;
   const total = quoteReady ? formatLockAmount(quoteReady.totalAmount, expectedSymbol) : null;
-  const setupEur = quoteReady?.setupEur ?? 2;
-  const yearEur = quoteReady?.yearEur ?? 19.99;
-  const monthlyEur = quoteReady?.monthlyEur ?? 1.67;
-  const totalEur = quoteReady?.totalEur ?? 21.99;
+  const setupEur = Number.isFinite(Number(quoteReady?.setupEur)) ? Number(quoteReady?.setupEur) : null;
+  const yearEur = Number.isFinite(Number(quoteReady?.yearEur)) ? Number(quoteReady?.yearEur) : null;
+  const monthlyEur = Number.isFinite(Number(quoteReady?.monthlyEur)) ? Number(quoteReady?.monthlyEur) : null;
+  const totalEur = Number.isFinite(Number(quoteReady?.totalEur))
+    ? Number(quoteReady?.totalEur)
+    : setupEur != null && yearEur != null
+      ? Number((setupEur + yearEur).toFixed(2))
+      : null;
   const buyer = { name: buyerName.trim(), email: buyerEmail.trim() };
 
   useEffect(() => {
@@ -451,6 +455,9 @@ export function CryptoPage() {
               <Button type="submit" disabled={!buyer.name || !buyer.email}>
                 {copy.detailsContinue}
               </Button>
+              <p className="crypto-checkout-recover">
+                {copy.recoverDetails} <Link to="/crypto/recover">{copy.recoverLink}</Link>
+              </p>
             </form>
           ) : (
             <>
@@ -573,21 +580,23 @@ export function CryptoPage() {
                   <p>{copy.billSetup}</p>
                   <p className="crypto-checkout-bill-hint">{copy.billSetupHint}</p>
                 </div>
-                <span>{formatEur(setupEur)}</span>
+                <span>{setupEur != null ? formatEur(setupEur) : "\u00a0"}</span>
               </li>
               <li>
                 <div>
                   <p>{copy.billYear}</p>
-                  <p className="crypto-checkout-bill-hint">{copy.billYearHint(formatEur(monthlyEur))}</p>
+                  <p className="crypto-checkout-bill-hint">
+                    {copy.billYearHint(monthlyEur != null ? formatEur(monthlyEur) : "—")}
+                  </p>
                 </div>
-                <span>{formatEur(yearEur)}</span>
+                <span>{yearEur != null ? formatEur(yearEur) : "\u00a0"}</span>
               </li>
               <li className="is-total">
                 <div>
                   <p>{copy.billTotalEur}</p>
                   <p className="crypto-checkout-bill-hint">{copy.billChargeHint}</p>
                 </div>
-                <span>{formatEur(totalEur)}</span>
+                <span>{totalEur != null ? formatEur(totalEur) : "\u00a0"}</span>
               </li>
             </ul>
             <p className="crypto-checkout-amount is-review">
@@ -612,7 +621,7 @@ export function CryptoPage() {
               void crypto.initiate(chainId, asset, buyer);
             }}
             loading={loading}
-            disabled={loading || !total || !buyer.name || !buyer.email}
+            disabled={loading || !total || totalEur == null || !buyer.name || !buyer.email}
           >
             {loading ? copy.paying : total ? copy.pay(total, paySymbol) : copy.pay("—", paySymbol)}
           </Button>

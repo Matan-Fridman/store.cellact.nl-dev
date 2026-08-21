@@ -224,6 +224,7 @@ type TranslationsShape = {
     paying: string;
     recover: string;
     recoverLink: string;
+    recoverDetails: string;
     quoteLoading: string;
     perMonth: (amount: string, symbol: string) => string;
     introMonths: (amount: string, symbol: string, count: number) => string;
@@ -368,6 +369,8 @@ type TranslationsShape = {
     sub: string;
     scanCta: string;
     emailCta: string;
+    cryptoPaid: string;
+    cryptoPaidLink: string;
     scanTitle: string;
     scanBody: string;
     scanWait: string;
@@ -752,6 +755,7 @@ export const translations: Record<Language, TranslationsShape> = {
       infoMore: "Read more",
       recover: "Already paid?",
       recoverLink: "Find your order",
+      recoverDetails: "This form is only for a new purchase. Already paid? Do not fill this in.",
       amoy: "Polygon Amoy",
       sepolia: "Sepolia",
       usdc: "USDC",
@@ -903,6 +907,8 @@ export const translations: Record<Language, TranslationsShape> = {
       sub: "Prove you own it, then stop card billing at period end.",
       scanCta: "Scan with Arnacon",
       emailCta: "Use the email I paid with",
+      cryptoPaid: "Already paid with crypto? Open those orders with the paying wallet. No new name or email.",
+      cryptoPaidLink: "Open crypto orders",
       scanTitle: "Scan with Arnacon",
       scanBody: "Open Arnacon and scan this code.",
       scanWait: "Waiting for the scan…",
@@ -917,7 +923,7 @@ export const translations: Record<Language, TranslationsShape> = {
       verifyCode: "Continue",
       listTitle: "Your numbers",
       listSub: "Card billing stops at the end of this billing period. No refund for time already paid.",
-      empty: "No live numbers on this account.",
+      empty: "No live numbers on this account. Crypto buyers: open orders with the paying wallet.",
       unnamed: "Number in setup",
       railCard: "Card",
       railCrypto: "Crypto",
@@ -1319,6 +1325,7 @@ export const translations: Record<Language, TranslationsShape> = {
       infoMore: "לקריאה נוספת",
       recover: "כבר שילמתם?",
       recoverLink: "איתור הזמנה",
+      recoverDetails: "הטופס הזה לרכישה חדשה בלבד. כבר שילמתם? אל תמלאו אותו.",
       amoy: "Polygon Amoy",
       sepolia: "Sepolia",
       usdc: "USDC",
@@ -1470,6 +1477,8 @@ export const translations: Record<Language, TranslationsShape> = {
       sub: "הוכיחו בעלות, ואז עצרו חיוב בכרטיס בסוף תקופת החיוב.",
       scanCta: "סריקה ב-Arnacon",
       emailCta: "האימייל ששילמתי איתו",
+      cryptoPaid: "כבר שילמתם בקריפטו? פתחו את ההזמנות עם ארנק התשלום. בלי שם ואימייל מחדש.",
+      cryptoPaidLink: "הזמנות קריפטו",
       scanTitle: "סריקה ב-Arnacon",
       scanBody: "פתחו את Arnacon וסרקו את הקוד.",
       scanWait: "ממתינים לסריקה…",
@@ -1484,7 +1493,7 @@ export const translations: Record<Language, TranslationsShape> = {
       verifyCode: "המשך",
       listTitle: "המספרים שלכם",
       listSub: "חיוב בכרטיס נעצר בסוף תקופת החיוב הזו. אין החזר על זמן שכבר שולם.",
-      empty: "אין מספרים פעילים בחשבון הזה.",
+      empty: "אין מספרים פעילים בחשבון הזה. בקריפטו: פתחו הזמנות עם ארנק התשלום.",
       unnamed: "מספר בהקמה",
       railCard: "כרטיס",
       railCrypto: "קריפטו",

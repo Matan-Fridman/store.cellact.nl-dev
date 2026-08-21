@@ -4,6 +4,7 @@ import { doc, onSnapshot, type Unsubscribe } from "firebase/firestore";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
 import { ErrorAlert } from "../components/ErrorAlert";
+import { getApiConfig } from "../config/constants";
 import { useLanguage } from "../contexts/LanguageContext";
 import { getDb } from "../lib/firebase";
 import {
@@ -27,12 +28,13 @@ function formatWhen(ts: number, lang: "en" | "he"): string {
   });
 }
 
-function buildManageQrPayload(sessionId: string, confirmEndpoint: string): string {
+function buildManageQrPayload(sessionId: string): string {
+  const { QR_CONFIRM_URL } = getApiConfig();
   return (
     `arnacon://auth` +
     `?session=${encodeURIComponent(sessionId)}` +
     `&provider=Secnum` +
-    `&endpoint=${encodeURIComponent(confirmEndpoint)}`
+    `&endpoint=${encodeURIComponent(QR_CONFIRM_URL)}`
   );
 }
 
@@ -93,7 +95,7 @@ export function ManagePage() {
     stopWait();
     try {
       const started = await startManageQr();
-      setQrPayload(buildManageQrPayload(started.sessionId, started.confirmEndpoint));
+      setQrPayload(buildManageQrPayload(started.sessionId));
       setStep("qr");
       unsubRef.current = onSnapshot(
         doc(getDb(), "qrLoginSessions", started.sessionId),
@@ -104,7 +106,7 @@ export function ManagePage() {
           }
         },
         () => {
-          setError(copy.error);
+          // Client listen is optional. Polling qr-exchange is the source of truth.
         },
       );
       pollRef.current = window.setInterval(() => {
@@ -179,6 +181,10 @@ export function ManagePage() {
                 <Button variant="secondary" onClick={() => setStep("email")} disabled={busy}>
                   {copy.emailCta}
                 </Button>
+                <Link to="/crypto/recover" style={linkBtn}>
+                  {copy.cryptoPaidLink}
+                </Link>
+                <p style={{ ...sub, margin: 0 }}>{copy.cryptoPaid}</p>
               </div>
             </>
           ) : null}
@@ -273,7 +279,12 @@ export function ManagePage() {
               <h1 style={titleStyle}>{copy.listTitle}</h1>
               <p style={sub}>{copy.listSub}</p>
               {numbers.length === 0 ? (
-                <p style={sub}>{copy.empty}</p>
+                <>
+                  <p style={sub}>{copy.empty}</p>
+                  <Link to="/crypto/recover" style={linkBtn}>
+                    {copy.cryptoPaidLink}
+                  </Link>
+                </>
               ) : (
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
                   {numbers.map((row) => {

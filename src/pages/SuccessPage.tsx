@@ -30,10 +30,11 @@ export function SuccessPage() {
       navigate("/", { replace: true });
       return;
     }
+    const paidSessionId: string = sessionId;
 
     if (!purchaseTracked.current) {
       purchaseTracked.current = true;
-      trackPurchase(sessionId);
+      trackPurchase(paidSessionId);
     }
 
     function finishWithToken(token: string) {
@@ -52,7 +53,7 @@ export function SuccessPage() {
     }
 
     async function pollOnce() {
-      const result = await getOrderResult(sessionId);
+      const result = await getOrderResult(paidSessionId);
       if (result.failed) {
         finishWithEmail();
         return;
@@ -71,7 +72,7 @@ export function SuccessPage() {
     const timeout = window.setTimeout(finishWithEmail, 120_000);
 
     if (hasFirebaseProject()) {
-      const orderRef = doc(getDb(), "incomingOrders", sessionId);
+      const orderRef = doc(getDb(), "incomingOrders", paidSessionId);
       unsubRef.current = onSnapshot(
         orderRef,
         (snap) => {

@@ -396,6 +396,7 @@ type TranslationsShape = {
     railCrypto: string;
     statusLive: string;
     statusStopping: (when: string) => string;
+    statusCancelled: string;
     activeUntil: (when: string) => string;
     cancelCta: string;
     confirmBody: (name: string) => string;
@@ -940,6 +941,7 @@ export const translations: Record<Language, TranslationsShape> = {
       railCrypto: "Crypto",
       statusLive: "Live",
       statusStopping: (when) => `Stops ${when}`,
+      statusCancelled: "Cancelled",
       activeUntil: (when) => `Active until ${when}`,
       cancelCta: "Stop at period end",
       confirmBody: (name) =>
@@ -1516,6 +1518,7 @@ export const translations: Record<Language, TranslationsShape> = {
       railCrypto: "קריפטו",
       statusLive: "פעיל",
       statusStopping: (when) => `נעצר ${when}`,
+      statusCancelled: "בוטל",
       activeUntil: (when) => `פעיל עד ${when}`,
       cancelCta: "עצירה בסוף התקופה",
       confirmBody: (name) =>

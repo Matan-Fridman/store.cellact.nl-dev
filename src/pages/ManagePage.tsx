@@ -305,15 +305,15 @@ export function ManagePage() {
                         {numbers.map((row) => {
                           const named = row.label ? formatIsraeliLocal(row.label) : copy.unnamed;
                           const confirming = confirmRef === row.paymentRef;
-                          const stopping = Boolean(row.cancelEffective) || doneRef === row.paymentRef;
-                          const statusLabel = stopping
-                            ? copy.statusStopping(
-                                formatWhen(
-                                  row.cancelEffective || Math.floor(Date.now() / 1000),
-                                  lang === "he" ? "he" : "en",
-                                ),
-                              )
-                            : copy.statusLive;
+                          const nowSec = Math.floor(Date.now() / 1000);
+                          const until = row.cancelEffective || (doneRef === row.paymentRef ? nowSec : 0);
+                          const cancelled = until > 0 && until <= nowSec;
+                          const stopping = until > nowSec;
+                          const statusLabel = cancelled
+                            ? copy.statusCancelled
+                            : stopping
+                              ? copy.statusStopping(formatWhen(until, lang === "he" ? "he" : "en"))
+                              : copy.statusLive;
                           const mark = (named.replace(/\D/g, "")[0] || named[0] || "N").toUpperCase();
                           return (
                             <tr
@@ -335,7 +335,7 @@ export function ManagePage() {
                               </td>
                               <td>{row.rail === "crypto" ? copy.railCrypto : copy.railCard}</td>
                               <td>
-                                <span className={`crypto-status is-${stopping ? "cancelled" : "live"}`}>
+                                <span className={`crypto-status is-${stopping || cancelled ? "cancelled" : "live"}`}>
                                   {statusLabel}
                                 </span>
                               </td>

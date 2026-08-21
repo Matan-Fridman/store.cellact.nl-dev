@@ -116,6 +116,33 @@ export function createCheckoutSession(
 }
 
 /**
+ * Polls the public order-result HTTP endpoint (browser poll).
+ */
+export async function getOrderResult(sessionId: string): Promise<{
+  ready: boolean;
+  failed?: boolean;
+  error?: string;
+  claimToken?: string | null;
+}> {
+  const { ORDER_RESULT_URL } = getApiConfig();
+  const url = `${ORDER_RESULT_URL.replace(/\/$/, "")}/order-result?session_id=${encodeURIComponent(sessionId)}`;
+  const res = await fetch(url, { method: "GET", headers: { Accept: "application/json" } });
+  const data = (await res.json()) as Record<string, unknown>;
+  if (!res.ok) {
+    throw new ApiError(
+      typeof data.error === "string" ? data.error : "Could not load the order",
+      res.status,
+    );
+  }
+  return {
+    ready: data.ready === true,
+    failed: data.failed === true,
+    error: typeof data.error === "string" ? data.error : undefined,
+    claimToken: typeof data.claimToken === "string" ? data.claimToken : null,
+  };
+}
+
+/**
  * Redeems a one-time activation token (from the confirmation email) and returns
  * the claimUrl deeplink. The secret never leaves the backend in readable form.
  */

@@ -14,26 +14,62 @@
 import { initializeApp, getApp, type FirebaseApp } from "firebase/app";
 import { getFirestore, type Firestore } from "firebase/firestore";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { isProductionGcp } from "../config/constants";
 
-const firebaseConfig = {
-  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+const STAGING_FIREBASE = {
+  apiKey: "AIzaSyDchYNakninaQPSYLlkQTFqq3a0JJz4_mY",
+  authDomain: "arnacon-staging-production.firebaseapp.com",
+  projectId: "arnacon-staging-production",
+  storageBucket: "arnacon-staging-production.firebasestorage.app",
+  messagingSenderId: "200686713833",
+  appId: "1:200686713833:web:cf237e014fae20142ea978",
+  measurementId: "G-R6EPHDT45P",
 };
 
-function getOrInitApp(config: typeof firebaseConfig, name: string): FirebaseApp {
+function firebaseConfig() {
+  const fromEnv = {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string | undefined,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID as string | undefined,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID as string | undefined,
+  };
+  if (fromEnv.projectId) return fromEnv;
+  if (isProductionGcp()) {
+    console.error("[firebase] VITE_FIREBASE_PROJECT_ID is required when VITE_BASE_URL is production");
+    return fromEnv;
+  }
+  return STAGING_FIREBASE;
+}
+
+const config = firebaseConfig();
+
+function getOrInitApp(name: string): FirebaseApp {
   try {
     return getApp(name);
   } catch {
-    return initializeApp(config, name);
+    return initializeApp(
+      {
+        apiKey: config.apiKey,
+        authDomain: config.authDomain,
+        projectId: config.projectId,
+        storageBucket: config.storageBucket,
+        messagingSenderId: config.messagingSenderId,
+        appId: config.appId,
+        measurementId: config.measurementId,
+      },
+      name,
+    );
   }
 }
 
-const app = getOrInitApp(firebaseConfig, "default");
+export function hasFirebaseProject(): boolean {
+  return Boolean(config.projectId);
+}
+
+const app = getOrInitApp("default");
 
 const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 if (siteKey) {

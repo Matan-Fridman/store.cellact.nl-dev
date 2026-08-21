@@ -27,6 +27,10 @@ export function getApiConfig() {
   return URLS;
 }
 
+export function isProductionGcp(): boolean {
+  return BASE_URL.includes("arnacon-production-gcp");
+}
+
 /** Stripe / product metadata */
 export const PACKAGE_ID = "secnum_number";
 export const PACKAGE_NAME = "Israeli Mobile Number";

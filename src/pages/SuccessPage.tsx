@@ -3,9 +3,10 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { doc, onSnapshot } from "firebase/firestore";
 import { Layout } from "../components/Layout";
-import { getDb } from "../lib/firebase";
+import { getDb, hasFirebaseProject } from "../lib/firebase";
 import { trackPurchase } from "../lib/analytics";
 import { useLanguage } from "../contexts/LanguageContext";
+import { getOrderResult } from "../services/api";
 
 export function SuccessPage() {
   const [searchParams] = useSearchParams();
@@ -13,6 +14,7 @@ export function SuccessPage() {
   const [provisioning, setProvisioning] = useState(true);
   const unsubRef = useRef<(() => void) | null>(null);
   const purchaseTracked = useRef(false);
+  const finishedRef = useRef(false);
 
   const sessionId = searchParams.get("session_id");
   const langParam = searchParams.get("lang");
@@ -34,34 +36,59 @@ export function SuccessPage() {
       trackPurchase(sessionId);
     }
 
-    // Watch incomingOrders/{session_id} for claim_token.
-    // The executor writes it the moment provisioning completes.
-    const db = getDb();
-    const orderRef = doc(db, "incomingOrders", sessionId);
+    function finishWithToken(token: string) {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      unsubRef.current?.();
+      const qs = new URLSearchParams({ token, lang: activateLang });
+      navigate(`/activate?${qs.toString()}`, { replace: true });
+    }
 
-    const unsub = onSnapshot(
-      orderRef,
-      (snap) => {
-        const data = snap.data();
-        const token = data?.claim_token as string | undefined;
-        if (token) {
-          unsub();
-          const qs = new URLSearchParams({
-            token,
-            lang: activateLang,
-          });
-          navigate(`/activate?${qs.toString()}`, { replace: true });
-        }
-      },
-      (err) => {
-        // Firestore permission error or offline — stay on page, email fallback works.
-        console.warn("[success] Firestore listener error:", err.message);
-        setProvisioning(false);
-      },
-    );
+    function finishWithEmail() {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      unsubRef.current?.();
+      setProvisioning(false);
+    }
 
-    unsubRef.current = unsub;
-    return () => unsub();
+    async function pollOnce() {
+      const result = await getOrderResult(sessionId);
+      if (result.failed) {
+        finishWithEmail();
+        return;
+      }
+      if (result.claimToken) {
+        finishWithToken(result.claimToken);
+        return;
+      }
+      if (result.ready) finishWithEmail();
+    }
+
+    const poll = window.setInterval(() => {
+      void pollOnce().catch(() => undefined);
+    }, 2000);
+    void pollOnce().catch(() => undefined);
+    const timeout = window.setTimeout(finishWithEmail, 120_000);
+
+    if (hasFirebaseProject()) {
+      const orderRef = doc(getDb(), "incomingOrders", sessionId);
+      unsubRef.current = onSnapshot(
+        orderRef,
+        (snap) => {
+          const token = snap.data()?.claim_token as string | undefined;
+          if (token) finishWithToken(token);
+        },
+        (err) => {
+          console.warn("[success] Firestore listener error:", err.message);
+        },
+      );
+    }
+
+    return () => {
+      window.clearInterval(poll);
+      window.clearTimeout(timeout);
+      unsubRef.current?.();
+    };
   }, [sessionId, navigate, activateLang]);
 
   return (

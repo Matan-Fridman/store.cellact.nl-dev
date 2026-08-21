@@ -158,7 +158,7 @@ export function CryptoWaitPage() {
         signature,
         issuedAt,
       });
-      navigate(`/activate?token=${encodeURIComponent(token)}`, { replace: true });
+      navigate(`/activate?token=${encodeURIComponent(token)}&pay=crypto`, { replace: true });
     } catch (err) {
       logCryptoError("wait-claim", err);
       setError(cryptoErrorCopy(copy, err));

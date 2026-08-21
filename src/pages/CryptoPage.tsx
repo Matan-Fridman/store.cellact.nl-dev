@@ -417,6 +417,7 @@ export function CryptoPage() {
           </ol>
           <p className="crypto-checkout-kicker">{copy.kicker}</p>
           <h1>{step === "details" ? copy.detailsTitle : copy.title}</h1>
+          <p className="crypto-checkout-special">{copy.specialPrice}</p>
           <p className="crypto-checkout-lead">
             {step === "details" ? copy.detailsLead : copy.lead}
           </p>

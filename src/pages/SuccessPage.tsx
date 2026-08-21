@@ -41,7 +41,8 @@ export function SuccessPage() {
       if (finishedRef.current) return;
       finishedRef.current = true;
       unsubRef.current?.();
-      const qs = new URLSearchParams({ token, lang: activateLang });
+      sessionStorage.removeItem("secnum_crypto_wait");
+      const qs = new URLSearchParams({ token, lang: activateLang, pay: "card" });
       navigate(`/activate?${qs.toString()}`, { replace: true });
     }
 

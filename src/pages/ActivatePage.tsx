@@ -28,6 +28,7 @@ export function ActivatePage() {
   const [state, setState] = useState<State>({ phase: "loading" });
 
   const token = searchParams.get("token");
+  const fromCrypto = searchParams.get("pay") === "crypto";
   const purchaseLang = lang === "he" ? "he" : "en";
   const apiBase = import.meta.env.VITE_BASE_URL || "";
   const isProd = apiBase.includes("arnacon-production-gcp");
@@ -58,15 +59,18 @@ export function ActivatePage() {
 
   return (
     <Layout hideAppStoreBadges>
-      <section className="crypto-checkout">
-        <div className="crypto-checkout-frame">
+      <section className={fromCrypto ? "crypto-checkout" : "activate-page"}>
+        <div className={fromCrypto ? "crypto-checkout-frame" : "activate-page-frame"}>
           <AnimatePresence mode="wait">
-            {state.phase === "loading" && <LoadingState key="loading" t={t} />}
+            {state.phase === "loading" && (
+              <LoadingState key="loading" fromCrypto={fromCrypto} t={t} />
+            )}
             {state.phase === "ready" && (
               <QRState
                 key="qr"
                 claimUrl={state.claimUrl}
                 label={state.label}
+                fromCrypto={fromCrypto}
                 onBack={() => navigate("/", { replace: true })}
                 t={t}
               />
@@ -86,7 +90,23 @@ export function ActivatePage() {
   );
 }
 
-function LoadingState({ t }: { t: ReturnType<typeof useLanguage>["t"] }) {
+function LoadingState({
+  fromCrypto,
+  t,
+}: {
+  fromCrypto: boolean;
+  t: ReturnType<typeof useLanguage>["t"];
+}) {
+  if (!fromCrypto) {
+    return (
+      <motion.div {...fade}>
+        <p className="activate-kicker">{t.claim.activationLabel}</p>
+        <h1>{t.success.loading}</h1>
+        <p className="activate-lead">{t.success.loadingDesc}</p>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div {...fade} className="crypto-wait-hero">
       <div className="crypto-wait-mark" aria-hidden="true">
@@ -105,16 +125,66 @@ function LoadingState({ t }: { t: ReturnType<typeof useLanguage>["t"] }) {
 function QRState({
   claimUrl,
   label,
+  fromCrypto,
   onBack,
   t,
 }: {
   claimUrl: string;
   label: string;
+  fromCrypto: boolean;
   onBack: () => void;
   t: ReturnType<typeof useLanguage>["t"];
 }) {
   const qrUrl = buildQrUrl(claimUrl, 220);
-  const fromCrypto = Boolean(sessionStorage.getItem("secnum_crypto_wait"));
+
+  if (!fromCrypto) {
+    return (
+      <motion.div {...fade}>
+        <p className="activate-back">
+          <button type="button" onClick={onBack}>
+            {t.success.back}
+          </button>
+        </p>
+        <p className="activate-kicker">{t.claim.activationLabel}</p>
+        <h1>
+          {t.claim.activateHeadlineA}
+          <br />
+          {t.claim.activateHeadlineB}
+        </h1>
+        <p className="activate-lead">{t.success.scanDesc("Arnacon")}</p>
+
+        {label ? (
+          <div className="activate-number">
+            <span>{t.claim.yourNumber}</span>
+            <strong dir="ltr">{formatIsraeliLocal(label)}</strong>
+          </div>
+        ) : null}
+
+        <motion.div
+          className="activate-qr"
+          initial={{ opacity: 0, scale: 0.94 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.12, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <img src={qrUrl} alt={t.success.scanTitle} width={220} height={220} />
+        </motion.div>
+
+        <ol className="activate-how">
+          {t.success.scanHow.map(([title, body]) => (
+            <li key={title}>
+              <strong>{title}</strong>
+              <span>{body}</span>
+            </li>
+          ))}
+        </ol>
+
+        <p className="activate-or">{t.success.orDivider}</p>
+        <Button onClick={() => { window.location.href = claimUrl; }}>
+          {t.success.installOnDevice}
+        </Button>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div {...fade}>
@@ -129,12 +199,12 @@ function QRState({
       </h1>
       <p className="crypto-checkout-lead">{t.success.scanDesc("Arnacon")}</p>
 
-      {label && (
+      {label ? (
         <div className="crypto-activate-number">
           <span>{t.claim.yourNumber}</span>
           <strong dir="ltr">{formatIsraeliLocal(label)}</strong>
         </div>
-      )}
+      ) : null}
 
       <motion.div
         className="crypto-activate-qr"
@@ -145,21 +215,7 @@ function QRState({
         <img src={qrUrl} alt={t.success.scanTitle} width={220} height={220} />
       </motion.div>
 
-      {fromCrypto ? (
-        <CryptoFlowSteps copy={t.crypto} current={4} />
-      ) : (
-        <ol className="crypto-activate-how">
-          {t.success.scanHow.map(([title, body], index) => (
-            <li key={title}>
-              <span className="crypto-wait-num">{index + 1}</span>
-              <div className="crypto-activate-copy">
-                <strong>{title}</strong>
-                <span>{body}</span>
-              </div>
-            </li>
-          ))}
-        </ol>
-      )}
+      <CryptoFlowSteps copy={t.crypto} current={4} />
 
       <p className="crypto-activate-or">{t.success.orDivider}</p>
       <Button onClick={() => { window.location.href = claimUrl; }}>
@@ -180,13 +236,13 @@ function ErrorState({
 }) {
   return (
     <motion.div {...fade}>
-      <p className="crypto-checkout-back">
+      <p className="activate-back">
         <button type="button" onClick={onBack}>
           {t.success.back}
         </button>
       </p>
       <h1>{t.success.errorTitle}</h1>
-      <p className="crypto-checkout-lead">{message}</p>
+      <p className="activate-lead">{message}</p>
       <Button variant="secondary" onClick={onBack}>
         {t.success.errorBack}
       </Button>

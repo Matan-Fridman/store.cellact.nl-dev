@@ -75,9 +75,6 @@ export function HeroCopy({ onPurchase, loading, error, onDismissError }: HeroCop
         </div>
 
         <p className="landing-fineprint">{copy.finePrint}</p>
-        {!shouldShowFacebookChrome() ? (
-          <p className="landing-fineprint">{copy.cryptoFine}</p>
-        ) : null}
 
         <p className="landing-hero-links">
           <Link to="/recover">{t.recover.entry}</Link>

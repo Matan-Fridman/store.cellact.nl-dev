@@ -500,7 +500,7 @@ export function CryptoRecoverPage() {
         signature,
         issuedAt,
       });
-      navigate(`/activate?token=${encodeURIComponent(token)}`, { replace: true });
+      navigate(`/activate?token=${encodeURIComponent(token)}&pay=crypto`, { replace: true });
     } catch (err) {
       logCryptoError("claim", err);
       setError(cryptoErrorCopy(copy, err));

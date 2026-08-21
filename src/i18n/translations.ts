@@ -10,7 +10,6 @@ type HeroCopy = {
   ctaLoading: string;
   finePrint: string;
   cryptoCta: string;
-  cryptoFine: string;
 };
 
 type TranslationsShape = {
@@ -187,6 +186,7 @@ type TranslationsShape = {
     emailPlaceholder: string;
     detailsContinue: string;
     detailsNeedBoth: string;
+    specialPrice: string;
     changeDetails: string;
     billSetup: string;
     billSetupHint: string;
@@ -425,7 +425,6 @@ export const translations: Record<Language, TranslationsShape> = {
       ctaLoading: "Redirecting…",
       finePrint: "€3.99 setup · €4.99/month",
       cryptoCta: "Pay with crypto",
-      cryptoFine: "€2 setup · €19.99/year",
     },
 
     campaignHero: {
@@ -437,7 +436,6 @@ export const translations: Record<Language, TranslationsShape> = {
       ctaLoading: "Redirecting…",
       finePrint: "€3.99 setup + €4.99/mo · billed in EUR · cancel anytime",
       cryptoCta: "Pay with crypto",
-      cryptoFine: "€2 setup · €19.99/year",
     },
 
     steps: [
@@ -715,6 +713,7 @@ export const translations: Record<Language, TranslationsShape> = {
       emailPlaceholder: "you@email.com",
       detailsContinue: "See the purchase",
       detailsNeedBoth: "Enter a name and email to continue.",
+      specialPrice: "Crypto price: €2 setup + €19.99 for the year.",
       changeDetails: "Change details",
       billSetup: "Setup",
       billSetupHint: "One-time. Issues the Israeli number. Not refunded if you cancel.",
@@ -817,7 +816,7 @@ export const translations: Record<Language, TranslationsShape> = {
       escrowUnread: "Could not read escrow. Cancel needs a live lock read.",
       numberLabel: (label) => `Number ${label}`,
       landingTitle: "Pay with crypto",
-      landingLead: "€2 to issue the number. €19.99 for twelve months, about €1.67/mo. Pay once.",
+      landingLead: "Pay once from your wallet. Unused months come back if you cancel.",
       landingCta: "Pay",
       landingExplainTitle: "Why prepaid, not monthly",
       landingExplainLead:
@@ -1006,7 +1005,6 @@ export const translations: Record<Language, TranslationsShape> = {
       ctaLoading: "מעבירים לתשלום…",
       finePrint: "דמי הקמה €3.99 · €4.99 לחודש",
       cryptoCta: "תשלום בקריפטו",
-      cryptoFine: "€2 הקמה · €19.99 לשנה",
     },
 
     campaignHero: {
@@ -1018,7 +1016,6 @@ export const translations: Record<Language, TranslationsShape> = {
       ctaLoading: "מעבירים לתשלום…",
       finePrint: "דמי הקמה €3.99 + €4.99 לחודש · ביטול בכל רגע",
       cryptoCta: "תשלום בקריפטו",
-      cryptoFine: "€2 הקמה · €19.99 לשנה",
     },
 
     steps: [
@@ -1292,6 +1289,7 @@ export const translations: Record<Language, TranslationsShape> = {
       emailPlaceholder: "you@email.com",
       detailsContinue: "להצגת הרכישה",
       detailsNeedBoth: "הזינו שם ואימייל כדי להמשיך.",
+      specialPrice: "מחיר לקריפטו: €2 הקמה + €19.99 לשנה.",
       changeDetails: "שינוי פרטים",
       billSetup: "הקמה",
       billSetupHint: "חד-פעמי. מנפיק את המספר הישראלי. לא מוחזר בביטול.",
@@ -1394,7 +1392,7 @@ export const translations: Record<Language, TranslationsShape> = {
       escrowUnread: "לא ניתן לקרוא את החוזה. הביטול דורש קריאה חיה.",
       numberLabel: (label) => `מספר ${label}`,
       landingTitle: "תשלום בקריפטו",
-      landingLead: "€2 להנפקת המספר. €19.99 לשניים-עשר חודשים, בערך €1.67 לחודש. תשלום אחד.",
+      landingLead: "תשלום אחד מהארנק. חודשים שלא נוצלו חוזרים אם מבטלים.",
       landingCta: "לתשלום",
       landingExplainTitle: "למה מראש, לא כל חודש",
       landingExplainLead:

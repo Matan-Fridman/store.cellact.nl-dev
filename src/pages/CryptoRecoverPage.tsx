@@ -10,7 +10,6 @@ import {
   CRYPTO_CHAINS,
   formatEscrowAmount,
   isCryptoChainId,
-  listOnchainOrderIds,
   orderIdBytes32,
   pickEthereum,
   readEscrowSettlement,
@@ -41,8 +40,6 @@ const CLAIM_TYPES = {
     { name: "issuedAt", type: "uint256" },
   ],
 };
-
-const CHAINS: CryptoChainId[] = [80002, 11155111];
 
 type ManagedOrder = {
   orderId: string;
@@ -161,18 +158,18 @@ async function settlementFor(
   snap: CryptoOrderStatus["escrowState"],
   injected?: EthereumProvider,
 ): Promise<EscrowSettlement | null> {
+  if (snap) {
+    try {
+      return settlementFromOnchain(chainId, snap);
+    } catch {
+      // Fall through to a live read.
+    }
+  }
   try {
     const live = await readEscrowSettlement(chainId, escrow, idBytes32);
     if (live) return live;
   } catch {
     // Public RPC can be busy; fall through.
-  }
-  if (snap) {
-    try {
-      return settlementFromOnchain(chainId, snap);
-    } catch {
-      // Fall through to the wallet RPC.
-    }
   }
   if (injected) {
     try {
@@ -185,6 +182,36 @@ async function settlementFor(
     }
   }
   return null;
+}
+
+function managedFromListed(order: CryptoOrderStatus): ManagedOrder | null {
+  const chainId = asChainId(Number(order.chainId));
+  if (!chainId) return null;
+  const escrow = order.escrow || CRYPTO_ESCROW[chainId];
+  const idBytes32 = bytes32Of(order.orderId);
+  const claimed = Boolean(order.claimed);
+  let settlement: EscrowSettlement | null = null;
+  if (order.escrowState) {
+    try {
+      settlement = settlementFromOnchain(chainId, order.escrowState);
+    } catch {
+      settlement = null;
+    }
+  }
+  return {
+    orderId: order.orderId,
+    idBytes32,
+    chainId,
+    escrow,
+    paid: order.paid,
+    provisioned: order.provisioned,
+    claimed,
+    canClaim: order.provisioned && isUuidOrder(order.orderId) && !claimed,
+    label: order.label || null,
+    status: order.status,
+    tokenSymbol: order.tokenSymbol || settlement?.symbol || null,
+    settlement,
+  };
 }
 
 async function readCancelledSettlement(
@@ -216,63 +243,11 @@ function withCancelApplied(
   };
 }
 
-async function loadManaged(address: string, injected?: EthereumProvider): Promise<ManagedOrder[]> {
-  const listed = await listCryptoOrders(address).catch(() => ({ orders: [] as CryptoOrderStatus[] }));
-  const byId = new Map<string, ManagedOrder>();
-
-  for (const order of listed.orders) {
-    const chainId = asChainId(Number(order.chainId));
-    if (!chainId) continue;
-    const escrow = order.escrow || CRYPTO_ESCROW[chainId];
-    const idBytes32 = bytes32Of(order.orderId);
-    const claimed = Boolean(order.claimed);
-    const settlement = await settlementFor(chainId, escrow, idBytes32, order.escrowState, injected);
-    byId.set(`${chainId}:${idBytes32.toLowerCase()}`, {
-      orderId: order.orderId,
-      idBytes32,
-      chainId,
-      escrow,
-      paid: order.paid,
-      provisioned: order.provisioned,
-      claimed,
-      canClaim: order.provisioned && isUuidOrder(order.orderId) && !claimed,
-      label: order.label || null,
-      status: order.status,
-      tokenSymbol: order.tokenSymbol || null,
-      settlement,
-    });
-  }
-
-  if (byId.size === 0 && injected) {
-    await Promise.all(
-      CHAINS.map(async (chainId) => {
-        const escrow = CRYPTO_ESCROW[chainId];
-        const ids = await listOnchainOrderIds(chainId, escrow, address).catch(() => [] as string[]);
-        for (const idBytes32 of ids) {
-          const key = `${chainId}:${idBytes32.toLowerCase()}`;
-          if (byId.has(key)) continue;
-          const settlement = await settlementFor(chainId, escrow, idBytes32, null, injected);
-          if (!settlement) continue;
-          byId.set(key, {
-            orderId: idBytes32,
-            idBytes32,
-            chainId,
-            escrow,
-            paid: true,
-            provisioned: false,
-            claimed: false,
-            canClaim: false,
-            label: null,
-            status: "onchain",
-            tokenSymbol: settlement.symbol,
-            settlement,
-          });
-        }
-      }),
-    );
-  }
-
-  return [...byId.values()];
+async function loadManaged(address: string): Promise<ManagedOrder[]> {
+  const listed = await listCryptoOrders(address);
+  return listed.orders
+    .map(managedFromListed)
+    .filter((order): order is ManagedOrder => order != null);
 }
 
 export function CryptoRecoverPage() {
@@ -300,15 +275,20 @@ export function CryptoRecoverPage() {
   const refresh = useCallback(async (address: string) => {
     setLoadingList(true);
     try {
-      const injected = await pickEthereum(address).catch(() => undefined);
-      const next = await loadManaged(address, injected);
+      const next = await loadManaged(address);
       if (payerRef.current?.toLowerCase() === address.toLowerCase()) {
         setOrders(next);
+        setError(null);
+      }
+    } catch (err) {
+      logCryptoError("recover-list", err);
+      if (payerRef.current?.toLowerCase() === address.toLowerCase()) {
+        setError(cryptoErrorCopy(copy, err));
       }
     } finally {
       setLoadingList(false);
     }
-  }, []);
+  }, [copy]);
 
   const connectSilent = useCallback(async () => {
     const kind = storedWalletKind();
@@ -638,7 +618,7 @@ export function CryptoRecoverPage() {
           )}
 
           {connected && loadingList && orders.length === 0 && (
-            <p className="crypto-checkout-amount">{copy.quoteLoading}</p>
+            <p className="crypto-checkout-amount">{copy.loadingOrders}</p>
           )}
 
           {connected && !loadingList && orders.length === 0 && (

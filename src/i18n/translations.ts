@@ -240,6 +240,7 @@ type TranslationsShape = {
     manageTitle: string;
     manageLead: string;
     manageConnected: (short: string) => string;
+    loadingOrders: string;
     noOrders: string;
     colNumber: string;
     colPaid: string;
@@ -762,6 +763,7 @@ export const translations: Record<Language, TranslationsShape> = {
       manageTitle: "Your crypto orders",
       manageLead: "Tap an order to cancel or claim.",
       manageConnected: (short) => `Connected ${short}`,
+      loadingOrders: "Loading orders…",
       noOrders: "No prepaid orders on this wallet.",
       colNumber: "Number",
       colPaid: "Paid",
@@ -1332,6 +1334,7 @@ export const translations: Record<Language, TranslationsShape> = {
       manageTitle: "ההזמנות בקריפטו",
       manageLead: "לחצו על הזמנה לביטול או להפעלה.",
       manageConnected: (short) => `מחובר ${short}`,
+      loadingOrders: "טוענים הזמנות…",
       noOrders: "אין הזמנות ממולאות מראש בארנק הזה.",
       colNumber: "מספר",
       colPaid: "שולם",

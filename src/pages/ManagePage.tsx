@@ -4,7 +4,7 @@ import { doc, onSnapshot, type Unsubscribe } from "firebase/firestore";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
 import { ErrorAlert } from "../components/ErrorAlert";
-import { getApiConfig } from "../config/constants";
+import { getApiConfig, isCryptoEnabled } from "../config/constants";
 import { useLanguage } from "../contexts/LanguageContext";
 import { getDb } from "../lib/firebase";
 import {
@@ -185,10 +185,14 @@ export function ManagePage() {
                 <Button variant="secondary" onClick={() => setStep("email")} disabled={busy}>
                   {copy.emailCta}
                 </Button>
-                <Link to="/crypto/recover" style={linkBtn}>
-                  {copy.cryptoPaidLink}
-                </Link>
-                <p style={{ ...sub, margin: 0 }}>{copy.cryptoPaid}</p>
+                {isCryptoEnabled() ? (
+                  <>
+                    <Link to="/crypto/recover" style={linkBtn}>
+                      {copy.cryptoPaidLink}
+                    </Link>
+                    <p style={{ ...sub, margin: 0 }}>{copy.cryptoPaid}</p>
+                  </>
+                ) : null}
               </div>
             </>
           ) : null}
@@ -285,9 +289,11 @@ export function ManagePage() {
               {numbers.length === 0 ? (
                 <>
                   <p style={sub}>{copy.empty}</p>
-                  <Link to="/crypto/recover" style={linkBtn}>
-                    {copy.cryptoPaidLink}
-                  </Link>
+                  {isCryptoEnabled() ? (
+                    <Link to="/crypto/recover" style={linkBtn}>
+                      {copy.cryptoPaidLink}
+                    </Link>
+                  ) : null}
                 </>
               ) : (
                 <>
@@ -341,9 +347,13 @@ export function ManagePage() {
                               </td>
                               <td>
                                 {row.rail === "crypto" ? (
-                                  <Link to="/crypto/recover" className="crypto-order-link">
-                                    {copy.cryptoCancel}
-                                  </Link>
+                                  isCryptoEnabled() ? (
+                                    <Link to="/crypto/recover" className="crypto-order-link">
+                                      {copy.cryptoCancel}
+                                    </Link>
+                                  ) : (
+                                    "—"
+                                  )
                                 ) : doneRef === row.paymentRef ? (
                                   copy.cancelled
                                 ) : row.canCancel ? (

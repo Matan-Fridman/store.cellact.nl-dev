@@ -31,6 +31,18 @@ export function isProductionGcp(): boolean {
   return BASE_URL.includes("arnacon-production-gcp");
 }
 
+/** Crypto checkout UI. Off on store.cellact.nl unless VITE_ENABLE_CRYPTO=true. Staging stays on by default. */
+export function isCryptoEnabled(): boolean {
+  const raw = String(import.meta.env.VITE_ENABLE_CRYPTO ?? "").trim().toLowerCase();
+  if (raw === "true" || raw === "1") return true;
+  if (raw === "false" || raw === "0") return false;
+  if (isProductionGcp()) return false;
+  if (typeof window !== "undefined" && /(?:^|\.)store\.cellact\.nl$/i.test(window.location.hostname)) {
+    return false;
+  }
+  return true;
+}
+
 /** Stripe / product metadata */
 export const PACKAGE_ID = "secnum_number";
 export const PACKAGE_NAME = "Israeli Mobile Number";

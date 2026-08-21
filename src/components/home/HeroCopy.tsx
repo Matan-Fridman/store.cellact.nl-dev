@@ -4,6 +4,7 @@ import { Button } from "../Button";
 import { ErrorAlert } from "../ErrorAlert";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { shouldShowFacebookChrome } from "../../lib/campaign";
+import { isCryptoEnabled } from "../../config/constants";
 
 interface HeroCopyProps {
   onPurchase: () => void;
@@ -67,7 +68,7 @@ export function HeroCopy({ onPurchase, loading, error, onDismissError }: HeroCop
           >
             {loading ? copy.ctaLoading : copy.cta}
           </Button>
-          {!shouldShowFacebookChrome() ? (
+          {!shouldShowFacebookChrome() && isCryptoEnabled() ? (
             <Link to="/crypto" className="landing-hero-crypto btn-secondary rounded-xl px-6 py-3.5 text-sm font-semibold">
               {copy.cryptoCta}
             </Link>

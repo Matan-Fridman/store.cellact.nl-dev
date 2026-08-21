@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { StorePage } from "./pages/StorePage";
 import { SixSevenPage } from "./pages/SixSevenPage";
@@ -14,6 +14,7 @@ import { CryptoWaitPage } from "./pages/CryptoWaitPage";
 import { CryptoRecoverPage } from "./pages/CryptoRecoverPage";
 import { CryptoPage } from "./pages/CryptoPage";
 import { initAnalytics, trackPageView } from "./lib/analytics";
+import { isCryptoEnabled } from "./config/constants";
 
 function AnalyticsTracker() {
   const location = useLocation();
@@ -47,10 +48,16 @@ export default function App() {
           <Route path="/port/complete" element={<PortCompletePage />} />
           <Route path="/recover" element={<RecoverPage />} />
           <Route path="/manage" element={<ManagePage />} />
-          <Route path="/crypto" element={<CryptoPage />} />
-          <Route path="/crypto/why" element={<CryptoPage />} />
-          <Route path="/crypto/wait" element={<CryptoWaitPage />} />
-          <Route path="/crypto/recover" element={<CryptoRecoverPage />} />
+          {isCryptoEnabled() ? (
+            <>
+              <Route path="/crypto" element={<CryptoPage />} />
+              <Route path="/crypto/why" element={<CryptoPage />} />
+              <Route path="/crypto/wait" element={<CryptoWaitPage />} />
+              <Route path="/crypto/recover" element={<CryptoRecoverPage />} />
+            </>
+          ) : (
+            <Route path="/crypto/*" element={<Navigate to="/" replace />} />
+          )}
         </Routes>
       </BrowserRouter>
     </LanguageProvider>

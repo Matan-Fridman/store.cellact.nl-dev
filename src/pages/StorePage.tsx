@@ -18,6 +18,7 @@ import {
   getFbOfferVariant,
   shouldShowFacebookChrome,
 } from "../lib/campaign";
+import { isCryptoEnabled } from "../config/constants";
 
 export function StorePage() {
   const [searchParams] = useSearchParams();
@@ -104,19 +105,23 @@ export function StorePage() {
         showCoupons={!facebookChrome}
       />
 
-      <section className="crypto-pay">
-        <h2>{t.crypto.landingTitle}</h2>
-        <p>{t.crypto.landingLead}</p>
-        <Link to="/crypto" className="btn-primary crypto-pay-link">
-          {t.crypto.landingCta}
-        </Link>
-      </section>
+      {isCryptoEnabled() ? (
+        <>
+          <section className="crypto-pay">
+            <h2>{t.crypto.landingTitle}</h2>
+            <p>{t.crypto.landingLead}</p>
+            <Link to="/crypto" className="btn-primary crypto-pay-link">
+              {t.crypto.landingCta}
+            </Link>
+          </section>
 
-      <section className="crypto-explain-landing">
-        <h2>{t.crypto.landingExplainTitle}</h2>
-        <p>{t.crypto.landingExplainLead}</p>
-        <Link to="/crypto/why">{t.crypto.landingExplainCta}</Link>
-      </section>
+          <section className="crypto-explain-landing">
+            <h2>{t.crypto.landingExplainTitle}</h2>
+            <p>{t.crypto.landingExplainLead}</p>
+            <Link to="/crypto/why">{t.crypto.landingExplainCta}</Link>
+          </section>
+        </>
+      ) : null}
 
       {showSticky && (
         <div className="landing-sticky">

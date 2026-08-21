@@ -1240,6 +1240,50 @@ html[data-landing] .site-header-controls {
   gap: 14px;
 }
 
+.landing-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.landing-hero-actions .landing-hero-buy,
+.landing-hero-crypto {
+  width: auto;
+  min-width: 180px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+}
+
+.landing-hero-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.landing-hero-links a {
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.site-header-manage {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.site-header-manage:hover {
+  color: var(--color-text);
+}
+
 .landing-fineprint {
   margin: 0;
   font-size: 13px;
@@ -1712,6 +1756,20 @@ html[data-fb-banner="1"] .landing-sticky {
     width: 100% !important;
   }
 
+  .landing-hero-actions {
+    flex-direction: column;
+  }
+
+  .landing-hero-actions .landing-hero-buy,
+  .landing-hero-crypto {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .site-header-manage {
+    display: none;
+  }
+
   .landing-phone-img {
     width: clamp(200px, 56vw, 280px);
   }
@@ -1887,9 +1945,13 @@ html[data-fb-banner="1"] .landing-sticky {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 10px;
-  margin: 22px 0 20px;
+  margin: 8px 0 16px;
   padding: 0;
   list-style: none;
+}
+
+.crypto-checkout-steps.is-two {
+  grid-template-columns: 1fr 1fr;
 }
 
 .crypto-checkout-steps li {
@@ -2034,6 +2096,69 @@ html[data-fb-banner="1"] .landing-sticky {
 
 .crypto-wallet-what:hover {
   color: var(--color-text);
+}
+
+.crypto-checkout-input {
+  display: block;
+  width: 100%;
+  margin: 0 0 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.crypto-checkout-form .btn-primary {
+  margin-top: 18px;
+}
+
+.crypto-checkout-bill {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.crypto-checkout-bill li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.crypto-checkout-bill li:first-child {
+  border-top: 0;
+}
+
+.crypto-checkout-bill li p {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.crypto-checkout-bill-hint {
+  margin: 4px 0 0 !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  color: var(--color-text-muted);
+  max-width: 42ch;
+}
+
+.crypto-checkout-bill li > span {
+  flex: 0 0 auto;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.crypto-checkout-bill li.is-total {
+  background: var(--color-bg);
 }
 
 .crypto-checkout-label {

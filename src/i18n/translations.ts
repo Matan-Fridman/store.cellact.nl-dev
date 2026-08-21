@@ -9,10 +9,12 @@ type HeroCopy = {
   cta: string;
   ctaLoading: string;
   finePrint: string;
+  cryptoCta: string;
+  cryptoFine: string;
 };
 
 type TranslationsShape = {
-  nav: { brand: string };
+  nav: { brand: string; manage: string };
   hero: HeroCopy;
   /** Facebook / secondary-number campaign copy overrides hero when active */
   campaignHero: HeroCopy;
@@ -175,6 +177,23 @@ type TranslationsShape = {
     stepChoose: string;
     stepConnect: string;
     stepPay: string;
+    stepDetails: string;
+    stepPurchase: string;
+    detailsTitle: string;
+    detailsLead: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    detailsContinue: string;
+    detailsNeedBoth: string;
+    changeDetails: string;
+    billSetup: string;
+    billSetupHint: string;
+    billYear: string;
+    billYearHint: (monthly: string) => string;
+    billTotalEur: string;
+    billChargeHint: string;
     network: string;
     token: string;
     walletOff: string;
@@ -343,12 +362,48 @@ type TranslationsShape = {
     errorTitle: string;
     back: string;
   };
+  manage: {
+    entry: string;
+    title: string;
+    sub: string;
+    scanCta: string;
+    emailCta: string;
+    scanTitle: string;
+    scanBody: string;
+    scanWait: string;
+    emailTitle: string;
+    emailBody: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    sendCode: string;
+    codeTitle: string;
+    codeBody: string;
+    codeLabel: string;
+    verifyCode: string;
+    listTitle: string;
+    listSub: string;
+    empty: string;
+    unnamed: string;
+    railCard: string;
+    railCrypto: string;
+    activeUntil: (when: string) => string;
+    cancelCta: string;
+    confirmBody: (name: string) => string;
+    confirmCancel: string;
+    keepNumber: string;
+    cancelled: string;
+    cryptoCancel: string;
+    backChoose: string;
+    back: string;
+    error: string;
+  };
 };
 
 export const translations: Record<Language, TranslationsShape> = {
   en: {
     nav: {
       brand: "Secnum",
+      manage: "Manage",
     },
 
     hero: {
@@ -359,6 +414,8 @@ export const translations: Record<Language, TranslationsShape> = {
       cta: "Get your Israeli number",
       ctaLoading: "Redirecting…",
       finePrint: "€3.99 setup · €4.99/month",
+      cryptoCta: "Pay with crypto",
+      cryptoFine: "€2 setup · €19.99/year",
     },
 
     campaignHero: {
@@ -369,6 +426,8 @@ export const translations: Record<Language, TranslationsShape> = {
       cta: "Buy now",
       ctaLoading: "Redirecting…",
       finePrint: "€3.99 setup + €4.99/mo · billed in EUR · cancel anytime",
+      cryptoCta: "Pay with crypto",
+      cryptoFine: "€2 setup · €19.99/year",
     },
 
     steps: [
@@ -630,11 +689,30 @@ export const translations: Record<Language, TranslationsShape> = {
       back: "Back to store",
       kicker: "Testnet",
       title: "Pay with crypto",
-      lead: "Pay twelve months once. No monthly pull.",
+      lead: "Name and email first. Then you see the bill and pay once.",
       stepChoose: "Choose",
       stepConnect: "Connect",
       stepReview: "Review",
       stepPay: "Pay",
+      stepDetails: "Details",
+      stepPurchase: "Purchase",
+      detailsTitle: "Your details",
+      detailsLead:
+        "Israeli numbers need a name and email on the order. We do not verify ID. We use these to send the activation QR.",
+      nameLabel: "Full name",
+      namePlaceholder: "Name on the order",
+      emailLabel: "Email",
+      emailPlaceholder: "you@email.com",
+      detailsContinue: "See the purchase",
+      detailsNeedBoth: "Enter a name and email to continue.",
+      changeDetails: "Change details",
+      billSetup: "Setup",
+      billSetupHint: "One-time. Issues the Israeli number. Not refunded if you cancel.",
+      billYear: "Twelve months",
+      billYearHint: (monthly) => `About ${monthly} / month. Locked in escrow. Cancel returns unused months.`,
+      billTotalEur: "Euro total",
+      billChargeHint:
+        "You pay the crypto equal to this euro total at the live rate. Setup plus the year, in one transaction.",
       continue: "Review lock",
       reviewTitle: "Check the lock",
       reviewLead: "This amount leaves your wallet into escrow.",
@@ -666,7 +744,7 @@ export const translations: Record<Language, TranslationsShape> = {
       perMonth: (amount, symbol) => `${amount} ${symbol} / month`,
       introMonths: (amount, symbol, count) => `First ${count} months: ${amount} ${symbol} / month`,
       lock: (amount, symbol) => `Lock ${amount} ${symbol}`,
-      prepaidLine: "12 months in advance. Cancel anytime.",
+      prepaidLine: "€2 setup + €19.99 for the year. Cancel unused months.",
       infoLabel: "How prepaid escrow works",
       infoTitle: "Prepaid escrow",
       infoBody:
@@ -727,7 +805,7 @@ export const translations: Record<Language, TranslationsShape> = {
       escrowUnread: "Could not read escrow. Cancel needs a live lock read.",
       numberLabel: (label) => `Number ${label}`,
       landingTitle: "Pay with crypto",
-      landingLead: "USDC or native on testnet.",
+      landingLead: "€2 to issue the number. €19.99 for twelve months, about €1.67/mo. Pay once.",
       landingCta: "Pay",
       landingExplainTitle: "Why prepaid, not monthly",
       landingExplainLead:
@@ -749,7 +827,7 @@ export const translations: Record<Language, TranslationsShape> = {
         "A live phone number cannot wait for you to remember a transaction. If the wallet is empty, or MetaMask is rate-limited, the number dies. We refuse that product.",
       whyLockTitle: "What the lock actually is",
       whyLock:
-        "Your wallet sends setup plus twelve 30-day periods into SubscriptionEscrow. The contract holds the funds. Each finished period vests to the provider. You do not sign again next month.",
+        "Your wallet sends a €2 setup plus €19.99 for twelve 30-day periods into SubscriptionEscrow. Setup pays to issue the number. The year sits in the contract. Each finished period vests to the provider. You do not sign again next month.",
       whyExampleTitle: "A year on a timeline",
       whyExampleLead: "You cancel in month 1. Here is the split.",
       whyExampleNow: "This month stays paid",
@@ -819,6 +897,43 @@ export const translations: Record<Language, TranslationsShape> = {
       back: "Back to store",
     },
 
+    manage: {
+      entry: "Manage a number",
+      title: "Manage your number",
+      sub: "Prove you own it, then stop card billing at period end.",
+      scanCta: "Scan with Arnacon",
+      emailCta: "Use the email I paid with",
+      scanTitle: "Scan with Arnacon",
+      scanBody: "Open Arnacon and scan this code.",
+      scanWait: "Waiting for the scan…",
+      emailTitle: "Email you paid with",
+      emailBody: "If this email has a live number, we send a 6-digit code.",
+      emailLabel: "Purchase email",
+      emailPlaceholder: "you@email.com",
+      sendCode: "Send code",
+      codeTitle: "Enter the code",
+      codeBody: "Check your inbox. The code expires in 10 minutes.",
+      codeLabel: "Code",
+      verifyCode: "Continue",
+      listTitle: "Your numbers",
+      listSub: "Card billing stops at the end of this billing period. No refund for time already paid.",
+      empty: "No live numbers on this account.",
+      unnamed: "Number in setup",
+      railCard: "Card",
+      railCrypto: "Crypto",
+      activeUntil: (when) => `Active until ${when}`,
+      cancelCta: "Stop at period end",
+      confirmBody: (name) =>
+        `Stop ${name} at the end of this billing period? You keep it until then. No refund for this period.`,
+      confirmCancel: "Stop this number",
+      keepNumber: "Keep the number",
+      cancelled: "Billing stops at period end.",
+      cryptoCancel: "Cancel from crypto recover",
+      backChoose: "Back",
+      back: "Back to store",
+      error: "Something went wrong",
+    },
+
     success: {
       paymentConfirmed: "Payment confirmed",
       loading: "Preparing your number…",
@@ -859,6 +974,7 @@ export const translations: Record<Language, TranslationsShape> = {
   he: {
     nav: {
       brand: "Secnum",
+      manage: "ניהול",
     },
 
     hero: {
@@ -869,6 +985,8 @@ export const translations: Record<Language, TranslationsShape> = {
       cta: "רכשו מספר ישראלי",
       ctaLoading: "מעבירים לתשלום…",
       finePrint: "דמי הקמה €3.99 · €4.99 לחודש",
+      cryptoCta: "תשלום בקריפטו",
+      cryptoFine: "€2 הקמה · €19.99 לשנה",
     },
 
     campaignHero: {
@@ -879,6 +997,8 @@ export const translations: Record<Language, TranslationsShape> = {
       cta: "לרכישה",
       ctaLoading: "מעבירים לתשלום…",
       finePrint: "דמי הקמה €3.99 + €4.99 לחודש · ביטול בכל רגע",
+      cryptoCta: "תשלום בקריפטו",
+      cryptoFine: "€2 הקמה · €19.99 לשנה",
     },
 
     steps: [
@@ -1136,11 +1256,30 @@ export const translations: Record<Language, TranslationsShape> = {
       back: "חזרה לחנות",
       kicker: "רשת בדיקה",
       title: "תשלום בקריפטו",
-      lead: "שניים-עשר חודשים בתשלום אחד. בלי חיוב חודשי.",
+      lead: "קודם שם ואימייל. אחר כך החשבון, ואז תשלום אחד.",
       stepChoose: "בחירה",
       stepConnect: "חיבור",
       stepReview: "סקירה",
       stepPay: "תשלום",
+      stepDetails: "פרטים",
+      stepPurchase: "רכישה",
+      detailsTitle: "הפרטים שלכם",
+      detailsLead:
+        "למספר ישראלי צריך שם ואימייל על ההזמנה. אנחנו לא מאמתים תעודה. נשלח לאימייל הזה את ה-QR להפעלה.",
+      nameLabel: "שם מלא",
+      namePlaceholder: "השם בהזמנה",
+      emailLabel: "אימייל",
+      emailPlaceholder: "you@email.com",
+      detailsContinue: "להצגת הרכישה",
+      detailsNeedBoth: "הזינו שם ואימייל כדי להמשיך.",
+      changeDetails: "שינוי פרטים",
+      billSetup: "הקמה",
+      billSetupHint: "חד-פעמי. מנפיק את המספר הישראלי. לא מוחזר בביטול.",
+      billYear: "שניים-עשר חודשים",
+      billYearHint: (monthly) => `בערך ${monthly} לחודש. נעול בחוזה. ביטול מחזיר חודשים שלא נוצלו.`,
+      billTotalEur: "סה״כ באירו",
+      billChargeHint:
+        "תשלמו בקריפטו את שווי הסכום באירו לפי השער החי. הקמה ועוד שנה, בעסקה אחת.",
       continue: "סקירת הנעילה",
       reviewTitle: "בדקו את הנעילה",
       reviewLead: "הסכום הזה יוצא מהארנק לחוזה הנעילה.",
@@ -1172,7 +1311,7 @@ export const translations: Record<Language, TranslationsShape> = {
       perMonth: (amount, symbol) => `${amount} ${symbol} לחודש`,
       introMonths: (amount, symbol, count) => `${count} החודשים הראשונים: ${amount} ${symbol} לחודש`,
       lock: (amount, symbol) => `נעילה של ${amount} ${symbol}`,
-      prepaidLine: "שניים-עשר חודשים מראש. ביטול בכל רגע.",
+      prepaidLine: "€2 הקמה + €19.99 לשנה. ביטול מחזיר חודשים שלא נוצלו.",
       infoLabel: "איך נעילה מראש עובדת",
       infoTitle: "אסקרו מראש",
       infoBody:
@@ -1233,7 +1372,7 @@ export const translations: Record<Language, TranslationsShape> = {
       escrowUnread: "לא ניתן לקרוא את החוזה. הביטול דורש קריאה חיה.",
       numberLabel: (label) => `מספר ${label}`,
       landingTitle: "תשלום בקריפטו",
-      landingLead: "USDC או מטבע רשת, ברשת בדיקה.",
+      landingLead: "€2 להנפקת המספר. €19.99 לשניים-עשר חודשים, בערך €1.67 לחודש. תשלום אחד.",
       landingCta: "לתשלום",
       landingExplainTitle: "למה מראש, לא כל חודש",
       landingExplainLead:
@@ -1255,7 +1394,7 @@ export const translations: Record<Language, TranslationsShape> = {
         "מספר חי לא יכול לחכות שתזכרו לעשות עסקה. אם הארנק ריק, או ש-MetaMask מוגבל, המספר מת. את זה אנחנו לא מוכרים.",
       whyLockTitle: "מה הנעילה באמת",
       whyLock:
-        "הארנק שולח הקמה ועוד שתים-עשרה תקופות של 30 יום ל-SubscriptionEscrow. החוזה מחזיק את הכסף. כל תקופה שנגמרה עוברת לספק. אין חתימה בחודש הבא.",
+        "הארנק שולח €2 הקמה ועוד €19.99 עבור שתים-עשרה תקופות של 30 יום ל-SubscriptionEscrow. ההקמה משלמת על הנפקת המספר. השנה יושבת בחוזה. כל תקופה שנגמרה עוברת לספק. אין חתימה בחודש הבא.",
       whyExampleTitle: "שנה על ציר זמן",
       whyExampleLead: "מבטלים בחודש הראשון. ככה מתחלק.",
       whyExampleNow: "החודש הזה נשאר משולם",
@@ -1323,6 +1462,43 @@ export const translations: Record<Language, TranslationsShape> = {
       numbersLabel: "מספרים ששוחזרו",
       errorTitle: "השחזור נכשל",
       back: "חזרה לחנות",
+    },
+
+    manage: {
+      entry: "ניהול מספר",
+      title: "ניהול המספר",
+      sub: "הוכיחו בעלות, ואז עצרו חיוב בכרטיס בסוף תקופת החיוב.",
+      scanCta: "סריקה ב-Arnacon",
+      emailCta: "האימייל ששילמתי איתו",
+      scanTitle: "סריקה ב-Arnacon",
+      scanBody: "פתחו את Arnacon וסרקו את הקוד.",
+      scanWait: "ממתינים לסריקה…",
+      emailTitle: "האימייל ששילמתם איתו",
+      emailBody: "אם לאימייל הזה יש מספר פעיל, נשלח קוד בן 6 ספרות.",
+      emailLabel: "אימייל הרכישה",
+      emailPlaceholder: "you@email.com",
+      sendCode: "שלחו קוד",
+      codeTitle: "הזינו את הקוד",
+      codeBody: "בדקו את תיבת הדואר. הקוד תקף ל-10 דקות.",
+      codeLabel: "קוד",
+      verifyCode: "המשך",
+      listTitle: "המספרים שלכם",
+      listSub: "חיוב בכרטיס נעצר בסוף תקופת החיוב הזו. אין החזר על זמן שכבר שולם.",
+      empty: "אין מספרים פעילים בחשבון הזה.",
+      unnamed: "מספר בהקמה",
+      railCard: "כרטיס",
+      railCrypto: "קריפטו",
+      activeUntil: (when) => `פעיל עד ${when}`,
+      cancelCta: "עצירה בסוף התקופה",
+      confirmBody: (name) =>
+        `לעצור את ${name} בסוף תקופת החיוב הזו? המספר נשאר עד אז. אין החזר על התקופה הזו.`,
+      confirmCancel: "עצרו את המספר הזה",
+      keepNumber: "השאירו את המספר",
+      cancelled: "החיוב נעצר בסוף התקופה.",
+      cryptoCancel: "ביטול דרך שחזור קריפטו",
+      backChoose: "חזרה",
+      back: "חזרה לחנות",
+      error: "משהו השתבש",
     },
 
     success: {

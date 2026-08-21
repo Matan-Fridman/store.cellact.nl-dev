@@ -57,25 +57,31 @@ export function HeroCopy({ onPurchase, loading, error, onDismissError }: HeroCop
       </motion.div>
 
       <motion.div {...item(0.42)} className="landing-hero-cta">
-        <Button
-          onClick={onPurchase}
-          loading={loading}
-          disabled={loading}
-          fullWidth={false}
-          className="landing-buy landing-hero-buy"
-        >
-          {loading ? copy.ctaLoading : copy.cta}
-        </Button>
+        <div className="landing-hero-actions">
+          <Button
+            onClick={onPurchase}
+            loading={loading}
+            disabled={loading}
+            fullWidth={false}
+            className="landing-buy landing-hero-buy"
+          >
+            {loading ? copy.ctaLoading : copy.cta}
+          </Button>
+          {!shouldShowFacebookChrome() ? (
+            <Link to="/crypto" className="landing-hero-crypto btn-secondary rounded-xl px-6 py-3.5 text-sm font-semibold">
+              {copy.cryptoCta}
+            </Link>
+          ) : null}
+        </div>
 
         <p className="landing-fineprint">{copy.finePrint}</p>
+        {!shouldShowFacebookChrome() ? (
+          <p className="landing-fineprint">{copy.cryptoFine}</p>
+        ) : null}
 
-        <p style={{ margin: "12px 0 0", fontSize: "0.9rem" }}>
-          <Link
-            to="/recover"
-            style={{ color: "var(--color-text-muted)", textDecoration: "underline", textUnderlineOffset: "3px" }}
-          >
-            {t.recover.entry}
-          </Link>
+        <p className="landing-hero-links">
+          <Link to="/recover">{t.recover.entry}</Link>
+          <Link to="/manage">{t.manage.entry}</Link>
         </p>
 
         <ErrorAlert message={error} onDismiss={onDismissError} />

@@ -14,6 +14,7 @@ export const URLS = {
   API_URL:               `${BASE_URL}/secnum-chain-activate`,
   ACTIVATE_URL:          `${BASE_URL}/secnum-activate-number`,
   RECOVERY_URL:          `${BASE_URL}/secnum-recovery`,
+  MANAGE_URL:             `${BASE_URL}/secnum-number-manage`,
   STRIPE_URL:            `${BASE_URL}/payment-link-generator`,
   CRYPTO_URL:             `${BASE_URL}/secnum-crypto-checkout`,
   ORDER_RESULT_URL:      `${BASE_URL}/secnum-order-result`,

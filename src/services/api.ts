@@ -2,7 +2,7 @@ import { getApiConfig } from "../config/constants";
 import type { CheckoutSessionResponse, ActivateResponse } from "../types";
 import type { ActivationProof } from "../utils/semaphore";
 
-class ApiError extends Error {
+export class ApiError extends Error {
   status: number;
 
   constructor(message: string, status: number) {
@@ -240,6 +240,10 @@ export interface CryptoQuote {
   setupAmount: string;
   periodAmounts: string[];
   totalAmount: string;
+  setupEur?: number;
+  yearEur?: number;
+  monthlyEur?: number;
+  totalEur?: number;
   expiry: number;
   serviceId: number;
   signature: string;
@@ -276,6 +280,9 @@ export interface CryptoOrderStatus {
 export function createCryptoQuote(params: {
   chainId: number;
   token: "native" | "usdc";
+  buyerName: string;
+  buyerEmail: string;
+  lang?: "en" | "he";
 }): Promise<CryptoQuote> {
   const { CRYPTO_URL } = getApiConfig();
   return post<CryptoQuote>(`${CRYPTO_URL.replace(/\/$/, "")}/quote`, params);
@@ -315,4 +322,54 @@ export function relayCryptoCancel(params: {
     `${CRYPTO_URL.replace(/\/$/, "")}/cancel`,
     params,
   );
+}
+
+export type ManagedNumber = {
+  paymentRef: string;
+  label: string | null;
+  rail: "stripe" | "crypto";
+  cancelEffective: number | null;
+  canCancel: boolean;
+};
+
+export type ManageSessionResult = {
+  token: string;
+  numbers: ManagedNumber[];
+  expiresInSec: number;
+};
+
+function managePost<T>(body: Record<string, unknown>, timeoutMs = 20_000): Promise<T> {
+  const { MANAGE_URL } = getApiConfig();
+  return post<T>(MANAGE_URL, body, timeoutMs);
+}
+
+export function startManageQr(): Promise<{
+  sessionId: string;
+  confirmEndpoint: string;
+  expiresInSec: number;
+}> {
+  return managePost({ action: "qr-start" });
+}
+
+export function exchangeManageQr(sessionId: string): Promise<ManageSessionResult> {
+  return managePost({ action: "qr-exchange", sessionId });
+}
+
+export function startManageEmail(email: string, lang: "en" | "he"): Promise<{ ok: true }> {
+  return managePost({ action: "email-start", email, lang }, 30_000);
+}
+
+export function verifyManageEmail(email: string, code: string): Promise<ManageSessionResult> {
+  return managePost({ action: "email-verify", email, code });
+}
+
+export function listManagedNumbers(token: string): Promise<{ numbers: ManagedNumber[] }> {
+  return managePost({ action: "list", token });
+}
+
+export function cancelManagedNumber(
+  token: string,
+  paymentRef: string,
+): Promise<{ ok: true; paymentRef: string; label: string | null; cancelEffective: number; numbers: ManagedNumber[] }> {
+  return managePost({ action: "cancel", token, paymentRef }, 30_000);
 }

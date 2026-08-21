@@ -9,6 +9,7 @@ import { ActivatePage } from "./pages/ActivatePage";
 import { PortPage } from "./pages/PortPage";
 import { PortCompletePage } from "./pages/PortCompletePage";
 import { RecoverPage } from "./pages/RecoverPage";
+import { ManagePage } from "./pages/ManagePage";
 import { CryptoWaitPage } from "./pages/CryptoWaitPage";
 import { CryptoRecoverPage } from "./pages/CryptoRecoverPage";
 import { CryptoPage } from "./pages/CryptoPage";
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/port" element={<PortPage />} />
           <Route path="/port/complete" element={<PortCompletePage />} />
           <Route path="/recover" element={<RecoverPage />} />
+          <Route path="/manage" element={<ManagePage />} />
           <Route path="/crypto" element={<CryptoPage />} />
           <Route path="/crypto/why" element={<CryptoPage />} />
           <Route path="/crypto/wait" element={<CryptoWaitPage />} />

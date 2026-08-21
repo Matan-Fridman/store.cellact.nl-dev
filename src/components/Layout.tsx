@@ -1,4 +1,5 @@
 import React, { useState, useEffect, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
 import type { Language } from "../i18n/translations";
 
@@ -57,6 +58,9 @@ export function Layout({
                 {buyLabel}
               </button>
             )}
+            <Link to="/manage" className="site-header-manage">
+              {t.nav.manage}
+            </Link>
             <LangToggle lang={lang} setLang={setLang} />
           </div>
         </div>

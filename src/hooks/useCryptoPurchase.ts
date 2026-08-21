@@ -888,11 +888,21 @@ export function useCryptoPurchase() {
     };
   }, [rememberWallet]);
 
-  const loadQuote = useCallback(async (chainId: CryptoChainId, token: CryptoAsset) => {
+  const loadQuote = useCallback(async (
+    chainId: CryptoChainId,
+    token: CryptoAsset,
+    buyer: { name: string; email: string },
+  ) => {
     setQuoteLoading(true);
     setError(null);
     try {
-      const next = await createCryptoQuote({ chainId, token });
+      const next = await createCryptoQuote({
+        chainId,
+        token,
+        buyerName: buyer.name,
+        buyerEmail: buyer.email,
+        lang: lang === "he" ? "he" : "en",
+      });
       setQuote(next);
       return next;
     } catch (err) {
@@ -904,7 +914,7 @@ export function useCryptoPurchase() {
     } finally {
       setQuoteLoading(false);
     }
-  }, []);
+  }, [lang]);
 
   const connect = useCallback(async (kind: WalletKind) => {
     setConnecting(true);
@@ -935,7 +945,7 @@ export function useCryptoPurchase() {
   }, []);
 
   const initiate = useCallback(
-    async (chainId: CryptoChainId, token: CryptoAsset) => {
+    async (chainId: CryptoChainId, token: CryptoAsset, buyer: { name: string; email: string }) => {
       setStatus("loading");
       setError(null);
       try {
@@ -944,8 +954,11 @@ export function useCryptoPurchase() {
         await ensureChain(injected, chainId);
         const { signer, address } = await signerFromInjected(injected);
         rememberWallet(injected, [address], storedWalletKind() || undefined);
-        const freshEnough = quote && quote.chainId === chainId && quote.expiry > Math.floor(Date.now() / 1000) + 30;
-        const paidQuote = freshEnough ? quote : await loadQuote(chainId, token);
+        const freshEnough =
+          quote &&
+          quote.chainId === chainId &&
+          quote.expiry > Math.floor(Date.now() / 1000) + 30;
+        const paidQuote = freshEnough ? quote : await loadQuote(chainId, token, buyer);
         try {
           await assertCanPay({
             chainId,

@@ -7,7 +7,6 @@ import {
   CRYPTO_ESCROW,
   escrowExplorerUrl,
   formatLockAmount,
-  quoteMonthly,
   shortHex,
   useCryptoPurchase,
   cryptoErrorCopy,
@@ -20,6 +19,26 @@ import {
 
 const CHAINS: CryptoChainId[] = [80002, 11155111];
 export const PAYMYEMAIL_SITE = "https://paymyemail.com";
+const BUYER_KEY = "secnum_crypto_buyer";
+
+function readBuyer(): { name: string; email: string } {
+  try {
+    const raw = sessionStorage.getItem(BUYER_KEY);
+    if (!raw) return { name: "", email: "" };
+    const parsed = JSON.parse(raw) as { name?: string; email?: string };
+    return { name: String(parsed.name || ""), email: String(parsed.email || "") };
+  } catch {
+    return { name: "", email: "" };
+  }
+}
+
+function writeBuyer(name: string, email: string) {
+  sessionStorage.setItem(BUYER_KEY, JSON.stringify({ name, email }));
+}
+
+function formatEur(value: number) {
+  return `€${value.toFixed(2)}`;
+}
 
 const SUBSCRIBE_SNIPPET = `function subscribe(
     bytes32 orderId,
@@ -314,6 +333,12 @@ export function CryptoPage() {
   const location = useLocation();
   const isWhy = location.pathname.endsWith("/why");
   const crypto = useCryptoPurchase();
+  const storedBuyer = readBuyer();
+  const [step, setStep] = useState<"details" | "purchase">(
+    storedBuyer.name.trim() && storedBuyer.email.trim() ? "purchase" : "details",
+  );
+  const [buyerName, setBuyerName] = useState(storedBuyer.name);
+  const [buyerEmail, setBuyerEmail] = useState(storedBuyer.email);
   const [chainId, setChainId] = useState<CryptoChainId>(80002);
   const [asset, setAsset] = useState<CryptoAsset>("usdc");
   const [picking, setPicking] = useState(false);
@@ -328,13 +353,17 @@ export function CryptoPage() {
     crypto.quote && crypto.quote.chainId === chainId && crypto.quote.tokenSymbol === expectedSymbol
       ? crypto.quote
       : null;
-  const monthly = quoteReady ? quoteMonthly(quoteReady) : null;
   const total = quoteReady ? formatLockAmount(quoteReady.totalAmount, expectedSymbol) : null;
+  const setupEur = quoteReady?.setupEur ?? 2;
+  const yearEur = quoteReady?.yearEur ?? 19.99;
+  const monthlyEur = quoteReady?.monthlyEur ?? 1.67;
+  const totalEur = quoteReady?.totalEur ?? 21.99;
+  const buyer = { name: buyerName.trim(), email: buyerEmail.trim() };
 
   useEffect(() => {
-    if (isWhy) return;
-    void crypto.loadQuote(chainId, asset).catch(() => undefined);
-  }, [chainId, asset, crypto.loadQuote, isWhy]);
+    if (isWhy || step !== "purchase" || !buyer.name || !buyer.email) return;
+    void crypto.loadQuote(chainId, asset, buyer).catch(() => undefined);
+  }, [chainId, asset, crypto.loadQuote, isWhy, step, buyer.name, buyer.email]);
 
   async function openPicker() {
     setPickError(null);
@@ -355,6 +384,12 @@ export function CryptoPage() {
     if (ok) setPicking(false);
   }
 
+  function goPurchase() {
+    if (!buyer.name || !buyer.email) return;
+    writeBuyer(buyer.name, buyer.email);
+    setStep("purchase");
+  }
+
   if (isWhy) {
     return <WhyArticle copy={copy} />;
   }
@@ -364,10 +399,61 @@ export function CryptoPage() {
       <section className="crypto-checkout">
         <div className="crypto-checkout-frame">
           <p className="crypto-checkout-back">
-            <Link to="/">{copy.back}</Link>
+            {step === "purchase" ? (
+              <button type="button" onClick={() => setStep("details")}>
+                {copy.changeDetails}
+              </button>
+            ) : (
+              <Link to="/">{copy.back}</Link>
+            )}
           </p>
-          <h1>{copy.title}</h1>
+          <ol className="crypto-checkout-steps is-two" aria-label={copy.title}>
+            <li className={step === "details" ? "is-current" : "is-done"}>{copy.stepDetails}</li>
+            <li className={step === "purchase" ? "is-current" : ""}>{copy.stepPurchase}</li>
+          </ol>
+          <p className="crypto-checkout-kicker">{copy.kicker}</p>
+          <h1>{step === "details" ? copy.detailsTitle : copy.title}</h1>
+          <p className="crypto-checkout-lead">
+            {step === "details" ? copy.detailsLead : copy.lead}
+          </p>
 
+          {step === "details" ? (
+            <form
+              className="crypto-checkout-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                goPurchase();
+              }}
+            >
+              <label className="crypto-checkout-label" htmlFor="crypto-buyer-name">
+                {copy.nameLabel}
+              </label>
+              <input
+                id="crypto-buyer-name"
+                className="crypto-checkout-input"
+                autoComplete="name"
+                value={buyerName}
+                onChange={(event) => setBuyerName(event.target.value)}
+                placeholder={copy.namePlaceholder}
+              />
+              <label className="crypto-checkout-label" htmlFor="crypto-buyer-email">
+                {copy.emailLabel}
+              </label>
+              <input
+                id="crypto-buyer-email"
+                className="crypto-checkout-input"
+                autoComplete="email"
+                inputMode="email"
+                value={buyerEmail}
+                onChange={(event) => setBuyerEmail(event.target.value)}
+                placeholder={copy.emailPlaceholder}
+              />
+              <Button type="submit" disabled={!buyer.name || !buyer.email}>
+                {copy.detailsContinue}
+              </Button>
+            </form>
+          ) : (
+            <>
           <div className="crypto-checkout-wallet">
             <span
               className={`crypto-checkout-wallet-dot${connected ? " is-on" : ""}`}
@@ -481,6 +567,29 @@ export function CryptoPage() {
           </div>
 
           <div className="crypto-checkout-charge">
+            <ul className="crypto-checkout-bill">
+              <li>
+                <div>
+                  <p>{copy.billSetup}</p>
+                  <p className="crypto-checkout-bill-hint">{copy.billSetupHint}</p>
+                </div>
+                <span>{formatEur(setupEur)}</span>
+              </li>
+              <li>
+                <div>
+                  <p>{copy.billYear}</p>
+                  <p className="crypto-checkout-bill-hint">{copy.billYearHint(formatEur(monthlyEur))}</p>
+                </div>
+                <span>{formatEur(yearEur)}</span>
+              </li>
+              <li className="is-total">
+                <div>
+                  <p>{copy.billTotalEur}</p>
+                  <p className="crypto-checkout-bill-hint">{copy.billChargeHint}</p>
+                </div>
+                <span>{formatEur(totalEur)}</span>
+              </li>
+            </ul>
             <p className="crypto-checkout-amount is-review">
               {crypto.quoteLoading && !total
                 ? copy.quoteLoading
@@ -488,16 +597,6 @@ export function CryptoPage() {
                   ? `${total} ${paySymbol}`
                   : "\u00a0"}
             </p>
-            {monthly && (
-              <p className="crypto-checkout-review-meta">
-                {copy.perMonth(monthly.monthly, paySymbol)}
-              </p>
-            )}
-            {monthly?.intro && (
-              <p className="crypto-checkout-review-meta">
-                {copy.introMonths(monthly.intro, paySymbol, monthly.introCount)}
-              </p>
-            )}
             <p className="crypto-checkout-prepaid">
               <span>{copy.prepaidLine}</span>
               <EscrowInfo copy={copy} />
@@ -510,10 +609,10 @@ export function CryptoPage() {
                 void openPicker();
                 return;
               }
-              void crypto.initiate(chainId, asset);
+              void crypto.initiate(chainId, asset, buyer);
             }}
             loading={loading}
-            disabled={loading || !total}
+            disabled={loading || !total || !buyer.name || !buyer.email}
           >
             {loading ? copy.paying : total ? copy.pay(total, paySymbol) : copy.pay("—", paySymbol)}
           </Button>
@@ -521,6 +620,8 @@ export function CryptoPage() {
           <p className="crypto-checkout-recover">
             {copy.recover} <Link to="/crypto/recover">{copy.recoverLink}</Link>
           </p>
+            </>
+          )}
         </div>
       </section>
     </Layout>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { createCryptoQuote, getCryptoStatus, relayCryptoCancel, type CryptoQuote } from "../services/api";
+import { isProductionGcp } from "../config/constants";
 import { useLanguage } from "../contexts/LanguageContext";
 import type { AsyncStatus } from "../types";
 
@@ -28,7 +29,8 @@ declare global {
 }
 
 export type CryptoAsset = "native" | "usdc";
-export type CryptoChainId = 80002 | 11155111;
+export type CryptoChainId = 1 | 137 | 80002 | 11155111;
+export type CryptoChainCopyKey = "polygon" | "ethereum" | "amoy" | "sepolia";
 
 export const CRYPTO_CHAINS: Record<
   CryptoChainId,
@@ -40,6 +42,20 @@ export const CRYPTO_CHAINS: Record<
     blockExplorerUrls: string[];
   }
 > = {
+  137: {
+    chainId: "0x89",
+    chainName: "Polygon",
+    nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 },
+    rpcUrls: ["https://polygon-bor-rpc.publicnode.com", "https://polygon-rpc.com"],
+    blockExplorerUrls: ["https://polygonscan.com"],
+  },
+  1: {
+    chainId: "0x1",
+    chainName: "Ethereum",
+    nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+    rpcUrls: ["https://ethereum-rpc.publicnode.com", "https://cloudflare-eth.com"],
+    blockExplorerUrls: ["https://etherscan.io"],
+  },
   80002: {
     chainId: "0x13882",
     chainName: "Polygon Amoy",
@@ -55,6 +71,21 @@ export const CRYPTO_CHAINS: Record<
     blockExplorerUrls: ["https://sepolia.etherscan.io"],
   },
 };
+
+export function checkoutChainIds(): CryptoChainId[] {
+  return isProductionGcp() ? [137, 1] : [80002, 11155111];
+}
+
+export function nativeSymbolFor(chainId: CryptoChainId): "ETH" | "POL" {
+  return chainId === 1 || chainId === 11155111 ? "ETH" : "POL";
+}
+
+export function chainCopyKey(chainId: CryptoChainId): CryptoChainCopyKey {
+  if (chainId === 137) return "polygon";
+  if (chainId === 1) return "ethereum";
+  if (chainId === 80002) return "amoy";
+  return "sepolia";
+}
 
 export type WalletKind = "metamask" | "paymyemail";
 
@@ -367,6 +398,8 @@ function waitPath(orderId: string, chainId: CryptoChainId, lang: "en" | "he"): s
 }
 
 export const CRYPTO_ESCROW: Record<CryptoChainId, string> = {
+  137: "0xe3116ad9A21958aB3008Cf8cD6676814Ffa42510",
+  1: "0xcB39D9884E23f89137A867345Af63C45724D02f9",
   80002: "0xc311B37C61aF3a4ad1eeb3559f98a3AF0c209A73",
   11155111: "0xB13816Add8E326f44D33322d19E0374CeDA7c742",
 };
@@ -395,10 +428,12 @@ const ESCROW_ACCOUNT_ABI = [
 ];
 
 export function isCryptoChainId(value: number): value is CryptoChainId {
-  return value === 80002 || value === 11155111;
+  return value === 1 || value === 137 || value === 80002 || value === 11155111;
 }
 
 const USDC_BY_CHAIN: Record<CryptoChainId, string> = {
+  1: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  137: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
   11155111: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
   80002: "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
 };
@@ -508,7 +543,7 @@ export type EscrowSettlement = {
 
 function tokenMeta(chainId: CryptoChainId, token: string): { symbol: string } {
   if (token === ethers.constants.AddressZero) {
-    return { symbol: chainId === 11155111 ? "ETH" : "POL" };
+    return { symbol: nativeSymbolFor(chainId) };
   }
   if (token.toLowerCase() === USDC_BY_CHAIN[chainId].toLowerCase()) {
     return { symbol: "USDC" };

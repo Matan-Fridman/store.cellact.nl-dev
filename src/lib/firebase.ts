@@ -26,6 +26,16 @@ const STAGING_FIREBASE = {
   measurementId: "G-R6EPHDT45P",
 };
 
+const PRODUCTION_FIREBASE = {
+  apiKey: "AIzaSyBlEdi5DOuWYEPMNMJZZULvHHa_TQ0qqiU",
+  authDomain: "arnacon-production-gcp.firebaseapp.com",
+  projectId: "arnacon-production-gcp",
+  storageBucket: "arnacon-production-gcp.firebasestorage.app",
+  messagingSenderId: "343948402138",
+  appId: "1:343948402138:web:3cfc2ebdd421e803dbb4e3",
+  measurementId: undefined as string | undefined,
+};
+
 function firebaseConfig() {
   const fromEnv = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
@@ -37,10 +47,7 @@ function firebaseConfig() {
     measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID as string | undefined,
   };
   if (fromEnv.projectId) return fromEnv;
-  if (isProductionGcp()) {
-    console.error("[firebase] VITE_FIREBASE_PROJECT_ID is required when VITE_BASE_URL is production");
-    return fromEnv;
-  }
+  if (isProductionGcp()) return PRODUCTION_FIREBASE;
   return STAGING_FIREBASE;
 }
 

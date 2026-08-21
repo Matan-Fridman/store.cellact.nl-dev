@@ -5,8 +5,11 @@ import { Button } from "../components/Button";
 import { useLanguage } from "../contexts/LanguageContext";
 import {
   CRYPTO_ESCROW,
+  checkoutChainIds,
+  chainCopyKey,
   escrowExplorerUrl,
   formatLockAmount,
+  nativeSymbolFor,
   shortHex,
   useCryptoPurchase,
   cryptoErrorCopy,
@@ -17,7 +20,6 @@ import {
   type WalletKind,
 } from "../hooks/useCryptoPurchase";
 
-const CHAINS: CryptoChainId[] = [80002, 11155111];
 export const PAYMYEMAIL_SITE = "https://paymyemail.com";
 const BUYER_KEY = "secnum_crypto_buyer";
 
@@ -157,9 +159,9 @@ function EscrowContracts({ copy }: { copy: CryptoCopy }) {
 
   return (
     <div className="crypto-article-chains">
-      {CHAINS.map((chainId) => {
+      {checkoutChainIds().map((chainId) => {
         const address = CRYPTO_ESCROW[chainId];
-        const name = chainId === 80002 ? copy.amoy : copy.sepolia;
+        const name = copy[chainCopyKey(chainId)];
         return (
           <div key={chainId} className="crypto-article-chain">
             <p className="crypto-article-chain-name">{name}</p>
@@ -339,14 +341,15 @@ export function CryptoPage() {
   );
   const [buyerName, setBuyerName] = useState(storedBuyer.name);
   const [buyerEmail, setBuyerEmail] = useState(storedBuyer.email);
-  const [chainId, setChainId] = useState<CryptoChainId>(80002);
+  const chains = checkoutChainIds();
+  const [chainId, setChainId] = useState<CryptoChainId>(() => checkoutChainIds()[0]);
   const [asset, setAsset] = useState<CryptoAsset>("usdc");
   const [picking, setPicking] = useState(false);
   const [wallets, setWallets] = useState<DiscoveredWallet[]>([]);
   const [pickError, setPickError] = useState<string | null>(null);
   const loading = crypto.status === "loading";
   const connected = Boolean(crypto.account);
-  const nativeSymbol = chainId === 80002 ? "POL" : "ETH";
+  const nativeSymbol = nativeSymbolFor(chainId);
   const paySymbol = asset === "usdc" ? copy.usdc : nativeSymbol;
   const expectedSymbol = asset === "usdc" ? "USDC" : nativeSymbol;
   const quoteReady =
@@ -532,25 +535,21 @@ export function CryptoPage() {
             </p>
           )}
 
-          <label className="crypto-checkout-label" htmlFor="crypto-network-amoy">
+          <label className="crypto-checkout-label" htmlFor={`crypto-network-${chains[0]}`}>
             {copy.network}
           </label>
           <div className="crypto-checkout-seg" role="radiogroup" aria-label={copy.network}>
-            <button
-              id="crypto-network-amoy"
-              type="button"
-              aria-pressed={chainId === 80002}
-              onClick={() => setChainId(80002)}
-            >
-              {copy.amoy}
-            </button>
-            <button
-              type="button"
-              aria-pressed={chainId === 11155111}
-              onClick={() => setChainId(11155111)}
-            >
-              {copy.sepolia}
-            </button>
+            {chains.map((id) => (
+              <button
+                key={id}
+                id={`crypto-network-${id}`}
+                type="button"
+                aria-pressed={chainId === id}
+                onClick={() => setChainId(id)}
+              >
+                {copy[chainCopyKey(id)]}
+              </button>
+            ))}
           </div>
 
           <label className="crypto-checkout-label" htmlFor="crypto-token-usdc">

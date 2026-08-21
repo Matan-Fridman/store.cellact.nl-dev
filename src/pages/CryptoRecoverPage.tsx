@@ -8,6 +8,7 @@ import { claimCryptoActivation, listCryptoOrders, type CryptoOrderStatus } from 
 import {
   CRYPTO_ESCROW,
   CRYPTO_CHAINS,
+  chainCopyKey,
   formatEscrowAmount,
   isCryptoChainId,
   orderIdBytes32,
@@ -697,6 +698,8 @@ function OrderTable({
     untilEmpty: string;
     amoy: string;
     sepolia: string;
+    polygon: string;
+    ethereum: string;
     numberLabel: (label: string) => string;
     statusProvisioning: string;
     statusLive: string;
@@ -724,7 +727,7 @@ function OrderTable({
             })
             .map((order) => {
             const ends = untilTs(order);
-            const network = order.chainId === 80002 ? copy.amoy : copy.sepolia;
+            const network = copy[chainCopyKey(order.chainId)];
             const paid = paidLine(order);
             return (
               <tr
@@ -742,7 +745,7 @@ function OrderTable({
                 <td>
                   <span className="crypto-order-cell">
                     <span
-                      className={`crypto-order-mark is-${order.chainId === 80002 ? "amoy" : "sepolia"}`}
+                      className={`crypto-order-mark is-${chainCopyKey(order.chainId)}`}
                       aria-hidden="true"
                     >
                       {markLetter(order)}
@@ -791,6 +794,8 @@ function OrderDetail({
   copy: {
     amoy: string;
     sepolia: string;
+    polygon: string;
+    ethereum: string;
     statusLive: string;
     statusProvisioning: string;
     statusCancelled: string;
@@ -827,7 +832,7 @@ function OrderDetail({
   const settlement = order.settlement;
   const symbol = settlement?.symbol || CRYPTO_CHAINS[order.chainId].nativeCurrency.symbol;
   const acting = action?.orderId === order.orderId;
-  const network = order.chainId === 80002 ? copy.amoy : copy.sepolia;
+  const network = copy[chainCopyKey(order.chainId)];
   const ends = untilTs(order);
   const cancelled = Boolean(settlement?.cancelAlreadySet);
   const txUrl = order.cancelTxHash ? escrowTxUrl(order.chainId, order.cancelTxHash) : null;

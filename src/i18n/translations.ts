@@ -236,6 +236,8 @@ type TranslationsShape = {
     infoMore: string;
     amoy: string;
     sepolia: string;
+    polygon: string;
+    ethereum: string;
     usdc: string;
     manageTitle: string;
     manageLead: string;
@@ -765,6 +767,8 @@ export const translations: Record<Language, TranslationsShape> = {
       recoverDetails: "This form is only for a new purchase. Already paid? Do not fill this in.",
       amoy: "Polygon Amoy",
       sepolia: "Sepolia",
+      polygon: "Polygon",
+      ethereum: "Ethereum",
       usdc: "USDC",
       manageTitle: "Your crypto orders",
       manageLead: "Tap an order to cancel or claim.",
@@ -1342,6 +1346,8 @@ export const translations: Record<Language, TranslationsShape> = {
       recoverDetails: "הטופס הזה לרכישה חדשה בלבד. כבר שילמתם? אל תמלאו אותו.",
       amoy: "Polygon Amoy",
       sepolia: "Sepolia",
+      polygon: "Polygon",
+      ethereum: "Ethereum",
       usdc: "USDC",
       manageTitle: "ההזמנות בקריפטו",
       manageLead: "לחצו על הזמנה לביטול או להפעלה.",

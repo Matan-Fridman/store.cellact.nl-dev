@@ -2955,7 +2955,12 @@ html[data-fb-banner="1"] .landing-sticky {
   color: #0b2744;
 }
 
-.crypto-order-mark.is-amoy {
+.crypto-order-mark.is-ethereum {
+  background: #d7effc;
+  color: #0b2744;
+}
+
+.crypto-order-mark.is-polygon {
   background: #e4ecff;
   color: #1e3a8a;
 }

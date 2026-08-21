@@ -6,7 +6,7 @@ import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
 import { useLanguage } from "../contexts/LanguageContext";
 import { claimCryptoActivation, getCryptoStatus } from "../services/api";
-import { pickEthereum, cryptoErrorCopy, escrowTxUrl, logCryptoError, signerFromInjected, type CryptoChainId } from "../hooks/useCryptoPurchase";
+import { pickEthereum, cryptoErrorCopy, escrowTxUrl, isCryptoChainId, logCryptoError, signerFromInjected, type CryptoChainId } from "../hooks/useCryptoPurchase";
 
 const CLAIM_TYPES = {
   ClaimActivation: [
@@ -88,7 +88,7 @@ export function CryptoWaitPage() {
   const [escrow, setEscrow] = useState(parsed?.escrow || "");
 
   useEffect(() => {
-    if (!orderId || (chainId !== 80002 && chainId !== 11155111)) {
+    if (!orderId || !isCryptoChainId(chainId)) {
       navigate("/crypto/recover", { replace: true });
       return;
     }
@@ -238,7 +238,7 @@ export function CryptoWaitPage() {
 
           {working && <p className="crypto-wait-meta">{copy.waitKeepOpen}</p>}
           <p className="crypto-wait-meta">{copy.waitOrder(orderId)}</p>
-          {txHash && (chainId === 80002 || chainId === 11155111) && (
+          {txHash && isCryptoChainId(chainId) && (
             <p className="crypto-wait-meta">
               <a href={escrowTxUrl(chainId, txHash)} target="_blank" rel="noreferrer">
                 {copy.waitViewTx}

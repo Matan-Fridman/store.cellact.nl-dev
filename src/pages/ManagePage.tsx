@@ -165,11 +165,15 @@ export function ManagePage() {
   }
 
   const qrUrl = qrPayload ? buildQrUrl(qrPayload, 220) : "";
+  const confirmingRow = numbers.find((row) => row.paymentRef === confirmRef) ?? null;
+  const confirmingName = confirmingRow?.label
+    ? formatIsraeliLocal(confirmingRow.label)
+    : copy.unnamed;
 
   return (
     <Layout>
-      <div style={pageWrap}>
-        <div style={card}>
+      <div style={{ ...pageWrap, alignItems: step === "list" ? "flex-start" : "center" }}>
+        <div style={{ ...card, maxWidth: step === "list" ? "46rem" : "420px" }}>
           {step === "choose" ? (
             <>
               <h1 style={titleStyle}>{copy.title}</h1>
@@ -286,57 +290,99 @@ export function ManagePage() {
                   </Link>
                 </>
               ) : (
-                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {numbers.map((row) => {
-                    const named = row.label ? formatIsraeliLocal(row.label) : copy.unnamed;
-                    const until = row.cancelEffective
-                      ? copy.activeUntil(formatWhen(row.cancelEffective, lang === "he" ? "he" : "en"))
-                      : null;
-                    const confirming = confirmRef === row.paymentRef;
-                    const done = doneRef === row.paymentRef;
-                    return (
-                      <li key={row.paymentRef} style={numberCard}>
-                        <p dir="ltr" style={{ margin: 0, fontWeight: 800, fontSize: "1.05rem" }}>
-                          {named}
-                        </p>
-                        <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--color-text-muted)" }}>
-                          {row.rail === "crypto" ? copy.railCrypto : copy.railCard}
-                          {until ? ` · ${until}` : ""}
-                        </p>
-                        {done ? <p style={{ margin: "10px 0 0", fontSize: "14px" }}>{copy.cancelled}</p> : null}
-                        {row.rail === "crypto" ? (
-                          <Link to="/crypto/recover" style={linkBtn}>
-                            {copy.cryptoCancel}
-                          </Link>
-                        ) : confirming ? (
-                          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "12px" }}>
-                            <p style={{ margin: 0, fontSize: "14px" }}>{copy.confirmBody(named)}</p>
-                            <Button
-                              onClick={() => void onCancel(row.paymentRef)}
-                              loading={busy}
-                              disabled={busy}
+                <>
+                  <div className="crypto-order-table-wrap" style={{ marginTop: 0 }}>
+                    <table className="crypto-order-table">
+                      <thead>
+                        <tr>
+                          <th>{copy.colNumber}</th>
+                          <th>{copy.colRail}</th>
+                          <th>{copy.colStatus}</th>
+                          <th>{copy.colAction}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {numbers.map((row) => {
+                          const named = row.label ? formatIsraeliLocal(row.label) : copy.unnamed;
+                          const confirming = confirmRef === row.paymentRef;
+                          const stopping = Boolean(row.cancelEffective) || doneRef === row.paymentRef;
+                          const statusLabel = stopping
+                            ? copy.statusStopping(
+                                formatWhen(
+                                  row.cancelEffective || Math.floor(Date.now() / 1000),
+                                  lang === "he" ? "he" : "en",
+                                ),
+                              )
+                            : copy.statusLive;
+                          const mark = (named.replace(/\D/g, "")[0] || named[0] || "N").toUpperCase();
+                          return (
+                            <tr
+                              key={row.paymentRef}
+                              className={`is-static${confirming ? " is-confirming" : ""}`}
                             >
-                              {copy.confirmCancel}
-                            </Button>
-                            <Button variant="secondary" onClick={() => setConfirmRef(null)} disabled={busy}>
-                              {copy.keepNumber}
-                            </Button>
-                          </div>
-                        ) : row.canCancel && !done ? (
-                          <div style={{ marginTop: "12px" }}>
-                            <Button
-                              variant="secondary"
-                              onClick={() => setConfirmRef(row.paymentRef)}
-                              disabled={busy}
-                            >
-                              {copy.cancelCta}
-                            </Button>
-                          </div>
-                        ) : null}
-                      </li>
-                    );
-                  })}
-                </ul>
+                              <td>
+                                <span className="crypto-order-cell">
+                                  <span
+                                    className={`crypto-order-mark is-${row.rail === "crypto" ? "crypto" : "card"}`}
+                                    aria-hidden="true"
+                                  >
+                                    {mark}
+                                  </span>
+                                  <span className="crypto-order-name">
+                                    <strong dir="ltr">{named}</strong>
+                                  </span>
+                                </span>
+                              </td>
+                              <td>{row.rail === "crypto" ? copy.railCrypto : copy.railCard}</td>
+                              <td>
+                                <span className={`crypto-status is-${stopping ? "cancelled" : "live"}`}>
+                                  {statusLabel}
+                                </span>
+                              </td>
+                              <td>
+                                {row.rail === "crypto" ? (
+                                  <Link to="/crypto/recover" className="crypto-order-link">
+                                    {copy.cryptoCancel}
+                                  </Link>
+                                ) : doneRef === row.paymentRef ? (
+                                  copy.cancelled
+                                ) : row.canCancel ? (
+                                  <button
+                                    type="button"
+                                    className="crypto-order-link"
+                                    disabled={busy}
+                                    onClick={() => setConfirmRef(confirming ? null : row.paymentRef)}
+                                  >
+                                    {copy.cancelCta}
+                                  </button>
+                                ) : (
+                                  "—"
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {confirmingRow ? (
+                    <div className="manage-confirm">
+                      <p>{copy.confirmBody(confirmingName)}</p>
+                      <div className="manage-confirm-actions">
+                        <Button
+                          onClick={() => void onCancel(confirmingRow.paymentRef)}
+                          loading={busy}
+                          disabled={busy}
+                        >
+                          {copy.confirmCancel}
+                        </Button>
+                        <Button variant="secondary" onClick={() => setConfirmRef(null)} disabled={busy}>
+                          {copy.keepNumber}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+                </>
               )}
             </>
           ) : null}
@@ -391,13 +437,6 @@ const inputStyle: CSSProperties = {
   background: "var(--color-bg-raised)",
   color: "var(--color-text)",
   fontSize: "16px",
-};
-
-const numberCard: CSSProperties = {
-  padding: "16px",
-  borderRadius: "16px",
-  border: "1px solid var(--color-border)",
-  background: "var(--color-bg-raised)",
 };
 
 const backLink: CSSProperties = {

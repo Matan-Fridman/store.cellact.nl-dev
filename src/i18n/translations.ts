@@ -388,8 +388,14 @@ type TranslationsShape = {
     listSub: string;
     empty: string;
     unnamed: string;
+    colNumber: string;
+    colRail: string;
+    colStatus: string;
+    colAction: string;
     railCard: string;
     railCrypto: string;
+    statusLive: string;
+    statusStopping: (when: string) => string;
     activeUntil: (when: string) => string;
     cancelCta: string;
     confirmBody: (name: string) => string;
@@ -927,8 +933,14 @@ export const translations: Record<Language, TranslationsShape> = {
       listSub: "Card billing stops at the end of this billing period. No refund for time already paid.",
       empty: "No live numbers on this account. Crypto buyers: open orders with the paying wallet.",
       unnamed: "Number in setup",
+      colNumber: "Number",
+      colRail: "Paid with",
+      colStatus: "Status",
+      colAction: "Action",
       railCard: "Card",
       railCrypto: "Crypto",
+      statusLive: "Live",
+      statusStopping: (when) => `Stops ${when}`,
       activeUntil: (when) => `Active until ${when}`,
       cancelCta: "Stop at period end",
       confirmBody: (name) =>
@@ -936,7 +948,7 @@ export const translations: Record<Language, TranslationsShape> = {
       confirmCancel: "Stop this number",
       keepNumber: "Keep the number",
       cancelled: "Billing stops at period end.",
-      cryptoCancel: "Cancel from crypto recover",
+      cryptoCancel: "Open orders",
       backChoose: "Back",
       back: "Back to store",
       error: "Something went wrong",
@@ -1498,8 +1510,14 @@ export const translations: Record<Language, TranslationsShape> = {
       listSub: "חיוב בכרטיס נעצר בסוף תקופת החיוב הזו. אין החזר על זמן שכבר שולם.",
       empty: "אין מספרים פעילים בחשבון הזה. בקריפטו: פתחו הזמנות עם ארנק התשלום.",
       unnamed: "מספר בהקמה",
+      colNumber: "מספר",
+      colRail: "שולם ב",
+      colStatus: "סטטוס",
+      colAction: "פעולה",
       railCard: "כרטיס",
       railCrypto: "קריפטו",
+      statusLive: "פעיל",
+      statusStopping: (when) => `נעצר ${when}`,
       activeUntil: (when) => `פעיל עד ${when}`,
       cancelCta: "עצירה בסוף התקופה",
       confirmBody: (name) =>
@@ -1507,7 +1525,7 @@ export const translations: Record<Language, TranslationsShape> = {
       confirmCancel: "עצרו את המספר הזה",
       keepNumber: "השאירו את המספר",
       cancelled: "החיוב נעצר בסוף התקופה.",
-      cryptoCancel: "ביטול דרך שחזור קריפטו",
+      cryptoCancel: "פתחו הזמנות",
       backChoose: "חזרה",
       back: "חזרה לחנות",
       error: "משהו השתבש",

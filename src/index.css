@@ -2714,14 +2714,65 @@ html[data-fb-banner="1"] .landing-sticky {
   cursor: pointer;
 }
 
+.crypto-order-table tbody tr.is-static {
+  cursor: default;
+}
+
 .crypto-order-table tbody tr:hover,
 .crypto-order-table tbody tr:focus-visible {
   background: #eef6fc;
   outline: none;
 }
 
+.crypto-order-table tbody tr.is-static:hover,
+.crypto-order-table tbody tr.is-static:focus-visible {
+  background: transparent;
+}
+
+.crypto-order-table tbody tr.is-confirming td {
+  background: #eef6fc;
+}
+
 .crypto-order-table tbody tr:last-child td {
   border-bottom: 0;
+}
+
+.crypto-order-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.crypto-order-link:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.manage-confirm {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.manage-confirm p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.manage-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .crypto-order-cell {
@@ -2750,6 +2801,16 @@ html[data-fb-banner="1"] .landing-sticky {
 .crypto-order-mark.is-amoy {
   background: #e4ecff;
   color: #1e3a8a;
+}
+
+.crypto-order-mark.is-card {
+  background: #e4ecff;
+  color: #1e3a8a;
+}
+
+.crypto-order-mark.is-crypto {
+  background: #d7effc;
+  color: #0b2744;
 }
 
 .crypto-order-name {

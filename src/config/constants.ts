@@ -7,7 +7,9 @@
 
 const BASE_URL = (
   import.meta.env.VITE_BASE_URL ??
-  "https://europe-west1-arnacon-staging-production.cloudfunctions.net"
+  (typeof window !== "undefined" && /(?:^|\.)store\.cellact\.nl$/i.test(window.location.hostname)
+    ? "https://europe-west1-arnacon-production-gcp.cloudfunctions.net"
+    : "https://europe-west1-arnacon-staging-production.cloudfunctions.net")
 ).replace(/\/$/, "");
 
 export const URLS = {

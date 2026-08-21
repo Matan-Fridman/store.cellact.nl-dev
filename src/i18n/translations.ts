@@ -401,9 +401,11 @@ type TranslationsShape = {
     statusCancelled: string;
     activeUntil: (when: string) => string;
     cancelCta: string;
+    confirmTitle: string;
     confirmBody: (name: string) => string;
     confirmCancel: string;
     keepNumber: string;
+    cancelledTitle: string;
     cancelled: string;
     cryptoCancel: string;
     backChoose: string;
@@ -948,11 +950,13 @@ export const translations: Record<Language, TranslationsShape> = {
       statusCancelled: "Cancelled",
       activeUntil: (when) => `Active until ${when}`,
       cancelCta: "Stop at period end",
+      confirmTitle: "Stop this number?",
       confirmBody: (name) =>
         `Stop ${name} at the end of this billing period? You keep it until then. No refund for this period.`,
-      confirmCancel: "Stop this number",
-      keepNumber: "Keep the number",
-      cancelled: "Billing stops at period end.",
+      confirmCancel: "OK",
+      keepNumber: "Keep it",
+      cancelledTitle: "Billing will stop",
+      cancelled: "Card billing stops at period end. You keep the number until then.",
       cryptoCancel: "Open orders",
       backChoose: "Back",
       back: "Back to store",
@@ -1527,11 +1531,13 @@ export const translations: Record<Language, TranslationsShape> = {
       statusCancelled: "בוטל",
       activeUntil: (when) => `פעיל עד ${when}`,
       cancelCta: "עצירה בסוף התקופה",
+      confirmTitle: "לעצור את המספר?",
       confirmBody: (name) =>
         `לעצור את ${name} בסוף תקופת החיוב הזו? המספר נשאר עד אז. אין החזר על התקופה הזו.`,
-      confirmCancel: "עצרו את המספר הזה",
-      keepNumber: "השאירו את המספר",
-      cancelled: "החיוב נעצר בסוף התקופה.",
+      confirmCancel: "אישור",
+      keepNumber: "השאירו",
+      cancelledTitle: "החיוב ייעצר",
+      cancelled: "חיוב הכרטיס נעצר בסוף התקופה. המספר נשאר עד אז.",
       cryptoCancel: "פתחו הזמנות",
       backChoose: "חזרה",
       back: "חזרה לחנות",

@@ -50,14 +50,28 @@ export function ManagePage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmRef, setConfirmRef] = useState<string | null>(null);
+  const [dialogPhase, setDialogPhase] = useState<"confirm" | "done">("confirm");
   const [doneRef, setDoneRef] = useState<string | null>(null);
   const unsubRef = useRef<Unsubscribe | null>(null);
   const pollRef = useRef<number | null>(null);
   const appliedRef = useRef(false);
+  const doneTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    return () => stopWait();
+    return () => {
+      stopWait();
+      if (doneTimerRef.current != null) window.clearTimeout(doneTimerRef.current);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!confirmRef) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape" && !busy) closeDialog();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmRef, busy]);
 
   function stopWait() {
     unsubRef.current?.();
@@ -151,14 +165,33 @@ export function ManagePage() {
     }
   }
 
+  function openCancelDialog(paymentRef: string) {
+    if (busy) return;
+    setError(null);
+    setDialogPhase("confirm");
+    setConfirmRef(paymentRef);
+  }
+
+  function closeDialog() {
+    if (busy) return;
+    setConfirmRef(null);
+    setDialogPhase("confirm");
+  }
+
   async function onCancel(paymentRef: string) {
     setBusy(true);
     setError(null);
     try {
       const result = await cancelManagedNumber(token, paymentRef);
       setNumbers(result.numbers);
-      setConfirmRef(null);
       setDoneRef(paymentRef);
+      setDialogPhase("done");
+      if (doneTimerRef.current != null) window.clearTimeout(doneTimerRef.current);
+      doneTimerRef.current = window.setTimeout(() => {
+        setConfirmRef(null);
+        setDialogPhase("confirm");
+        doneTimerRef.current = null;
+      }, 2400);
     } catch (err) {
       setError(err instanceof Error ? err.message : copy.error);
     } finally {
@@ -312,7 +345,6 @@ export function ManagePage() {
                       <tbody>
                         {numbers.map((row) => {
                           const named = row.label ? formatIsraeliLocal(row.label) : copy.unnamed;
-                          const confirming = confirmRef === row.paymentRef;
                           const nowSec = Math.floor(Date.now() / 1000);
                           const until = row.cancelEffective || (doneRef === row.paymentRef ? nowSec : 0);
                           const cancelled = until > 0 && until <= nowSec;
@@ -323,23 +355,43 @@ export function ManagePage() {
                               ? copy.statusStopping(formatWhen(until, lang === "he" ? "he" : "en"))
                               : copy.statusLive;
                           const mark = (named.replace(/\D/g, "")[0] || named[0] || "N").toUpperCase();
+                          const canStop = row.rail === "stripe" && row.canCancel && doneRef !== row.paymentRef;
                           return (
                             <tr
                               key={row.paymentRef}
-                              className={`is-static${confirming ? " is-confirming" : ""}`}
+                              className={`is-static${canStop ? " is-actionable" : ""}`}
                             >
                               <td>
-                                <span className="crypto-order-cell">
-                                  <span
-                                    className={`crypto-order-mark is-${row.rail === "crypto" ? "crypto" : "card"}`}
-                                    aria-hidden="true"
+                                {canStop ? (
+                                  <button
+                                    type="button"
+                                    className="crypto-order-cell manage-number-btn"
+                                    disabled={busy}
+                                    onClick={() => openCancelDialog(row.paymentRef)}
                                   >
-                                    {mark}
+                                    <span
+                                      className="crypto-order-mark is-card"
+                                      aria-hidden="true"
+                                    >
+                                      {mark}
+                                    </span>
+                                    <span className="crypto-order-name">
+                                      <strong dir="ltr">{named}</strong>
+                                    </span>
+                                  </button>
+                                ) : (
+                                  <span className="crypto-order-cell">
+                                    <span
+                                      className={`crypto-order-mark is-${row.rail === "crypto" ? "crypto" : "card"}`}
+                                      aria-hidden="true"
+                                    >
+                                      {mark}
+                                    </span>
+                                    <span className="crypto-order-name">
+                                      <strong dir="ltr">{named}</strong>
+                                    </span>
                                   </span>
-                                  <span className="crypto-order-name">
-                                    <strong dir="ltr">{named}</strong>
-                                  </span>
-                                </span>
+                                )}
                               </td>
                               <td>{row.rail === "crypto" ? copy.railCrypto : copy.railCard}</td>
                               <td>
@@ -356,14 +408,12 @@ export function ManagePage() {
                                   ) : (
                                     "—"
                                   )
-                                ) : doneRef === row.paymentRef ? (
-                                  copy.cancelled
                                 ) : row.canCancel ? (
                                   <button
                                     type="button"
                                     className="crypto-order-link"
                                     disabled={busy}
-                                    onClick={() => setConfirmRef(confirming ? null : row.paymentRef)}
+                                    onClick={() => openCancelDialog(row.paymentRef)}
                                   >
                                     {copy.cancelCta}
                                   </button>
@@ -377,34 +427,72 @@ export function ManagePage() {
                       </tbody>
                     </table>
                   </div>
-                  {confirmingRow ? (
-                    <div className="manage-confirm">
-                      <p>{copy.confirmBody(confirmingName)}</p>
-                      <div className="manage-confirm-actions">
-                        <Button
-                          onClick={() => void onCancel(confirmingRow.paymentRef)}
-                          loading={busy}
-                          disabled={busy}
-                        >
-                          {copy.confirmCancel}
-                        </Button>
-                        <Button variant="secondary" onClick={() => setConfirmRef(null)} disabled={busy}>
-                          {copy.keepNumber}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : null}
                 </>
               )}
             </>
           ) : null}
 
-          <ErrorAlert message={error} onDismiss={() => setError(null)} />
+          {confirmingRow ? null : (
+            <ErrorAlert message={error} onDismiss={() => setError(null)} />
+          )}
           <Link to="/" style={backLink}>
             {copy.back}
           </Link>
         </div>
       </div>
+      {confirmingRow ? (
+        <div
+          className="manage-dialog-overlay"
+          onClick={() => {
+            if (dialogPhase === "confirm") closeDialog();
+          }}
+        >
+          <div
+            className={`manage-dialog${dialogPhase === "done" ? " is-done" : ""}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="manage-dialog-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {dialogPhase === "done" ? (
+              <>
+                <span className="manage-check" aria-hidden="true">
+                  <svg viewBox="0 0 52 52">
+                    <circle cx="26" cy="26" r="24" fill="none" />
+                    <path fill="none" d="M15 27 l8 8 14-16" />
+                  </svg>
+                </span>
+                <h2 id="manage-dialog-title">{copy.cancelledTitle}</h2>
+                <p>{copy.cancelled}</p>
+                <p className="manage-dialog-number" dir="ltr">
+                  {confirmingName}
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 id="manage-dialog-title">{copy.confirmTitle}</h2>
+                <p className="manage-dialog-number" dir="ltr">
+                  {confirmingName}
+                </p>
+                <p>{copy.confirmBody(confirmingName)}</p>
+                <ErrorAlert message={error} onDismiss={() => setError(null)} />
+                <div className="manage-dialog-actions">
+                  <Button
+                    onClick={() => void onCancel(confirmingRow.paymentRef)}
+                    loading={busy}
+                    disabled={busy}
+                  >
+                    {copy.confirmCancel}
+                  </Button>
+                  <Button variant="secondary" onClick={closeDialog} disabled={busy}>
+                    {copy.keepNumber}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : null}
     </Layout>
   );
 }

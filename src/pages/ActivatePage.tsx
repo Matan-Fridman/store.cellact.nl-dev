@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
-import { redeemActivationToken } from "../services/api";
+import { claimLightPbx, redeemActivationToken } from "../services/api";
 import { buildQrUrl, ensureClaimUrlDevParam, formatIsraeliLocal } from "../utils/format";
 import { useLanguage } from "../contexts/LanguageContext";
 import { CryptoFlowSteps } from "./CryptoWaitPage";
@@ -247,5 +247,108 @@ function ErrorState({
         {t.success.errorBack}
       </Button>
     </motion.div>
+  );
+}
+
+function canonicalWeb3Identity(raw: string): string | null {
+  const value = raw.trim().toLowerCase();
+  if (!value) return null;
+  if (value.endsWith(".arnacon.global")) return value;
+  if (/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(value)) {
+    return `${value}.arnacon.global`;
+  }
+  return null;
+}
+
+export function LightPbxActivatePage() {
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token") || "";
+  const web3identity = canonicalWeb3Identity(searchParams.get("web3identity") || "");
+  const [state, setState] = useState<"ready" | "claiming" | "done" | "error">(
+    token ? "ready" : "error",
+  );
+  const [error, setError] = useState(token ? "" : "This invite link is missing its token.");
+  const [extension, setExtension] = useState("");
+
+  const returnUrl = useMemo(() => {
+    if (!token) return "";
+    const url = new URL(`${window.location.origin}/lightpbx/activate`);
+    url.searchParams.set("token", token);
+    url.searchParams.set("flow", "secnum-claim-v1");
+    return url.toString();
+  }, [token]);
+
+  const arnaconUrl = returnUrl
+    ? `arnacon://install?url=${encodeURIComponent(returnUrl)}&provider=Cellact-LightPBX`
+    : "";
+  const qrUrl = arnaconUrl ? buildQrUrl(arnaconUrl, 200) : "";
+
+  const claim = useCallback(async () => {
+    if (!token || !web3identity) return;
+    setState("claiming");
+    setError("");
+    try {
+      const result = await claimLightPbx(token, web3identity);
+      setExtension(result.extension);
+      setState("done");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not join Light PBX.");
+      setState("error");
+    }
+  }, [token, web3identity]);
+
+  useEffect(() => {
+    if (token && web3identity) void claim();
+  }, [token, web3identity, claim]);
+
+  const title = state === "done" ? "You're in." : "Join your Light PBX team";
+  const lead =
+    state === "done"
+      ? `You're on the team. Your extension is ${extension || "ready"}.`
+      : web3identity
+        ? "Finishing your join to the Light PBX team…"
+        : "Open this invite in Arnacon on your phone, then tap to join your team.";
+
+  return (
+    <Layout hideAppStoreBadges>
+      <section className="activate-page">
+        <div className="activate-page-frame">
+          <p className="activate-kicker">Light PBX</p>
+          <h1>{title}</h1>
+          <p className="activate-lead">{lead}</p>
+
+          {!web3identity && state !== "done" && token && (
+            <>
+              {arnaconUrl && (
+                <Button
+                  className="w-full"
+                  type="button"
+                  onClick={() => {
+                    window.location.href = arnaconUrl;
+                  }}
+                >
+                  Open in Arnacon
+                </Button>
+              )}
+              <p className="activate-lead">On your phone, tap Open in Arnacon to join your team.</p>
+              {qrUrl && (
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <p className="activate-lead">On a computer? Scan this QR with your phone.</p>
+                  <div className="rounded-2xl bg-white p-3">
+                    <img src={qrUrl} alt="Scan to open this invite in Arnacon" width={180} height={180} />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {web3identity && state === "ready" && (
+            <Button onClick={() => void claim()}>Join Light PBX team</Button>
+          )}
+          {state === "claiming" && <p className="activate-lead">Joining your team…</p>}
+          {error && <p className="activate-lead">{error}</p>}
+        </div>
+      </section>
+    </Layout>
   );
 }

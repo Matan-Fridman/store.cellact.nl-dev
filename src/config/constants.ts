@@ -23,6 +23,7 @@ export const URLS = {
   QR_CREATE_SESSION_URL: `${BASE_URL}/qr-login-create-session`,
   QR_CONFIRM_URL:        `${BASE_URL}/qr-login-confirm/confirm`,
   PORT_REQUEST_URL:      `${BASE_URL}/port-number-request`,
+  LIGHTPBX_CONFIG_URL:   `${BASE_URL}/lightpbx-config`,
 };
 
 export function getApiConfig() {

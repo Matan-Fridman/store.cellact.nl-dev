@@ -5,7 +5,7 @@ import { StorePage } from "./pages/StorePage";
 import { SixSevenPage } from "./pages/SixSevenPage";
 import { ClaimPage } from "./pages/ClaimPage";
 import { SuccessPage } from "./pages/SuccessPage";
-import { ActivatePage } from "./pages/ActivatePage";
+import { ActivatePage, LightPbxActivatePage } from "./pages/ActivatePage";
 import { PortPage } from "./pages/PortPage";
 import { PortCompletePage } from "./pages/PortCompletePage";
 import { RecoverPage } from "./pages/RecoverPage";
@@ -44,6 +44,7 @@ export default function App() {
           <Route path="/claim" element={<ClaimPage />} />
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/activate" element={<ActivatePage />} />
+          <Route path="/lightpbx/activate" element={<LightPbxActivatePage />} />
           <Route path="/port" element={<PortPage />} />
           <Route path="/port/complete" element={<PortCompletePage />} />
           <Route path="/recover" element={<RecoverPage />} />

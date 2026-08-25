@@ -394,6 +394,17 @@ export function listManagedNumbers(token: string): Promise<{ numbers: ManagedNum
   return managePost({ action: "list", token });
 }
 
+export function claimLightPbx(
+  token: string,
+  web3identity: string,
+): Promise<{ ok: boolean; extension: string; label?: string }> {
+  return post(getApiConfig().LIGHTPBX_CONFIG_URL, {
+    action: "claim",
+    token,
+    web3identity,
+  });
+}
+
 export function cancelManagedNumber(
   token: string,
   paymentRef: string,

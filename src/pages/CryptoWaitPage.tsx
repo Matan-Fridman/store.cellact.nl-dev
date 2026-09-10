@@ -5,6 +5,7 @@ import { ethers } from "ethers";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
 import { useLanguage } from "../contexts/LanguageContext";
+import { showCryptoTestnetKicker } from "../config/constants";
 import { claimCryptoActivation, getCryptoStatus } from "../services/api";
 import { pickEthereum, cryptoErrorCopy, escrowTxUrl, isCryptoChainId, logCryptoError, signerFromInjected, type CryptoChainId } from "../hooks/useCryptoPurchase";
 
@@ -191,7 +192,9 @@ export function CryptoWaitPage() {
           <p className="crypto-checkout-back">
             <Link to="/crypto">{copy.back}</Link>
           </p>
-          <p className="crypto-checkout-kicker">{copy.kicker}</p>
+          {showCryptoTestnetKicker() ? (
+            <p className="crypto-checkout-kicker">{copy.kicker}</p>
+          ) : null}
 
           <AnimatePresence mode="wait">
             <motion.div key={title} {...fade}>

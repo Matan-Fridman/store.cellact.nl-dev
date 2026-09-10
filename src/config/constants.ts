@@ -34,6 +34,11 @@ export function isProductionGcp(): boolean {
   return BASE_URL.includes("arnacon-production-gcp");
 }
 
+/** Staging crypto UI keeps a testnet kicker. Production / store.cellact.nl must not. */
+export function showCryptoTestnetKicker(): boolean {
+  return !isProductionGcp();
+}
+
 /** Crypto checkout UI. Off only when VITE_ENABLE_CRYPTO=false. */
 export function isCryptoEnabled(): boolean {
   const raw = String(import.meta.env.VITE_ENABLE_CRYPTO ?? "").trim().toLowerCase();

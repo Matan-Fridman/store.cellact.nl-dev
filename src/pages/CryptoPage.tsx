@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
 import { useLanguage } from "../contexts/LanguageContext";
+import { showCryptoTestnetKicker } from "../config/constants";
 import {
   CRYPTO_ESCROW,
   checkoutChainIds,
@@ -277,7 +278,9 @@ function WhyArticle({ copy }: { copy: CryptoCopy }) {
           <p className="crypto-checkout-back">
             <Link to="/crypto">{copy.whyBack}</Link>
           </p>
-          <p className="crypto-article-kicker">{copy.kicker}</p>
+          {showCryptoTestnetKicker() ? (
+            <p className="crypto-article-kicker">{copy.kicker}</p>
+          ) : null}
           <h1>{copy.whyTitle}</h1>
           <p className="crypto-article-dek">{copy.whyLead}</p>
 
@@ -418,7 +421,9 @@ export function CryptoPage() {
             <li className={step === "details" ? "is-current" : "is-done"}>{copy.stepDetails}</li>
             <li className={step === "purchase" ? "is-current" : ""}>{copy.stepPurchase}</li>
           </ol>
-          <p className="crypto-checkout-kicker">{copy.kicker}</p>
+          {showCryptoTestnetKicker() ? (
+            <p className="crypto-checkout-kicker">{copy.kicker}</p>
+          ) : null}
           <h1>{step === "details" ? copy.detailsTitle : copy.title}</h1>
           <p className="crypto-checkout-special">{copy.specialPrice}</p>
           <p className="crypto-checkout-lead">

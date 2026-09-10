@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { Layout } from "../components/Layout";
 import { Button } from "../components/Button";
 import { useLanguage } from "../contexts/LanguageContext";
+import { showCryptoTestnetKicker } from "../config/constants";
 import { claimCryptoActivation, listCryptoOrders, type CryptoOrderStatus } from "../services/api";
 import {
   CRYPTO_ESCROW,
@@ -549,7 +550,9 @@ export function CryptoRecoverPage() {
               <Link to="/crypto">{copy.back}</Link>
             )}
           </p>
-          <p className="crypto-checkout-kicker">{copy.kicker}</p>
+          {showCryptoTestnetKicker() ? (
+            <p className="crypto-checkout-kicker">{copy.kicker}</p>
+          ) : null}
           <h1>{selected ? orderTitle(selected, copy) : copy.manageTitle}</h1>
           {!selected && <p className="crypto-checkout-lead">{copy.manageLead}</p>}
 

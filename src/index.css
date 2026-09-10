@@ -2197,6 +2197,10 @@ html[data-fb-banner="1"] .landing-sticky {
 }
 
 .crypto-checkout-seg button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: 0;
   border-radius: 8px;
   padding: 10px 8px;
@@ -2205,6 +2209,13 @@ html[data-fb-banner="1"] .landing-sticky {
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+.crypto-token-logo {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border-radius: 50%;
 }
 
 .crypto-checkout-seg button[aria-pressed="true"] {

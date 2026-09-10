@@ -149,6 +149,46 @@ export function CryptoWalletPick({
   );
 }
 
+function TokenLogo({ kind }: { kind: "pol" | "eth" | "usdc" }) {
+  if (kind === "eth") {
+    return (
+      <svg className="crypto-token-logo" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="16" fill="#627EEA" />
+        <path fill="#fff" fillOpacity="0.6" d="M16.498 4v8.87l7.497 3.35z" />
+        <path fill="#fff" d="M16.498 4 9 16.22l7.498-3.35z" />
+        <path fill="#fff" fillOpacity="0.6" d="M16.498 21.968v6.027L24 17.616z" />
+        <path fill="#fff" d="M16.498 27.995v-6.028L9 17.616z" />
+        <path fill="#fff" fillOpacity="0.2" d="m16.498 20.573 7.497-4.353-7.497-3.348z" />
+        <path fill="#fff" fillOpacity="0.6" d="m9 16.22 7.498 4.353v-7.701z" />
+      </svg>
+    );
+  }
+  if (kind === "usdc") {
+    return (
+      <svg className="crypto-token-logo" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="16" fill="#2775CA" />
+        <path
+          fill="#fff"
+          d="M20.5 18.44c0-2.12-1.28-2.86-3.84-3.15-1.9-.27-2.28-.82-2.28-1.8 0-.99.73-1.67 2.16-1.67 1.44 0 2.24.55 2.5 1.9h2.72c-.3-2.16-1.74-3.8-4.76-4.16V7.5h-2.4v2.02c-2.72.33-4.48 2.08-4.48 4.42 0 2.8 1.68 3.76 4.14 4.12 2.08.3 2.5.74 2.5 1.86 0 1.1-.94 1.86-2.26 1.86-1.74 0-2.42-.74-2.66-2.08h-2.8c.28 2.5 2 4.28 5.04 4.62V24.5h2.4v-2.06c2.8-.28 4.72-2.14 4.72-4.6z"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg className="crypto-token-logo" viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="16" fill="#6C47FF" />
+      <path
+        fill="#fff"
+        d="M21.18 12.86c-.32-.18-.7-.18-1.04 0l-2.52 1.46-1.64.95-2.38 1.38c-.32.18-.7.18-1.04 0l-1.86-1.08c-.32-.18-.52-.52-.52-.9v-2.16c0-.38.2-.72.52-.9l1.86-1.08c.32-.18.7-.18 1.04 0l1.86 1.08c.32.18.52.52.52.9v1.44l1.64-.96v-1.5c0-.38-.2-.72-.52-.9l-3.48-2.02c-.32-.18-.7-.18-1.04 0L9.08 10.6c-.32.18-.52.52-.52.9v3.96c0 .38.2.72.52.9l3.5 2.04c.32.18.7.18 1.04 0l2.38-1.38 1.64-.96 2.38-1.38c.32-.18.7-.18 1.04 0l1.86 1.08c.32.18.52.52.52.9v2.16c0 .38-.2.72-.52.9l-1.86 1.08c-.32.18-.7.18-1.04 0l-1.86-1.08c-.32-.18-.52-.52-.52-.9v-1.44l-1.64.96v1.44c0 .38.2.72.52.9l3.5 2.04c.32.18.7.18 1.04 0l3.5-2.04c.32-.18.52-.52.52-.9v-3.96c0-.38-.2-.72-.52-.9z"
+      />
+    </svg>
+  );
+}
+
+function nativeLogoKind(chainId: CryptoChainId): "pol" | "eth" {
+  return nativeSymbolFor(chainId) === "ETH" ? "eth" : "pol";
+}
+
 function EscrowContracts({ copy }: { copy: CryptoCopy }) {
   const [copied, setCopied] = useState<CryptoChainId | null>(null);
 
@@ -552,6 +592,7 @@ export function CryptoPage() {
                 aria-pressed={chainId === id}
                 onClick={() => setChainId(id)}
               >
+                <TokenLogo kind={nativeLogoKind(id)} />
                 {copy[chainCopyKey(id)]}
               </button>
             ))}
@@ -567,6 +608,7 @@ export function CryptoPage() {
               aria-pressed={asset === "usdc"}
               onClick={() => setAsset("usdc")}
             >
+              <TokenLogo kind="usdc" />
               {copy.usdc}
             </button>
             <button
@@ -574,6 +616,7 @@ export function CryptoPage() {
               aria-pressed={asset === "native"}
               onClick={() => setAsset("native")}
             >
+              <TokenLogo kind={nativeLogoKind(chainId)} />
               {nativeSymbol}
             </button>
           </div>

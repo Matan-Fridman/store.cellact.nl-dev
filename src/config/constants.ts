@@ -1,0 +1,105 @@
+/**
+ * All GCP function URLs are derived from a single base URL.
+ * Set VITE_BASE_URL in your Vercel environment (or .env) per deployment:
+ *   Staging:    https://europe-west1-arnacon-staging-production.cloudfunctions.net
+ *   Production: https://europe-west1-arnacon-production-gcp.cloudfunctions.net
+ */
+
+const BASE_URL = (
+  import.meta.env.VITE_BASE_URL ??
+  (typeof window !== "undefined" && /(?:^|\.)store\.cellact\.nl$/i.test(window.location.hostname)
+    ? "https://europe-west1-arnacon-production-gcp.cloudfunctions.net"
+    : "https://europe-west1-arnacon-staging-production.cloudfunctions.net")
+).replace(/\/$/, "");
+
+export const URLS = {
+  API_URL:               `${BASE_URL}/secnum-chain-activate`,
+  ACTIVATE_URL:          `${BASE_URL}/secnum-activate-number`,
+  RECOVERY_URL:          `${BASE_URL}/secnum-recovery`,
+  MANAGE_URL:             `${BASE_URL}/secnum-number-manage`,
+  STRIPE_URL:            `${BASE_URL}/payment-link-generator`,
+  CRYPTO_URL:             `${BASE_URL}/secnum-crypto-checkout`,
+  ORDER_RESULT_URL:      `${BASE_URL}/secnum-order-result`,
+  QR_CREATE_SESSION_URL: `${BASE_URL}/qr-login-create-session`,
+  QR_CONFIRM_URL:        `${BASE_URL}/qr-login-confirm/confirm`,
+  PORT_REQUEST_URL:      `${BASE_URL}/port-number-request`,
+  LIGHTPBX_CONFIG_URL:   `${BASE_URL}/lightpbx-config`,
+};
+
+export function getApiConfig() {
+  return URLS;
+}
+
+export function isProductionGcp(): boolean {
+  return BASE_URL.includes("arnacon-production-gcp");
+}
+
+/** Staging crypto UI keeps a testnet kicker. Production / store.cellact.nl must not. */
+export function showCryptoTestnetKicker(): boolean {
+  return !isProductionGcp();
+}
+
+/** Crypto checkout UI. Off only when VITE_ENABLE_CRYPTO=false. */
+export function isCryptoEnabled(): boolean {
+  const raw = String(import.meta.env.VITE_ENABLE_CRYPTO ?? "").trim().toLowerCase();
+  if (raw === "false" || raw === "0") return false;
+  return true;
+}
+
+/** Stripe / product metadata */
+export const PACKAGE_ID = "secnum_number";
+export const PACKAGE_NAME = "Israeli Mobile Number";
+/** Stripe line item for secondary-number / FB campaign checkouts */
+export const SECONDARY_PACKAGE_NAME = "Secondary Israeli Number";
+
+/** Port-a-number package */
+export const PORT_PACKAGE_ID = "secnum_port_number";
+export const PORT_PACKAGE_NAME = "Israeli Number Porting";
+
+/** Pricing (decimal strings — the GCP function multiplies by 100 internally) */
+export const PRICE_DISPLAY_AMOUNT = "3.99";  // one-time setup fee
+export const SUBSCRIPTION_PRICE   = "4.99";  // monthly subscription
+export const PRICE_CURRENCY = "eur";
+/** Display-only monthly price (short). Full setup+monthly lives in translated finePrint. */
+export const PRICE_DISPLAY = "€4.99/mo";
+
+/** Cellact / Arnacon support — https://www.cellact.com/contact-us/ */
+export const SUPPORT_TEL = "+972557005555";
+export const SUPPORT_TEL_DISPLAY = "+972 55 700 55 55";
+/** Local Israeli display — do not run this through RTL */
+export const SUPPORT_TEL_DISPLAY_IL = "055-700-5555";
+export const SUPPORT_EMAIL = "support@arnacon.com";
+
+/** Light PBX web2 (Base44) — package ids must match payment-link-generator + lightpbx-config plans. */
+export const LIGHTPBX_PLANS = ["basic", "standard", "super"] as const;
+export type LightPbxPlan = (typeof LIGHTPBX_PLANS)[number];
+
+export const LIGHTPBX_PACKAGES: Record<
+  LightPbxPlan,
+  { packageId: string; packageName: string; /** Display-only; generator enforces EUR cents via env */ transactionPrice: string }
+> = {
+  basic: {
+    packageId: "lightpbx_basic",
+    packageName: "Light PBX — Basic",
+    transactionPrice: "20.00",
+  },
+  standard: {
+    packageId: "lightpbx_standard",
+    packageName: "Light PBX — Standard",
+    transactionPrice: "40.00",
+  },
+  super: {
+    packageId: "lightpbx_super",
+    packageName: "Light PBX — Super",
+    transactionPrice: "80.00",
+  },
+};
+
+/** Staging placeholder Base44 return URL — override via ?success_url= / ?cancel_url= */
+export const LIGHTPBX_DEFAULT_SUCCESS_URL =
+  import.meta.env.VITE_LIGHTPBX_SUCCESS_URL?.trim() ||
+  "https://lightpbx-staging.base44.app/billing/success";
+export const LIGHTPBX_DEFAULT_CANCEL_URL =
+  import.meta.env.VITE_LIGHTPBX_CANCEL_URL?.trim() ||
+  "https://lightpbx-staging.base44.app/billing/cancel";
+

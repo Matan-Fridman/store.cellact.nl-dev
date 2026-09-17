@@ -115,6 +115,52 @@ export function createCheckoutSession(
   return post<CheckoutSessionResponse>(STRIPE_URL, body);
 }
 
+export interface CreateLightPbxCheckoutParams {
+  plan: "basic" | "standard" | "super";
+  systemId: string;
+  userId: string;
+  /** Bare Base44 URL — generator appends session_id={CHECKOUT_SESSION_ID} plus systemId/plan */
+  successUrl: string;
+  failureUrl: string;
+  lang?: "en" | "he";
+}
+
+/** Start Stripe Checkout for Light PBX (web2). Server enforces price + Stripe metadata. */
+export function createLightPbxCheckoutSession(
+  params: CreateLightPbxCheckoutParams,
+): Promise<CheckoutSessionResponse> {
+  const { STRIPE_URL } = getApiConfig();
+  const plan = params.plan;
+  const catalog: Record<
+    string,
+    { packageId: string; packageName: string; transactionPrice: string }
+  > = {
+    basic: { packageId: "lightpbx_basic", packageName: "Light PBX — Basic", transactionPrice: "20.00" },
+    standard: { packageId: "lightpbx_standard", packageName: "Light PBX — Standard", transactionPrice: "40.00" },
+    super: { packageId: "lightpbx_super", packageName: "Light PBX — Super", transactionPrice: "80.00" },
+  };
+  const pkg = catalog[plan];
+  if (!pkg) {
+    return Promise.reject(new ApiError(`Unknown Light PBX plan: ${plan}`, 400));
+  }
+  const body: Record<string, unknown> = {
+    packageId: pkg.packageId,
+    packageName: pkg.packageName,
+    transactionPrice: pkg.transactionPrice,
+    subscriptionPrice: "0",
+    currency: "eur",
+    success_url: params.successUrl,
+    failure_url: params.failureUrl,
+    userId: params.userId,
+    systemId: params.systemId,
+    plan,
+    product: "lightpbx",
+    serviceProvider: "lightpbx",
+    lang: params.lang === "he" ? "he" : "en",
+  };
+  return post<CheckoutSessionResponse>(STRIPE_URL, body);
+}
+
 /**
  * Polls the public order-result HTTP endpoint (browser poll).
  */

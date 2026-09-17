@@ -13,6 +13,7 @@ import { ManagePage } from "./pages/ManagePage";
 import { CryptoWaitPage } from "./pages/CryptoWaitPage";
 import { CryptoRecoverPage } from "./pages/CryptoRecoverPage";
 import { CryptoPage } from "./pages/CryptoPage";
+import { LightPbxPayPage } from "./pages/LightPbxPayPage";
 import { initAnalytics, trackPageView } from "./lib/analytics";
 import { isCryptoEnabled } from "./config/constants";
 
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="/port/complete" element={<PortCompletePage />} />
           <Route path="/recover" element={<RecoverPage />} />
           <Route path="/manage" element={<ManagePage />} />
+          <Route path="/lightpbx/pay" element={<LightPbxPayPage />} />
           {isCryptoEnabled() ? (
             <>
               <Route path="/crypto" element={<CryptoPage />} />

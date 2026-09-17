@@ -69,3 +69,37 @@ export const SUPPORT_TEL_DISPLAY = "+972 55 700 55 55";
 /** Local Israeli display — do not run this through RTL */
 export const SUPPORT_TEL_DISPLAY_IL = "055-700-5555";
 export const SUPPORT_EMAIL = "support@arnacon.com";
+
+/** Light PBX web2 (Base44) — package ids must match payment-link-generator + lightpbx-config plans. */
+export const LIGHTPBX_PLANS = ["basic", "standard", "super"] as const;
+export type LightPbxPlan = (typeof LIGHTPBX_PLANS)[number];
+
+export const LIGHTPBX_PACKAGES: Record<
+  LightPbxPlan,
+  { packageId: string; packageName: string; /** Display-only; generator enforces EUR cents via env */ transactionPrice: string }
+> = {
+  basic: {
+    packageId: "lightpbx_basic",
+    packageName: "Light PBX — Basic",
+    transactionPrice: "20.00",
+  },
+  standard: {
+    packageId: "lightpbx_standard",
+    packageName: "Light PBX — Standard",
+    transactionPrice: "40.00",
+  },
+  super: {
+    packageId: "lightpbx_super",
+    packageName: "Light PBX — Super",
+    transactionPrice: "80.00",
+  },
+};
+
+/** Staging placeholder Base44 return URL — override via ?success_url= / ?cancel_url= */
+export const LIGHTPBX_DEFAULT_SUCCESS_URL =
+  import.meta.env.VITE_LIGHTPBX_SUCCESS_URL?.trim() ||
+  "https://lightpbx-staging.base44.app/billing/success";
+export const LIGHTPBX_DEFAULT_CANCEL_URL =
+  import.meta.env.VITE_LIGHTPBX_CANCEL_URL?.trim() ||
+  "https://lightpbx-staging.base44.app/billing/cancel";
+

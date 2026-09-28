@@ -1,6 +1,4 @@
 # Light PBX Stripe checkout (refer)
-> **Test store (this repo):** Pages at `https://matan-fridman.github.io/store.cellact.nl-dev/` — hostname is not `store.cellact.nl`, so checkout hits **staging** GCP `arnacon-staging-production`. Production CNAME is intentionally absent.
-
 
 Cellact Store owns Stripe via GCP `payment-link-generator` (`lightpbx_*` packages). lightpbx-store never holds Stripe keys.
 
@@ -34,7 +32,7 @@ https://store.cellact.nl/lightpbx/refer
 
 Optional overrides (rarely needed):
 
-- `success_url` / `cancel_url` — **only** accepted if same origin as `VITE_LIGHTPBX_APP_URL` (default `https://lightpbx-store.vercel.app`) **or** `http://localhost:3000`, and pathname is exactly `/billing/success` or `/billing/cancel`. Marketing `/`, `/he`, etc. are rejected. Store still forces `session_id={CHECKOUT_SESSION_ID}` on success and `systemId` + `lang` on both.
+- `success_url` / `cancel_url` — **only** accepted if origin is one of `https://app.lightpbx.com`, `http://localhost:3000`, or `https://lightpbx-store.vercel.app` (plus the configured `VITE_LIGHTPBX_APP_URL` origin), and pathname is exactly `/billing/success` or `/billing/cancel`. Marketing `/`, `/he`, etc. are rejected. Store still forces `session_id={CHECKOUT_SESSION_ID}` on success and `systemId` + `lang` on both.
 
 ## Package IDs
 
@@ -50,7 +48,7 @@ Generator **ignores** client prices for these package ids.
 
 Env:
 
-- `VITE_LIGHTPBX_APP_URL` — default `https://lightpbx-store.vercel.app`
+- `VITE_LIGHTPBX_APP_URL` — default `https://app.lightpbx.com`
 - `VITE_LIGHTPBX_APP_URL_STAGING` — docs / staging reference only
 
 **Success** (exact shape — literal Stripe placeholder):
@@ -103,7 +101,7 @@ Open as a **full page** (top-level navigation). Stripe redirect uses iframe brea
 1. Deploy updated `payment-link-generator` if needed (skip duplicate `session_id`; accept `lang=nl`).
 2. Set generator price env if defaults are wrong.
 3. Store Pages deploy includes `/lightpbx/refer` + `/lightpbx/pay` SPA fallbacks.
-4. Optional: `VITE_LIGHTPBX_APP_URL` if fulfillment host differs from `https://lightpbx-store.vercel.app`.
+4. Optional: `VITE_LIGHTPBX_APP_URL` if fulfillment host differs from `https://app.lightpbx.com` (staging/reference: `https://lightpbx-store.vercel.app`).
 5. lightpbx-store dashboard CTAs → `/lightpbx/refer` with `systemId`, `userId`, `packageId`, `lang`.
 
 No Secnum SKUs or Secnum webhook secrets are reused. Primary path: Checkout → success_url → fulfillment(`session_id`).

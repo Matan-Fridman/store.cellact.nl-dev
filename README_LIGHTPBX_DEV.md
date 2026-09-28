@@ -22,3 +22,10 @@ Aliases: `plan` / `type` / `package` / `package_id`; `system_id` / `user_id`.
 `/lightpbx/pay` is the same page (backward compatible).
 
 See `LIGHTPBX_STRIPE_CHECKOUT.md` for the full refer contract (ported from prod).
+
+## Light PBX app URL
+
+Default fulfillment origin: `https://app.lightpbx.com` (`VITE_LIGHTPBX_APP_URL` override supported).
+
+Optional `success_url` / `cancel_url` allowlist: `app.lightpbx.com`, `localhost:3000`, `lightpbx-store.vercel.app`.
+

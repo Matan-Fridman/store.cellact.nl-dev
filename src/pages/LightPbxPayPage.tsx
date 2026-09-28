@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import { createLightPbxCheckoutSession } from "../services/api";
 import {
   LIGHTPBX_APP_URL,
-  LIGHTPBX_PACKAGES,
   buildLightPbxCancelUrl,
   buildLightPbxSuccessUrl,
   parseLightPbxLang,
@@ -13,6 +12,13 @@ import {
 } from "../config/constants";
 
 const SESSION_PLACEHOLDER = "{CHECKOUT_SESSION_ID}";
+
+/** Origins allowed for optional ?success_url= / ?cancel_url= overrides. */
+const ALLOWED_LIGHTPBX_ORIGINS = new Set<string>([
+  "https://app.lightpbx.com",
+  "http://localhost:3000",
+  "https://lightpbx-store.vercel.app",
+]);
 
 /** Prefer top window so Base44 iframes / in-app WebViews can reach Stripe Checkout. */
 function navigateToCheckout(url: string) {
@@ -28,13 +34,18 @@ function navigateToCheckout(url: string) {
 }
 
 function isAllowedLightPbxOrigin(origin: string): boolean {
-  const allowed = new Set<string>([new URL(LIGHTPBX_APP_URL).origin, "http://localhost:3000"]);
-  return allowed.has(origin);
+  if (ALLOWED_LIGHTPBX_ORIGINS.has(origin)) return true;
+  try {
+    return origin === new URL(LIGHTPBX_APP_URL).origin;
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Optional ?success_url= / ?cancel_url= — only same origin as VITE_LIGHTPBX_APP_URL
- * (or localhost:3000) and pathname /billing/success|/billing/cancel. Rejects marketing `/`.
+ * Optional ?success_url= / ?cancel_url= — only allowlisted Light PBX origins
+ * (app.lightpbx.com, localhost:3000, lightpbx-store.vercel.app) and pathname
+ * /billing/success|/billing/cancel. Rejects marketing `/`.
  * Always forces session_id={CHECKOUT_SESSION_ID} on success + systemId + lang.
  */
 function resolveReturnUrl(
@@ -42,7 +53,7 @@ function resolveReturnUrl(
   rawOverride: string | null,
   systemId: string,
   lang: LightPbxLang,
-): { url: string; rejected?: string } {
+): { url: string } {
   const fallback =
     kind === "success"
       ? buildLightPbxSuccessUrl(systemId, lang)
@@ -55,26 +66,20 @@ function resolveReturnUrl(
   try {
     parsed = new URL(raw);
   } catch {
-    return { url: fallback, rejected: `invalid ${kind}_url` };
+    return { url: fallback };
   }
 
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-    return { url: fallback, rejected: `${kind}_url must be http(s)` };
+    return { url: fallback };
   }
 
   if (!isAllowedLightPbxOrigin(parsed.origin)) {
-    return {
-      url: fallback,
-      rejected: `${kind}_url origin not allowed (need ${new URL(LIGHTPBX_APP_URL).origin} or http://localhost:3000)`,
-    };
+    return { url: fallback };
   }
 
   const expectedPath = kind === "success" ? "/billing/success" : "/billing/cancel";
   if (parsed.pathname.replace(/\/$/, "") !== expectedPath) {
-    return {
-      url: fallback,
-      rejected: `${kind}_url pathname must be ${expectedPath} (got ${parsed.pathname})`,
-    };
+    return { url: fallback };
   }
 
   // Rebuild query: keep caller extras, force required keys.
@@ -92,6 +97,23 @@ function resolveReturnUrl(
   }
 
   return { url: parsed.toString() };
+}
+
+function shortErrorMessage(err: unknown, missing: string[]): string {
+  if (missing.length) {
+    return "Missing checkout details. Please return to Light PBX and try again.";
+  }
+  const raw = err instanceof Error ? err.message : "";
+  if (/no Stripe URL/i.test(raw)) {
+    return "Could not start payment. Please try again.";
+  }
+  if (/Could not leave this page/i.test(raw) || /sandboxed iframe/i.test(raw)) {
+    return "Could not open the payment page. Please try again.";
+  }
+  if (raw && raw.length < 120 && !/https?:\/\//i.test(raw) && !/\bcs_/i.test(raw)) {
+    return raw;
+  }
+  return "Something went wrong. Please try again.";
 }
 
 /**
@@ -140,18 +162,14 @@ export function LightPbxPayPage() {
     const issues: string[] = [];
     if (!systemId) issues.push("systemId");
     if (!userId) issues.push("userId");
-    if (!plan) {
-      issues.push(
-        "packageId (lightpbx_basic|lightpbx_standard|lightpbx_super) or plan/type (basic|standard|super)",
-      );
-    }
+    if (!plan) issues.push("packageId");
     return issues;
   }, [systemId, userId, plan]);
 
   const startCheckout = useCallback(async () => {
     if (missing.length) {
       setPhase("error");
-      setError(`Missing or invalid: ${missing.join(", ")}`);
+      setError(shortErrorMessage(null, missing));
       return;
     }
     const planId = plan as LightPbxPlan;
@@ -176,12 +194,15 @@ export function LightPbxPayPage() {
       window.setTimeout(() => {
         setPhase("error");
         setError(
-          "Could not leave this page to open Stripe. Open the refer/pay URL as a full page (not a sandboxed iframe). Tap Retry, or use top-level navigation from the lightpbx-store dashboard.",
+          shortErrorMessage(
+            new Error("Could not leave this page to open Stripe (sandboxed iframe)."),
+            [],
+          ),
         );
       }, 2500);
     } catch (err) {
       setPhase("error");
-      setError(err instanceof Error ? err.message : "Could not start Light PBX checkout");
+      setError(shortErrorMessage(err, []));
     }
   }, [missing, plan, systemId, userId, successUrl, cancelUrl, lang]);
 
@@ -189,92 +210,85 @@ export function LightPbxPayPage() {
     void startCheckout();
   }, [startCheckout, attempt]);
 
-  const packageLabel = plan ? LIGHTPBX_PACKAGES[plan].packageId : planRaw || "(missing)";
-  const overrideNotes = [successResolved.rejected, cancelResolved.rejected]
-    .filter(Boolean)
-    .join("; ");
+  const logoSrc = `${import.meta.env.BASE_URL}favicon.png`;
 
   return (
     <main
       style={{
-        fontFamily: "system-ui, sans-serif",
+        fontFamily: "system-ui, -apple-system, sans-serif",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
         padding: "2rem",
-        maxWidth: 520,
-        margin: "0 auto",
+        background: "var(--color-bg, #f4f7fb)",
+        color: "var(--color-text, #142033)",
+        textAlign: "center",
       }}
     >
-      <h1 style={{ fontSize: "1.25rem", marginBottom: "0.75rem" }}>Light PBX checkout</h1>
+      <img
+        src={logoSrc}
+        alt="Cellact"
+        width={56}
+        height={56}
+        style={{ borderRadius: 12, marginBottom: "1.25rem" }}
+      />
 
       {phase !== "error" && (
-        <p style={{ color: "#475569" }}>
-          {phase === "redirecting" ? "Opening Stripe…" : "Starting checkout…"}
-        </p>
+        <>
+          <div
+            role="status"
+            aria-label="Loading"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              border: "3px solid #c7d7e8",
+              borderTopColor: "var(--color-blue-600, #2563eb)",
+              animation: "lightpbx-spin 0.8s linear infinite",
+              marginBottom: "1rem",
+            }}
+          />
+          <p style={{ margin: 0, fontSize: "1.05rem", fontWeight: 560, color: "var(--color-text, #142033)" }}>
+            Redirecting to payment…
+          </p>
+          <style>{`@keyframes lightpbx-spin { to { transform: rotate(360deg); } }`}</style>
+        </>
       )}
 
-      {error && (
+      {phase === "error" && error && (
         <>
-          <p style={{ color: "#b91c1c", whiteSpace: "pre-wrap" }}>{error}</p>
+          <p
+            style={{
+              margin: "0 0 1.25rem",
+              maxWidth: 360,
+              fontSize: "1rem",
+              lineHeight: 1.45,
+              color: "#b91c1c",
+            }}
+          >
+            {error}
+          </p>
           <button
             type="button"
             onClick={() => setAttempt((n) => n + 1)}
             style={{
-              marginTop: "1rem",
-              padding: "0.6rem 1rem",
-              borderRadius: 8,
+              padding: "0.7rem 1.4rem",
+              borderRadius: 10,
               border: "none",
-              background: "#0f172a",
+              background: "linear-gradient(120deg, #60a5fa 0%, #2563eb 100%)",
               color: "#fff",
+              fontWeight: 600,
+              fontSize: "0.95rem",
               cursor: "pointer",
+              boxShadow: "0 8px 20px rgba(37, 99, 235, 0.25)",
             }}
           >
-            Retry checkout
+            Retry
           </button>
         </>
       )}
-
-      <div
-        style={{
-          marginTop: "1.5rem",
-          padding: "0.75rem 1rem",
-          background: "#f8fafc",
-          borderRadius: 8,
-          fontSize: "0.8rem",
-          color: "#64748b",
-          wordBreak: "break-all",
-        }}
-      >
-        <div>
-          <strong>systemId:</strong> {systemId || "(missing)"}
-        </div>
-        <div>
-          <strong>userId:</strong> {userId || "(missing)"}
-        </div>
-        <div>
-          <strong>packageId:</strong> {packageLabel}
-        </div>
-        <div>
-          <strong>lang:</strong> {lang}
-        </div>
-        <div>
-          <strong>success_url:</strong> {successUrl || "(missing)"}
-        </div>
-        <div>
-          <strong>cancel_url:</strong> {cancelUrl || "(missing)"}
-        </div>
-        {overrideNotes ? (
-          <div style={{ marginTop: "0.5rem", color: "#b45309" }}>
-            Override ignored: {overrideNotes} — using store defaults.
-          </div>
-        ) : null}
-      </div>
-
-      <p style={{ marginTop: "1.5rem", fontSize: "0.85rem", color: "#64748b" }}>
-        Checkout starts from the authenticated lightpbx-store <strong>dashboard</strong> with known{" "}
-        <code>systemId</code> + <code>userId</code>. Open{" "}
-        <code>/lightpbx/refer</code> (or <code>/lightpbx/pay</code>) as a <strong>full page</strong>, not
-        inside a sandboxed iframe. Required: <code>systemId</code>, <code>userId</code>, and a valid{" "}
-        <code>packageId</code> / <code>plan</code>.
-      </p>
     </main>
   );
 }

@@ -98,7 +98,7 @@ export const LIGHTPBX_PACKAGES: Record<
 /** lightpbx-store app origin (fulfillment lives there, not marketing `/`). */
 export const LIGHTPBX_APP_URL = (
   import.meta.env.VITE_LIGHTPBX_APP_URL?.trim() ||
-  "https://lightpbx-store.vercel.app"
+  "https://app.lightpbx.com"
 ).replace(/\/$/, "");
 
 /** Docs / staging reference only — not used for checkout redirects unless set as VITE_LIGHTPBX_APP_URL. */

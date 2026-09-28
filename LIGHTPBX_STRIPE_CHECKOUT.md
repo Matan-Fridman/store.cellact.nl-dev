@@ -65,7 +65,7 @@ Env:
 {APP_URL}/billing/cancel?systemId={id}&lang={lang}
 ```
 
-Critical: include the literal `{CHECKOUT_SESSION_ID}` in `success_url`. Stripe substitutes it with `cs_…`. Do **not** rely on generator auto-append alone.
+Critical: include the literal `{CHECKOUT_SESSION_ID}` in `success_url` (**unencoded braces**, never `%7BCHECKOUT_SESSION_ID%7D`). Store builds this via manual query string (not `URLSearchParams`). Stripe substitutes it with `cs_…`. Do **not** rely on generator auto-append alone.
 
 ### Double `session_id` (GCP follow-up)
 

@@ -151,7 +151,10 @@ export function createLightPbxCheckoutSession(
   }
   // Store already embeds session_id={CHECKOUT_SESSION_ID}. Strip a duplicate
   // placeholder if a caller accidentally included two before we hand off.
-  let successUrl = params.successUrl.trim();
+  // Also undo any %7B/%7D encoding — Stripe will not substitute encoded braces.
+  let successUrl = params.successUrl
+    .trim()
+    .replace(/session_id=%7[Bb]CHECKOUT_SESSION_ID%7[Dd]/g, "session_id={CHECKOUT_SESSION_ID}");
   const placeholder = "session_id={CHECKOUT_SESSION_ID}";
   const first = successUrl.indexOf(placeholder);
   if (first >= 0) {

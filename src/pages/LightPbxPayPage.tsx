@@ -84,6 +84,7 @@ function resolveReturnUrl(
 
   if (kind === "success") {
     // Put session_id first with literal Stripe placeholder (unencoded braces).
+    // Do NOT use URLSearchParams/URL.href for session_id — they emit %7B/%7D.
     const rest = parsed.searchParams.toString();
     const base = `${parsed.origin}${parsed.pathname}`;
     const withSession = `${base}?session_id=${SESSION_PLACEHOLDER}${rest ? `&${rest}` : ""}`;

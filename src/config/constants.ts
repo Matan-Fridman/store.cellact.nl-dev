@@ -133,15 +133,16 @@ export function resolveLightPbxPlan(raw: string | null | undefined): LightPbxPla
  * Stripe substitutes it; do not rely on generator auto-append alone.
  */
 export function buildLightPbxSuccessUrl(systemId: string, lang: LightPbxLang): string {
-  const u = new URL(`${LIGHTPBX_APP_URL}/billing/success`);
-  u.searchParams.set("session_id", "{CHECKOUT_SESSION_ID}");
-  u.searchParams.set("systemId", systemId);
-  u.searchParams.set("lang", lang);
-  // URLSearchParams encodes braces; Stripe needs the literal placeholder unencoded.
-  return u.toString().replace(
-    "session_id=%7BCHECKOUT_SESSION_ID%7D",
+  // Build query manually — never URLSearchParams for session_id.
+  // URLSearchParams percent-encodes braces (%7B/%7D); Stripe only substitutes
+  // the literal placeholder `{CHECKOUT_SESSION_ID}`.
+  const base = `${LIGHTPBX_APP_URL}/billing/success`;
+  const q = [
     "session_id={CHECKOUT_SESSION_ID}",
-  );
+    `systemId=${encodeURIComponent(systemId)}`,
+    `lang=${encodeURIComponent(lang)}`,
+  ].join("&");
+  return `${base}?${q}`;
 }
 
 export function buildLightPbxCancelUrl(systemId: string, lang: LightPbxLang): string {

@@ -95,11 +95,64 @@ export const LIGHTPBX_PACKAGES: Record<
   },
 };
 
-/** Staging placeholder Base44 return URL — override via ?success_url= / ?cancel_url= */
-export const LIGHTPBX_DEFAULT_SUCCESS_URL =
-  import.meta.env.VITE_LIGHTPBX_SUCCESS_URL?.trim() ||
-  "https://lightpbx-staging.base44.app/billing/success";
-export const LIGHTPBX_DEFAULT_CANCEL_URL =
-  import.meta.env.VITE_LIGHTPBX_CANCEL_URL?.trim() ||
-  "https://lightpbx-staging.base44.app/billing/cancel";
+/** lightpbx-store app origin (fulfillment lives there, not marketing `/`). */
+export const LIGHTPBX_APP_URL = (
+  import.meta.env.VITE_LIGHTPBX_APP_URL?.trim() ||
+  "https://lightpbx-store.vercel.app"
+).replace(/\/$/, "");
+
+/** Docs / staging reference only — not used for checkout redirects unless set as VITE_LIGHTPBX_APP_URL. */
+export const LIGHTPBX_APP_URL_STAGING = (
+  import.meta.env.VITE_LIGHTPBX_APP_URL_STAGING?.trim() ||
+  "https://lightpbx-store.vercel.app"
+).replace(/\/$/, "");
+
+export const LIGHTPBX_LANGS = ["en", "he", "nl"] as const;
+export type LightPbxLang = (typeof LIGHTPBX_LANGS)[number];
+
+export function parseLightPbxLang(value: string | null | undefined): LightPbxLang {
+  const v = (value || "").trim().toLowerCase();
+  if ((LIGHTPBX_LANGS as readonly string[]).includes(v)) return v as LightPbxLang;
+  return "en";
+}
+
+/** Map plan short name or full packageId → plan. */
+export function resolveLightPbxPlan(raw: string | null | undefined): LightPbxPlan | null {
+  const v = (raw || "").trim().toLowerCase();
+  if (!v) return null;
+  if ((LIGHTPBX_PLANS as readonly string[]).includes(v)) return v as LightPbxPlan;
+  for (const plan of LIGHTPBX_PLANS) {
+    if (LIGHTPBX_PACKAGES[plan].packageId.toLowerCase() === v) return plan;
+  }
+  return null;
+}
+
+/**
+ * Build lightpbx-store return URLs.
+ * Success MUST include the literal Stripe placeholder `{CHECKOUT_SESSION_ID}` —
+ * Stripe substitutes it; do not rely on generator auto-append alone.
+ */
+export function buildLightPbxSuccessUrl(systemId: string, lang: LightPbxLang): string {
+  const u = new URL(`${LIGHTPBX_APP_URL}/billing/success`);
+  u.searchParams.set("session_id", "{CHECKOUT_SESSION_ID}");
+  u.searchParams.set("systemId", systemId);
+  u.searchParams.set("lang", lang);
+  // URLSearchParams encodes braces; Stripe needs the literal placeholder unencoded.
+  return u.toString().replace(
+    "session_id=%7BCHECKOUT_SESSION_ID%7D",
+    "session_id={CHECKOUT_SESSION_ID}",
+  );
+}
+
+export function buildLightPbxCancelUrl(systemId: string, lang: LightPbxLang): string {
+  const u = new URL(`${LIGHTPBX_APP_URL}/billing/cancel`);
+  u.searchParams.set("systemId", systemId);
+  u.searchParams.set("lang", lang);
+  return u.toString();
+}
+
+/** @deprecated Prefer buildLightPbxSuccessUrl — kept for any leftover imports */
+export const LIGHTPBX_DEFAULT_SUCCESS_URL = `${LIGHTPBX_APP_URL}/billing/success`;
+/** @deprecated Prefer buildLightPbxCancelUrl */
+export const LIGHTPBX_DEFAULT_CANCEL_URL = `${LIGHTPBX_APP_URL}/billing/cancel`;
 

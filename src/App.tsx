@@ -50,6 +50,7 @@ export default function App() {
           <Route path="/port/complete" element={<PortCompletePage />} />
           <Route path="/recover" element={<RecoverPage />} />
           <Route path="/manage" element={<ManagePage />} />
+          <Route path="/lightpbx/refer" element={<LightPbxPayPage />} />
           <Route path="/lightpbx/pay" element={<LightPbxPayPage />} />
           {isCryptoEnabled() ? (
             <>

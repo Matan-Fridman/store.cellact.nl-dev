@@ -119,10 +119,16 @@ export interface CreateLightPbxCheckoutParams {
   plan: "basic" | "standard" | "super";
   systemId: string;
   userId: string;
-  /** Bare Base44 URL — generator appends session_id={CHECKOUT_SESSION_ID} plus systemId/plan */
+  /**
+   * Full success URL template. Store sends
+   * `…/billing/success?session_id={CHECKOUT_SESSION_ID}&systemId=…&lang=…`.
+   * Prefer this over bare URLs. If payment-link-generator also appends
+   * `session_id={CHECKOUT_SESSION_ID}`, it must skip when already present
+   * (avoid `session_id=…&session_id=…`).
+   */
   successUrl: string;
   failureUrl: string;
-  lang?: "en" | "he";
+  lang?: "en" | "he" | "nl";
 }
 
 /** Start Stripe Checkout for Light PBX (web2). Server enforces price + Stripe metadata. */
@@ -143,20 +149,35 @@ export function createLightPbxCheckoutSession(
   if (!pkg) {
     return Promise.reject(new ApiError(`Unknown Light PBX plan: ${plan}`, 400));
   }
+  // Store already embeds session_id={CHECKOUT_SESSION_ID}. Strip a duplicate
+  // placeholder if a caller accidentally included two before we hand off.
+  let successUrl = params.successUrl.trim();
+  const placeholder = "session_id={CHECKOUT_SESSION_ID}";
+  const first = successUrl.indexOf(placeholder);
+  if (first >= 0) {
+    const second = successUrl.indexOf(placeholder, first + placeholder.length);
+    if (second >= 0) {
+      successUrl =
+        successUrl.slice(0, second - (successUrl[second - 1] === "&" ? 1 : 0)) +
+        successUrl.slice(second + placeholder.length);
+    }
+  }
+  const lang =
+    params.lang === "he" || params.lang === "nl" ? params.lang : "en";
   const body: Record<string, unknown> = {
     packageId: pkg.packageId,
     packageName: pkg.packageName,
     transactionPrice: pkg.transactionPrice,
     subscriptionPrice: "0",
     currency: "eur",
-    success_url: params.successUrl,
+    success_url: successUrl,
     failure_url: params.failureUrl,
     userId: params.userId,
     systemId: params.systemId,
     plan,
     product: "lightpbx",
     serviceProvider: "lightpbx",
-    lang: params.lang === "he" ? "he" : "en",
+    lang,
   };
   return post<CheckoutSessionResponse>(STRIPE_URL, body);
 }

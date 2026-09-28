@@ -2,24 +2,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { createLightPbxCheckoutSession } from "../services/api";
 import {
-  LIGHTPBX_DEFAULT_CANCEL_URL,
-  LIGHTPBX_DEFAULT_SUCCESS_URL,
-  LIGHTPBX_PLANS,
+  LIGHTPBX_APP_URL,
+  LIGHTPBX_PACKAGES,
+  buildLightPbxCancelUrl,
+  buildLightPbxSuccessUrl,
+  parseLightPbxLang,
+  resolveLightPbxPlan,
+  type LightPbxLang,
   type LightPbxPlan,
 } from "../config/constants";
 
-function isPlan(value: string | null): value is LightPbxPlan {
-  return !!value && (LIGHTPBX_PLANS as readonly string[]).includes(value);
-}
-
-function isHttpUrl(value: string): boolean {
-  try {
-    const u = new URL(value);
-    return u.protocol === "https:" || u.protocol === "http:";
-  } catch {
-    return false;
-  }
-}
+const SESSION_PLACEHOLDER = "{CHECKOUT_SESSION_ID}";
 
 /** Prefer top window so Base44 iframes / in-app WebViews can reach Stripe Checkout. */
 function navigateToCheckout(url: string) {
@@ -34,10 +27,77 @@ function navigateToCheckout(url: string) {
   window.location.assign(url);
 }
 
+function isAllowedLightPbxOrigin(origin: string): boolean {
+  const allowed = new Set<string>([new URL(LIGHTPBX_APP_URL).origin, "http://localhost:3000"]);
+  return allowed.has(origin);
+}
+
 /**
- * Base44 entrypoint: /lightpbx/pay?systemId=&userId=&plan=basic|standard|super
- * Optional: success_url, cancel_url (https). Defaults to VITE_LIGHTPBX_* staging placeholders.
- * Redirects to Stripe Checkout (top-level); on success Stripe returns to Base44 with session_id=cs_…
+ * Optional ?success_url= / ?cancel_url= — only same origin as VITE_LIGHTPBX_APP_URL
+ * (or localhost:3000) and pathname /billing/success|/billing/cancel. Rejects marketing `/`.
+ * Always forces session_id={CHECKOUT_SESSION_ID} on success + systemId + lang.
+ */
+function resolveReturnUrl(
+  kind: "success" | "cancel",
+  rawOverride: string | null,
+  systemId: string,
+  lang: LightPbxLang,
+): { url: string; rejected?: string } {
+  const fallback =
+    kind === "success"
+      ? buildLightPbxSuccessUrl(systemId, lang)
+      : buildLightPbxCancelUrl(systemId, lang);
+
+  const raw = (rawOverride || "").trim();
+  if (!raw) return { url: fallback };
+
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return { url: fallback, rejected: `invalid ${kind}_url` };
+  }
+
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    return { url: fallback, rejected: `${kind}_url must be http(s)` };
+  }
+
+  if (!isAllowedLightPbxOrigin(parsed.origin)) {
+    return {
+      url: fallback,
+      rejected: `${kind}_url origin not allowed (need ${new URL(LIGHTPBX_APP_URL).origin} or http://localhost:3000)`,
+    };
+  }
+
+  const expectedPath = kind === "success" ? "/billing/success" : "/billing/cancel";
+  if (parsed.pathname.replace(/\/$/, "") !== expectedPath) {
+    return {
+      url: fallback,
+      rejected: `${kind}_url pathname must be ${expectedPath} (got ${parsed.pathname})`,
+    };
+  }
+
+  // Rebuild query: keep caller extras, force required keys.
+  parsed.searchParams.delete("session_id");
+  parsed.searchParams.set("systemId", systemId);
+  parsed.searchParams.set("lang", lang);
+
+  if (kind === "success") {
+    // Put session_id first with literal Stripe placeholder (unencoded braces).
+    const rest = parsed.searchParams.toString();
+    const base = `${parsed.origin}${parsed.pathname}`;
+    const withSession = `${base}?session_id=${SESSION_PLACEHOLDER}${rest ? `&${rest}` : ""}`;
+    return { url: withSession };
+  }
+
+  return { url: parsed.toString() };
+}
+
+/**
+ * Authenticated lightpbx-store dashboard entry:
+ *   /lightpbx/refer?packageId=lightpbx_basic|…&systemId=&userId=&lang=en|he|nl
+ * Aliases: plan|type|package|package_id; system_id|user_id.
+ * /lightpbx/pay is the same page (backward compatible).
  */
 export function LightPbxPayPage() {
   const [params] = useSearchParams();
@@ -47,28 +107,45 @@ export function LightPbxPayPage() {
 
   const systemId = (params.get("systemId") || params.get("system_id") || "").trim();
   const userId = (params.get("userId") || params.get("user_id") || "").trim();
-  const planRaw = (params.get("plan") || "").trim().toLowerCase();
-  const successUrl = (
-    params.get("success_url") ||
-    params.get("successUrl") ||
-    LIGHTPBX_DEFAULT_SUCCESS_URL
-  ).trim();
-  const cancelUrl = (
-    params.get("cancel_url") ||
-    params.get("cancelUrl") ||
-    LIGHTPBX_DEFAULT_CANCEL_URL
-  ).trim();
-  const lang = params.get("lang") === "he" ? "he" : "en";
+  const lang = parseLightPbxLang(params.get("lang"));
+
+  const planRaw =
+    params.get("packageId") ||
+    params.get("package_id") ||
+    params.get("package") ||
+    params.get("plan") ||
+    params.get("type") ||
+    "";
+  const plan = resolveLightPbxPlan(planRaw);
+
+  const successOverride =
+    params.get("success_url") || params.get("successUrl") || null;
+  const cancelOverride =
+    params.get("cancel_url") || params.get("cancelUrl") || null;
+
+  const successResolved = useMemo(
+    () => resolveReturnUrl("success", successOverride, systemId, lang),
+    [successOverride, systemId, lang],
+  );
+  const cancelResolved = useMemo(
+    () => resolveReturnUrl("cancel", cancelOverride, systemId, lang),
+    [cancelOverride, systemId, lang],
+  );
+
+  const successUrl = successResolved.url;
+  const cancelUrl = cancelResolved.url;
 
   const missing = useMemo(() => {
     const issues: string[] = [];
     if (!systemId) issues.push("systemId");
     if (!userId) issues.push("userId");
-    if (!isPlan(planRaw)) issues.push("plan (basic|standard|super)");
-    if (!isHttpUrl(successUrl)) issues.push("success_url (https)");
-    if (!isHttpUrl(cancelUrl)) issues.push("cancel_url (https)");
+    if (!plan) {
+      issues.push(
+        "packageId (lightpbx_basic|lightpbx_standard|lightpbx_super) or plan/type (basic|standard|super)",
+      );
+    }
     return issues;
-  }, [systemId, userId, planRaw, successUrl, cancelUrl]);
+  }, [systemId, userId, plan]);
 
   const startCheckout = useCallback(async () => {
     if (missing.length) {
@@ -76,11 +153,12 @@ export function LightPbxPayPage() {
       setError(`Missing or invalid: ${missing.join(", ")}`);
       return;
     }
+    const planId = plan as LightPbxPlan;
     setPhase("loading");
     setError(null);
     try {
       const result = await createLightPbxCheckoutSession({
-        plan: planRaw as LightPbxPlan,
+        plan: planId,
         systemId,
         userId,
         successUrl,
@@ -97,18 +175,23 @@ export function LightPbxPayPage() {
       window.setTimeout(() => {
         setPhase("error");
         setError(
-          "Could not leave this page to open Stripe. Base44 must open the pay URL as a full page (not a sandboxed iframe). Tap Open Stripe below, or change Base44 to window.location / top-level navigation.",
+          "Could not leave this page to open Stripe. Open the refer/pay URL as a full page (not a sandboxed iframe). Tap Retry, or use top-level navigation from the lightpbx-store dashboard.",
         );
       }, 2500);
     } catch (err) {
       setPhase("error");
       setError(err instanceof Error ? err.message : "Could not start Light PBX checkout");
     }
-  }, [missing, planRaw, systemId, userId, successUrl, cancelUrl, lang]);
+  }, [missing, plan, systemId, userId, successUrl, cancelUrl, lang]);
 
   useEffect(() => {
     void startCheckout();
   }, [startCheckout, attempt]);
+
+  const packageLabel = plan ? LIGHTPBX_PACKAGES[plan].packageId : planRaw || "(missing)";
+  const overrideNotes = [successResolved.rejected, cancelResolved.rejected]
+    .filter(Boolean)
+    .join("; ");
 
   return (
     <main
@@ -166,7 +249,10 @@ export function LightPbxPayPage() {
           <strong>userId:</strong> {userId || "(missing)"}
         </div>
         <div>
-          <strong>plan:</strong> {planRaw || "(missing)"}
+          <strong>packageId:</strong> {packageLabel}
+        </div>
+        <div>
+          <strong>lang:</strong> {lang}
         </div>
         <div>
           <strong>success_url:</strong> {successUrl || "(missing)"}
@@ -174,12 +260,19 @@ export function LightPbxPayPage() {
         <div>
           <strong>cancel_url:</strong> {cancelUrl || "(missing)"}
         </div>
+        {overrideNotes ? (
+          <div style={{ marginTop: "0.5rem", color: "#b45309" }}>
+            Override ignored: {overrideNotes} — using store defaults.
+          </div>
+        ) : null}
       </div>
 
       <p style={{ marginTop: "1.5rem", fontSize: "0.85rem", color: "#64748b" }}>
-        Base44 must open this URL as a <strong>full page</strong> (same tab or new tab), not inside a
-        sandboxed iframe. Required query params: <code>systemId</code>, <code>userId</code>,{" "}
-        <code>plan</code>, <code>success_url</code>, <code>cancel_url</code>.
+        Checkout starts from the authenticated lightpbx-store <strong>dashboard</strong> with known{" "}
+        <code>systemId</code> + <code>userId</code>. Open{" "}
+        <code>/lightpbx/refer</code> (or <code>/lightpbx/pay</code>) as a <strong>full page</strong>, not
+        inside a sandboxed iframe. Required: <code>systemId</code>, <code>userId</code>, and a valid{" "}
+        <code>packageId</code> / <code>plan</code>.
       </p>
     </main>
   );
